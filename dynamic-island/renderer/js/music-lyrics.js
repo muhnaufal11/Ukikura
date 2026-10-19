@@ -629,24 +629,9 @@ async function initDesktopAudioVisualizer() {
     if (visualizerInitializing) return false;
     visualizerInitializing = true;
     try {
-        const sourceId = await ipcRenderer.invoke('get-desktop-audio-source');
-        if (!sourceId) {
-            visualizerInitializing = false;
-            return false;
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                mandatory: {
-                    chromeMediaSource: 'desktop'
-                }
-            },
-            video: {
-                mandatory: {
-                    chromeMediaSource: 'desktop',
-                    chromeMediaSourceId: sourceId
-                }
-            }
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+            audio: true,
+            video: true
         });
 
         stream.getVideoTracks().forEach(t => t.stop());
