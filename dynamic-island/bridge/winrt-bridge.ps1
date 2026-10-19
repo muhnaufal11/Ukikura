@@ -342,9 +342,9 @@ function Process-MediaCmd {
                         } elseif ($cmd -match '^SEEK:([\d\.]+)') {
                             $targetSec = [double]$Matches[1]
                             $ticks = [long]([math]::Round($targetSec * 10000000))
-                            if (-not $ctrls -or $ctrls.IsPlaybackPositionEnabled) {
+                            try {
                                 $handled = [bool](Await ($curSess.TryChangePlaybackPositionAsync($ticks)) ([bool]))
-                            }
+                            } catch {}
                             if ($handled) {
                                 Poll-MediaSession $true
                             }

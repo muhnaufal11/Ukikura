@@ -313,11 +313,11 @@ function initInteractiveProgressBar(fillId, posId, remId) {
     }
 
     function updatePreview(ratio) {
-        const dur = mediaState.dur || 0;
-        const previewSec = ratio * dur;
+        const totalDur = (mediaState.dur > 0) ? mediaState.dur : (lyricTrackDuration > 0 ? lyricTrackDuration : 0);
+        const previewSec = ratio * totalDur;
         fillEl.style.width = `${(ratio * 100).toFixed(1)}%`;
         if (posEl) posEl.textContent = formatMediaTime(previewSec);
-        if (remEl) remEl.textContent = `-${formatMediaTime(Math.max(0, dur - previewSec))}`;
+        if (remEl) remEl.textContent = `-${formatMediaTime(Math.max(0, totalDur - previewSec))}`;
 
         const rect = containerEl.getBoundingClientRect();
         const x = Math.max(0, Math.min(rect.width, ratio * rect.width));
@@ -327,7 +327,8 @@ function initInteractiveProgressBar(fillId, posId, remId) {
     }
 
     containerEl.addEventListener('mouseenter', () => {
-        if (mediaState.dur > 0) tooltip.classList.add('active');
+        const totalDur = (mediaState.dur > 0) ? mediaState.dur : (lyricTrackDuration > 0 ? lyricTrackDuration : 0);
+        if (totalDur > 0) tooltip.classList.add('active');
     });
 
     containerEl.addEventListener('mouseleave', () => {
@@ -335,9 +336,10 @@ function initInteractiveProgressBar(fillId, posId, remId) {
     });
 
     containerEl.addEventListener('mousemove', (e) => {
-        if (mediaState.dur > 0 && !isSeekingGlobal) {
+        const totalDur = (mediaState.dur > 0) ? mediaState.dur : (lyricTrackDuration > 0 ? lyricTrackDuration : 0);
+        if (totalDur > 0 && !isSeekingGlobal) {
             const ratio = calcRatio(e);
-            const previewSec = ratio * mediaState.dur;
+            const previewSec = ratio * totalDur;
             const rect = containerEl.getBoundingClientRect();
             const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
             tooltip.style.left = `${x}px`;
@@ -345,8 +347,13 @@ function initInteractiveProgressBar(fillId, posId, remId) {
         }
     });
 
+    containerEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
     containerEl.addEventListener('mousedown', (e) => {
-        if (!mediaState.dur || mediaState.dur <= 0) return;
+        const totalDur = (mediaState.dur > 0) ? mediaState.dur : (lyricTrackDuration > 0 ? lyricTrackDuration : 0);
+        if (!totalDur || totalDur <= 0) return;
         e.preventDefault();
         e.stopPropagation();
         isSeekingGlobal = true;
@@ -369,8 +376,9 @@ function initInteractiveProgressBar(fillId, posId, remId) {
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('mouseup', onMouseUp);
 
+            const totalDur = (mediaState.dur > 0) ? mediaState.dur : (lyricTrackDuration > 0 ? lyricTrackDuration : 0);
             const finalRatio = calcRatio(ev);
-            const targetSec = Math.max(0, Math.min(mediaState.dur, finalRatio * mediaState.dur));
+            const targetSec = Math.max(0, Math.min(totalDur, finalRatio * totalDur));
 
             mediaState.pos = targetSec;
             mediaState.basePos = targetSec;
