@@ -2,11 +2,11 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "version": "1.0.0",
-  "fixCount": 6,
+  "fixCount": 7,
   "channel": "debug",
   "channelName": "Debug",
-  "versionCode": "1.0.0-debug.6",
-  "displayVersion": "v1.0.0-debug (Fix #6)",
+  "versionCode": "1.0.0-debug.7",
+  "displayVersion": "v1.0.0-debug (Fix #7)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -17,5 +17,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.0.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Build Debug v1.0.0-debug (Fix #6): Transisi penutupan Dynamic Island disempurnakan (eliminasi glitch telinga sudut bezel, kurva deselerasi mulus tanpa squish/overshoot negatif, dan isolasi fade konten)."
+  "changelog": "Build Debug v1.0.0-debug (Fix #7): Tata letak kontrol lirik & bar volume disempurnakan (eliminasi tumpang tindih dengan kolom lirik, styling glass pill minimalis, dan proporsi presisi)."
 }
