@@ -21,15 +21,27 @@
 
 ## Instalasi Langsung (Tanpa Compile)
 
-File installer penuh (**Full Self-Contained Offline Installer** hasil kompilasi **Inno Setup 6**, sudah termasuk runtime Electron lengkap di dalamnya) tersedia langsung untuk diunduh dan diinstal tanpa perlu melakukan kompilasi atau memasang Node.js terlebih dahulu:
+File installer resmi hasil kompilasi **Inno Setup 6** tersedia langsung di repositori ini dan halaman **GitHub Releases** sehingga pengguna baru dapat langsung menginstal tanpa perlu memasang Node.js atau melakukan kompilasi ulang:
 
-- **Unduh Langsung Installer Siap Pakai (`91.2 MB`)**: **[Ukikura-Setup-v1.0.0.exe (GitHub Release Resmi)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.0/Ukikura-Setup-v1.0.0.exe)**
+### Cara 1 — Unduh & Jalankan File `.exe` Langsung (Paling Umum)
+1. Unduh file installer **[`Ukikura-Setup-v1.0.0.exe` (GitHub Release Resmi)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.0/Ukikura-Setup-v1.0.0.exe)** (atau melalui folder [`installer/Ukikura-Setup-v1.0.0.exe`](./installer/Ukikura-Setup-v1.0.0.exe)).
+2. Klik dua kali file **`Ukikura-Setup-v1.0.0.exe`**.
+   > [!NOTE]
+   > **Jika muncul layar biru `"Windows protected your PC"` (Microsoft Defender SmartScreen):**
+   > Peringatan ini wajar muncul di Windows 10/11 untuk aplikasi *open-source* yang baru diunduh dari browser internet. Cara melewatinya:
+   > 1. Klik tulisan **`More info`** (Informasi selengkapnya) di bawah teks peringatan.
+   > 2. Klik tombol **`Run anyway`** (Tetap jalankan) di bagian bawah jendela.
+3. Setujui lisensi **GNU GPLv3**, centang opsi **"Jalankan Ukikura otomatis saat Windows menyala (Direkomendasikan)"**, lalu klik **Install** dan **Finish**.
+4. Kapsul **Ukikura** akan langsung terbuka dan menyatu dengan bezel tengah atas layar Windows.
 
-### Langkah Instalasi Pengguna Akhir
-1. Unduh dan jalankan file **[`Ukikura-Setup-v1.0.0.exe`](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.0/Ukikura-Setup-v1.0.0.exe)**.
-2. Setujui lisensi **GNU GPLv3** pada jendela instalasi.
-3. Centang opsi **"Jalankan Ukikura otomatis saat Windows menyala (Direkomendasikan)"** agar kapsul Dynamic Island selalu aktif setiap kali laptop dinyalakan.
-4. Klik **Install** lalu **Finish** — Ukikura langsung tampil menyatu dengan bezel tengah atas layar Windows.
+### Cara 2 — Instalasi 1-Baris via PowerShell (Bebas Layar Biru SmartScreen)
+Jika Anda ingin menginstal langsung tanpa memunculkan jendela biru *Windows SmartScreen*, buka **PowerShell** lalu jalankan perintah 1 baris berikut:
+
+```powershell
+irm https://raw.githubusercontent.com/muhnaufal11/Ukikura/main/installer/install.ps1 | iex
+```
+
+Skrip [`installer/install.ps1`](./installer/install.ps1) akan mengunduh `Ukikura-Setup-v1.0.0.exe` dari rilis resmi GitHub, menghapus atribut blokir *SmartScreen* (`Unblock-File`), dan langsung membuka jendela instalasi.
 
 ---
 
