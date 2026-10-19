@@ -29,8 +29,10 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=.
 OutputBaseFilename=Ukikura-Setup-v{#MyAppVersion}
-Compression=lzma2/fast
-SolidCompression=no
+Compression=lzma2/ultra64
+SolidCompression=yes
+LZMAUseSeparateProcess=yes
+LZMANumBlockThreads=6
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -45,16 +47,19 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "autostart"; Description: "Jalankan Ukikura otomatis saat Windows menyala (Direkomendasikan)"; GroupDescription: "Opsi Startup:"
 
 [Files]
-; 1. Modul Utama Ukikura (100% terpisah dari Asisten LMS)
-Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Flags: ignoreversion recursesubdirs createallsubdirs
+; 1. Modul Utama Ukikura (100% terpisah dari Asisten LMS & tanpa data pribadi pengguna)
+Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\version.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\package.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; 2. Runtime Electron & Dependensi
-Source: "..\node_modules\electron\dist\*"; DestDir: "{app}\runtime"; Flags: ignoreversion recursesubdirs createallsubdirs
+; 2. Runtime Electron & Dependensi (dikompresi di bawah 100 MB agar muat di GitHub repo)
+Source: "..\node_modules\electron\dist\*"; DestDir: "{app}\runtime"; Excludes: "LICENSES.chromium.html,locales\*,vk_swiftshader.dll,dxcompiler.dll,dxil.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\node_modules\electron\dist\locales\en-US.pak"; DestDir: "{app}\runtime\locales"; Flags: ignoreversion
+Source: "..\node_modules\electron\dist\locales\id.pak"; DestDir: "{app}\runtime\locales"; Flags: ignoreversion
+Source: "..\node_modules\electron\dist\locales\ja.pak"; DestDir: "{app}\runtime\locales"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; Comment: "{#MyAppFullTitle}"

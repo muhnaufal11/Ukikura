@@ -120,7 +120,7 @@
       98%, 100% { opacity: 0; }
     }
 
-    /* Mascot Eye Blinking & Glancing */
+    /* Mascot Eye Blinking and Glancing */
     .pet-eye {
       transform-origin: center;
       animation: eyeLook 4s ease-in-out infinite;
