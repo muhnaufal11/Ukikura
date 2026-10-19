@@ -1,5 +1,5 @@
 ; ==============================================================================
-; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT (FULL SELF-CONTAINED)
+; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT
 ; Uki (Terapung / Floating Island) + Kura (Gudang Penyimpanan Data & Tugas)
 ; License: GNU General Public License v3.0 (GPLv3)
 ; ==============================================================================
@@ -11,6 +11,7 @@
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
 #define MyAppExeName "electron.exe"
 #define MyAppEntryArgs "dynamic-island\main.js"
+#define ElectronZipUrl "https://github.com/electron/electron/releases/download/v33.2.0/electron-v33.2.0-win32-x64.zip"
 
 [Setup]
 AppId={{8F4B9A2E-6D31-4E9C-A7C2-91E40B85D3F1}
@@ -33,8 +34,6 @@ OutputDir=.
 OutputBaseFilename=Ukikura-Setup-v{#MyAppVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes
-LZMAUseSeparateProcess=yes
-LZMANumBlockThreads=6
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -48,20 +47,17 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "autostart"; Description: "Jalankan Ukikura otomatis saat Windows menyala (Direkomendasikan)"; GroupDescription: "Opsi Startup:"
 
+[Dirs]
+Name: "{app}\runtime"
+
 [Files]
-; 1. Modul Utama Ukikura (100% terpisah dari Asisten LMS & tanpa data pribadi pengguna)
+; Modul Utama Ukikura (100% terpisah dari Asisten LMS & tanpa data pribadi pengguna)
 Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*,*.md"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\version.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\package.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-; 2. Runtime Electron & Dependensi Lengkap (Langsung Diekstrak ke {app}\runtime\electron.exe)
-Source: "..\node_modules\electron\dist\*"; DestDir: "{app}\runtime"; Excludes: "LICENSES.chromium.html,locales\*,vk_swiftshader.dll,dxcompiler.dll,dxil.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "..\node_modules\electron\dist\locales\en-US.pak"; DestDir: "{app}\runtime\locales"; Flags: ignoreversion
-Source: "..\node_modules\electron\dist\locales\id.pak"; DestDir: "{app}\runtime\locales"; Flags: ignoreversion
-Source: "..\node_modules\electron\dist\locales\ja.pak"; DestDir: "{app}\runtime\locales"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; IconFilename: "{app}\assets\ukikura-logo.ico"; Comment: "{#MyAppFullTitle}"
@@ -72,7 +68,54 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\runtime\{#MyAppExeName}"; P
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Ukikura"; ValueData: """{app}\runtime\{#MyAppExeName}"" ""{app}\{#MyAppEntryArgs}"""; Flags: uninsdeletevalue; Tasks: autostart
 
 [Run]
+Filename: "{sys}\tar.exe"; Parameters: "-xf ""{tmp}\electron-runtime.zip"" -C ""{app}\runtime"""; StatusMsg: "Mengekstrak runtime Ukikura..."; Flags: runhidden waituntilterminated
 Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; Description: "Jalankan {#MyAppFullTitle} sekarang"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
 Filename: "powershell.exe"; Parameters: "-NoProfile -WindowStyle Hidden -Command ""Get-CimInstance Win32_Process | Where-Object {{ $_.CommandLine -match 'dynamic-island' }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }}"""; Flags: runhidden; RunOnceId: "StopUkikuraProcesses"
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}\runtime"
+
+[Code]
+var
+  DownloadPage: TDownloadWizardPage;
+
+function OnDownloadProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
+begin
+  if Progress = ProgressMax then
+    Log(Format('Successfully downloaded file to {tmp}: %s', [FileName]));
+  Result := True;
+end;
+
+procedure InitializeWizard;
+begin
+  DownloadPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), SetupMessage(msgPreparingDesc), @OnDownloadProgress);
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  if CurPageID = wpReady then begin
+    DownloadPage.Clear;
+    if not FileExists(ExpandConstant('{app}\runtime\electron.exe')) then begin
+      DownloadPage.Add('{#ElectronZipUrl}', 'electron-runtime.zip', '');
+      DownloadPage.Show;
+      try
+        try
+          DownloadPage.Download;
+          Result := True;
+        except
+          if DownloadPage.AbortedByUser then
+            Log('Download aborted by user.')
+          else
+            SuppressibleMsgBox(AddPeriod(GetExceptionMessage), mbCriticalError, MB_OK, IDOK);
+          Result := False;
+        end;
+      finally
+        DownloadPage.Hide;
+      end;
+    end else
+      Result := True;
+  end else
+    Result := True;
+end;
