@@ -63,15 +63,7 @@ function renderMediaUI() {
         idleArtEl.classList.remove('has-art');
     }
 
-    // Set background ambient aura mengikuti sampul video/lagu
-    const ambientEls = document.querySelectorAll('.l-music .ambient, .l-lyrics .ambient');
-    ambientEls.forEach(el => {
-        if (bg) {
-            el.style.backgroundImage = bg;
-        } else {
-            el.style.backgroundImage = '';
-        }
-    });
+    // Ekstrak palet warna dari sampul video/lagu untuk ambient canvas
     if (bg) {
         updateCoverDominantColor(bg);
     }
@@ -671,6 +663,163 @@ async function initDesktopAudioVisualizer() {
     }
 }
 
+let ambientPalette = {
+    primary: '94, 194, 255',
+    secondary: '45, 91, 255',
+    accent: '51, 224, 122'
+};
+let ambientPhase = 0;
+let lastSampledBg = '';
+let smoothWavePoints = [0, 0, 0, 0, 0, 0, 0, 0];
+
+function updateCoverDominantColor(bgStr) {
+    if (!bgStr || bgStr === lastSampledBg) return;
+    lastSampledBg = bgStr;
+    const match = bgStr.match(/^url\(["']?(.*?)["']?\)$/);
+    const src = match ? match[1] : bgStr;
+    if (!src) return;
+
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 24;
+            canvas.height = 24;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 24, 24);
+            const p = ctx.getImageData(0, 0, 24, 24).data;
+            
+            // Kumpulkan warna-warna berkarakter (saturasi & kecerahan hidup)
+            let colors = [];
+            for (let i = 0; i < p.length; i += 4) {
+                const pr = p[i], pg = p[i + 1], pb = p[i + 2];
+                const max = Math.max(pr, pg, pb);
+                const min = Math.min(pr, pg, pb);
+                if (max > 40 && (max - min) > 16) {
+                    colors.push({ r: pr, g: pg, b: pb, sat: max - min });
+                }
+            }
+
+            if (colors.length >= 3) {
+                colors.sort((a, b) => b.sat - a.sat);
+                const c1 = colors[0];
+                const c2 = colors[Math.min(colors.length - 1, Math.floor(colors.length * 0.40))];
+                const c3 = colors[Math.min(colors.length - 1, Math.floor(colors.length * 0.80))];
+
+                ambientPalette.primary = `${c1.r}, ${c1.g}, ${c1.b}`;
+                ambientPalette.secondary = `${c2.r}, ${c2.g}, ${c2.b}`;
+                ambientPalette.accent = `${c3.r}, ${c3.g}, ${c3.b}`;
+            } else {
+                ambientPalette.primary = '94, 194, 255';
+                ambientPalette.secondary = '45, 91, 255';
+                ambientPalette.accent = '51, 224, 122';
+            }
+            applyAmbientToDOM(smoothBass, smoothMid, smoothTreb, smoothWavePoints);
+        } catch (_) {
+            ambientPalette.primary = '94, 194, 255';
+            ambientPalette.secondary = '45, 91, 255';
+            ambientPalette.accent = '51, 224, 122';
+        }
+    };
+    img.src = src;
+}
+
+function renderFluidAmbientCanvas(canvasId, bass, mid, treb, wavePoints) {
+    const cvs = document.getElementById(canvasId);
+    if (!cvs) return;
+    const ctx = cvs.getContext('2d');
+    const w = cvs.width;
+    const h = cvs.height;
+
+    // Latar belakang gelap berkarakter
+    ctx.fillStyle = '#080c14';
+    ctx.fillRect(0, 0, w, h);
+
+    // 1. Fluid Orb Bass (Kiri Bawah - membesar & bergelombang mengikuti dentuman bass)
+    const x1 = w * 0.28 + Math.sin(ambientPhase * 0.75) * 32;
+    const y1 = h * 0.68 + Math.cos(ambientPhase * 0.55) * 18;
+    const r1 = 52 + bass * 50;
+    const g1 = ctx.createRadialGradient(x1, y1, 4, x1, y1, r1);
+    g1.addColorStop(0, `rgba(${ambientPalette.primary}, ${0.85 + bass * 0.15})`);
+    g1.addColorStop(0.55, `rgba(${ambientPalette.primary}, 0.45)`);
+    g1.addColorStop(1, `rgba(${ambientPalette.primary}, 0)`);
+    ctx.fillStyle = g1;
+    ctx.beginPath();
+    ctx.arc(x1, y1, r1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Fluid Orb Vokal & Melodi (Kanan Tengah - mengalir & berirama sesuai vokal lagu)
+    const x2 = w * 0.72 + Math.cos(ambientPhase * 0.85) * 30;
+    const y2 = h * 0.50 + Math.sin(ambientPhase * 0.65) * 20;
+    const r2 = 46 + mid * 44;
+    const g2 = ctx.createRadialGradient(x2, y2, 4, x2, y2, r2);
+    g2.addColorStop(0, `rgba(${ambientPalette.secondary}, ${0.75 + mid * 0.22})`);
+    g2.addColorStop(0.6, `rgba(${ambientPalette.secondary}, 0.35)`);
+    g2.addColorStop(1, `rgba(${ambientPalette.secondary}, 0)`);
+    ctx.fillStyle = g2;
+    ctx.beginPath();
+    ctx.arc(x2, y2, r2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Fluid Orb Treble (Atas Tengah - kemilau nada tinggi)
+    const x3 = w * 0.50 + Math.sin(ambientPhase * 1.15) * 44;
+    const y3 = h * 0.32 + Math.cos(ambientPhase * 0.95) * 14;
+    const r3 = 36 + treb * 34;
+    const g3 = ctx.createRadialGradient(x3, y3, 3, x3, y3, r3);
+    g3.addColorStop(0, `rgba(${ambientPalette.accent}, ${0.65 + treb * 0.32})`);
+    g3.addColorStop(0.65, `rgba(${ambientPalette.accent}, 0.22)`);
+    g3.addColorStop(1, `rgba(${ambientPalette.accent}, 0)`);
+    ctx.fillStyle = g3;
+    ctx.beginPath();
+    ctx.arc(x3, y3, r3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4. Gelombang Fluida Audio (Liquid Wave Ribbon yang bergelombang naik-turun sesuai spektrum nada lagu)
+    if (wavePoints && wavePoints.length >= 2) {
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        const step = w / (wavePoints.length - 1);
+        for (let i = 0; i < wavePoints.length; i++) {
+            const px = i * step;
+            const py = h - 12 - (wavePoints[i] * 36);
+            if (i === 0) {
+                ctx.lineTo(px, py);
+            } else {
+                const prevX = (i - 1) * step;
+                const prevY = h - 12 - (wavePoints[i - 1] * 36);
+                const midX = (prevX + px) / 2;
+                ctx.quadraticCurveTo(prevX, prevY, midX, (prevY + py) / 2);
+            }
+        }
+        ctx.lineTo(w, h);
+        ctx.closePath();
+        const waveGrad = ctx.createLinearGradient(0, h - 50, 0, h);
+        waveGrad.addColorStop(0, `rgba(${ambientPalette.secondary}, ${0.48 + bass * 0.38})`);
+        waveGrad.addColorStop(1, `rgba(${ambientPalette.primary}, 0.12)`);
+        ctx.fillStyle = waveGrad;
+        ctx.fill();
+    }
+}
+
+function applyAmbientToDOM(bass, mid, treb, wavePoints) {
+    ambientPhase += 0.018 + bass * 0.038;
+    renderFluidAmbientCanvas('ambient-canvas-1', bass, mid, treb, wavePoints);
+    renderFluidAmbientCanvas('ambient-canvas-2', bass, mid, treb, wavePoints);
+
+    // Pendaran dinamis halus pada sampul album mengikuti warna video/lagu
+    const art1 = document.getElementById('music-art-1');
+    const art2 = document.getElementById('music-art-2');
+    const artGlowSpread = Math.round(14 + bass * 26);
+    const artGlowAlpha = (0.32 + bass * 0.48).toFixed(2);
+    const glowColor = ambientPalette.primary || '94, 194, 255';
+    const glowStyle = (bass > 0.02)
+        ? `0 6px ${artGlowSpread}px rgba(${glowColor}, ${artGlowAlpha})`
+        : '';
+    if (art1) art1.style.boxShadow = glowStyle;
+    if (art2) art2.style.boxShadow = glowStyle;
+}
+
 function updateAmbientVisualizer() {
     const isPlaying = mediaState.active && mediaState.status === 'Playing';
     const isMusicOrLyrics = (typeof currentPage !== 'undefined') && (currentPage === 'music' || currentPage === 'lyrics');
@@ -680,13 +829,16 @@ function updateAmbientVisualizer() {
         smoothBass *= 0.82;
         smoothMid *= 0.82;
         smoothTreb *= 0.82;
-        applyAmbientToDOM(smoothBass, smoothMid, smoothTreb);
+        for (let i = 0; i < 8; i++) smoothWavePoints[i] *= 0.82;
+
+        applyAmbientToDOM(smoothBass, smoothMid, smoothTreb, smoothWavePoints);
 
         if (smoothBass < 0.005 && smoothMid < 0.005 && smoothTreb < 0.005) {
             smoothBass = 0;
             smoothMid = 0;
             smoothTreb = 0;
-            applyAmbientToDOM(0, 0, 0);
+            for (let i = 0; i < 8; i++) smoothWavePoints[i] = 0;
+            applyAmbientToDOM(0, 0, 0, smoothWavePoints);
             visualizerAnimId = null;
             return;
         }
@@ -713,6 +865,13 @@ function updateAmbientVisualizer() {
         for (let i = 11; i <= 22; i++) trebSum += audioVisualizerData[i] || 0;
         const targetTreb = Math.min(1, (trebSum / (12 * 255)) * 1.2);
 
+        // Ekstrak 8 titik gelombang spektrum frekuensi untuk liquid wave ribbon
+        for (let i = 0; i < 8; i++) {
+            const binIdx = Math.min(audioVisualizerData.length - 1, 1 + i * 2);
+            const targetVal = (audioVisualizerData[binIdx] || 0) / 255;
+            smoothWavePoints[i] += (targetVal - smoothWavePoints[i]) * 0.32;
+        }
+
         // Exponential smoothing: responsif saat beat menghentak, halus saat melemah
         smoothBass += (targetBass - smoothBass) * (targetBass > smoothBass ? 0.36 : 0.12);
         smoothMid += (targetMid - smoothMid) * (targetMid > smoothMid ? 0.30 : 0.10);
@@ -721,82 +880,11 @@ function updateAmbientVisualizer() {
         smoothBass *= 0.88;
         smoothMid *= 0.88;
         smoothTreb *= 0.88;
+        for (let i = 0; i < 8; i++) smoothWavePoints[i] *= 0.85;
     }
 
-    applyAmbientToDOM(smoothBass, smoothMid, smoothTreb);
+    applyAmbientToDOM(smoothBass, smoothMid, smoothTreb, smoothWavePoints);
     visualizerAnimId = requestAnimationFrame(updateAmbientVisualizer);
-}
-
-let currentAmbientColor = '94, 194, 255';
-let lastSampledBg = '';
-
-function updateCoverDominantColor(bgStr) {
-    if (!bgStr || bgStr === lastSampledBg) return;
-    lastSampledBg = bgStr;
-    const match = bgStr.match(/^url\(["']?(.*?)["']?\)$/);
-    const src = match ? match[1] : bgStr;
-    if (!src) return;
-
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = () => {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = 16;
-            canvas.height = 16;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, 16, 16);
-            const p = ctx.getImageData(0, 0, 16, 16).data;
-            let r = 0, g = 0, b = 0, count = 0;
-            for (let i = 0; i < p.length; i += 4) {
-                const pr = p[i], pg = p[i + 1], pb = p[i + 2];
-                const max = Math.max(pr, pg, pb);
-                const min = Math.min(pr, pg, pb);
-                if (max > 45 && (max - min) > 16) {
-                    r += pr; g += pg; b += pb;
-                    count++;
-                }
-            }
-            if (count > 0) {
-                currentAmbientColor = `${Math.round(r / count)}, ${Math.round(g / count)}, ${Math.round(b / count)}`;
-            } else {
-                currentAmbientColor = '94, 194, 255';
-            }
-        } catch (_) {
-            currentAmbientColor = '94, 194, 255';
-        }
-    };
-    img.src = src;
-}
-
-function applyAmbientToDOM(bass, mid, treb) {
-    const ambientEls = document.querySelectorAll('.l-music .ambient, .l-lyrics .ambient');
-    if (!ambientEls.length) return;
-
-    // Skala denyut & intensitas pendaran mengikuti energi frekuensi bass + vokal
-    const scale = (1.04 + (bass * 0.12)).toFixed(3);
-    const opacity = (0.75 + (mid * 0.20) + (bass * 0.15)).toFixed(2);
-    const blur = Math.round(38 + bass * 14);
-    const saturate = (2.2 + mid * 0.8).toFixed(2);
-    const brightness = (0.68 + bass * 0.36).toFixed(2);
-
-    ambientEls.forEach(el => {
-        el.style.transform = `scale(${scale})`;
-        el.style.opacity = opacity;
-        el.style.filter = `blur(${blur}px) saturate(${saturate}) brightness(${brightness})`;
-    });
-
-    // Pendaran dinamis halus pada sampul album mengikuti warna video/lagu
-    const art1 = document.getElementById('music-art-1');
-    const art2 = document.getElementById('music-art-2');
-    const artGlowSpread = Math.round(14 + bass * 26);
-    const artGlowAlpha = (0.32 + bass * 0.48).toFixed(2);
-    const glowColor = currentAmbientColor || '94, 194, 255';
-    const glowStyle = (bass > 0.02)
-        ? `0 6px ${artGlowSpread}px rgba(${glowColor}, ${artGlowAlpha})`
-        : '';
-    if (art1) art1.style.boxShadow = glowStyle;
-    if (art2) art2.style.boxShadow = glowStyle;
 }
 
 function startAmbientVisualizerIfNeeded() {
@@ -815,4 +903,9 @@ function startAmbientVisualizerIfNeeded() {
         }
     }
 }
+
+// Render frame awal canvas ambient saat pertama kali dimuat
+setTimeout(() => {
+    applyAmbientToDOM(0, 0, 0, smoothWavePoints);
+}, 200);
 

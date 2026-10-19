@@ -356,48 +356,34 @@
         height: 15px;
     }
 
-    /* Ambient Aura Dinamis Halaman Musik & Lirik (Mengikuti Warna Video / Thumbnail) */
-    .l-music .ambient,
-    .l-lyrics .ambient {
+    /* Canvas Ambient Audio-Reaktif Mengikuti Warna Video & Frekuensi Suara */
+    .ambient-canvas {
         position: absolute;
-        inset: -28px -28px -28px -28px;
-        height: auto;
-        border-radius: inherit;
-        background-color: #0b111e;
-        background-image: linear-gradient(110deg, #19b8ff 0%, #2d5bff 28%, #33e07a 54%, #7b4bff 80%, #19b8ff 100%);
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        filter: blur(40px) saturate(2.6) brightness(0.68);
-        opacity: 0.82;
-        transform: scale(1.05);
-        transform-origin: center center;
-        mask: none;
-        -webkit-mask: none;
-        animation: none;
+        inset: -25px;
+        width: calc(100% + 50px);
+        height: calc(100% + 50px);
+        filter: blur(34px) saturate(2.4) brightness(0.85);
         pointer-events: none;
         z-index: 0;
-        transition:
-            transform 0.08s cubic-bezier(0.16, 1, 0.3, 1),
-            opacity 0.12s ease,
-            filter 0.1s ease,
-            background-image 0.4s ease;
+        border-radius: inherit;
+        transition: opacity 0.3s ease;
         will-change: transform, opacity, filter;
     }
 
     /* Lapisan Vignette Lembut agar Teks Judul, Artis, & Tombol Tetap Kontras & Tajam */
-    .l-music .ambient::after,
-    .l-lyrics .ambient::after {
-        content: '';
+    .ambient-vignette {
         position: absolute;
         inset: 0;
-        background: radial-gradient(ellipse at 50% 60%, rgba(10, 15, 24, 0.28) 0%, rgba(3, 5, 8, 0.76) 88%);
+        background: radial-gradient(ellipse at 50% 60%, rgba(10, 15, 24, 0.20) 0%, rgba(0, 0, 0, 0.74) 86%);
         pointer-events: none;
+        z-index: 1;
     }
 
     /* Semua elemen fungsional dipastikan berada di atas lapisan ambient */
-    .l-music > *:not(.ambient),
-    .l-lyrics > *:not(.ambient) {
+    .l-music > *:not(.ambient-canvas):not(.ambient-vignette),
+    .l-lyrics > *:not(.ambient-canvas):not(.ambient-vignette) {
+        z-index: 2;
+    }
         z-index: 2;
     }
 

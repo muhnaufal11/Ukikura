@@ -44,8 +44,16 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if (Test-Path $targetPath) {
+    Start-Sleep -Milliseconds 1200
     Write-Host "[Ukikura Builder] Menandatangani digital (SHA-256)..." -ForegroundColor Yellow
-    Set-AuthenticodeSignature -FilePath $targetPath -Certificate $cert -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com" | Out-Null
+    for ($i = 0; $i -lt 5; $i++) {
+        try {
+            Set-AuthenticodeSignature -FilePath $targetPath -Certificate $cert -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com" | Out-Null
+            break
+        } catch {
+            Start-Sleep -Milliseconds 800
+        }
+    }
     Copy-Item $targetPath (Join-Path $distDir $outputFile) -Force
     
     $ukikuraInstallerDir = Join-Path $rootDir "Ukikura\installer"

@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.0",
-  "versionCode": 8,
+  "versionCode": 9,
   "version": "1.0.0",
-  "fixCount": 8,
-  "displayVersion": "1.0.0 (Kode: 8)",
+  "fixCount": 9,
+  "displayVersion": "1.0.0 (Kode: 9)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.0.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.0 (Fix #8): Ambient Aura Dinamis mengikuti warna video YouTube & cover musik, denyut audio WASAPI loopback, dan perbaikan jam header."
+  "changelog": "Ukikura v1.0.0 (Fix #9): Fluid Audio-Reactive Ambient Engine (Animasi gelombang fluida dinamis & orbs cahaya reaktif mengikuti nada bass, vokal, dan warna video)."
 }
