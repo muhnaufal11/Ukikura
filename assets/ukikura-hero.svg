@@ -91,7 +91,7 @@
     /* 4-Stage Cycle (16s total):
        0% - 16%: State 1 - Resting Mascot (176x25)
        18% - 52%: State 2 - Synced Lyrics (520x186) - Exact match to screenshot
-       54% - 76%: State 3 - LMS Todo & Deadlines (480x186)
+       54% - 76%: State 3 - LMS Todo and Deadlines (480x186)
        78% - 96%: State 4 - Smart Calendar (480x186)
     */
     .st-pet { animation: fadePet 16s infinite; }
