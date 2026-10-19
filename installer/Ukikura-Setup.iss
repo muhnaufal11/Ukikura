@@ -47,7 +47,7 @@ Name: "autostart"; Description: "Jalankan Ukikura otomatis saat Windows menyala 
 
 [Files]
 ; Modul Utama Ukikura (100% terpisah dari Asisten LMS & tanpa data pribadi pengguna)
-Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*,*.md"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\version.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\package.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
