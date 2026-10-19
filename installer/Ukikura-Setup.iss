@@ -16,6 +16,24 @@
 #define MyAppEntryArgs "dynamic-island\main.js"
 #define ElectronZipUrl "https://github.com/electron/electron/releases/download/v33.2.0/electron-v33.2.0-win32-x64.zip"
 
+#ifndef DefaultChannel
+  #define DefaultChannel "universal"
+#endif
+
+#if DefaultChannel == "debug"
+  #define OutputName "Ukikura-Setup-v" + MyAppVersion + "-debug"
+  #define PublicTaskFlags "exclusive unchecked"
+  #define DebugTaskFlags "exclusive"
+#elif DefaultChannel == "public"
+  #define OutputName "Ukikura-Setup-v" + MyAppVersion + "-public"
+  #define PublicTaskFlags "exclusive"
+  #define DebugTaskFlags "exclusive unchecked"
+#else
+  #define OutputName "Ukikura-Setup-v" + MyAppVersion
+  #define PublicTaskFlags "exclusive"
+  #define DebugTaskFlags "exclusive unchecked"
+#endif
+
 [Setup]
 AppId={{8F4B9A2E-6D31-4E9C-A7C2-91E40B85D3F1}
 AppName={#MyAppName}
@@ -37,7 +55,7 @@ SetupIconFile=..\assets\ukikura-logo.ico
 UninstallDisplayIcon={app}\assets\ukikura-logo.ico
 PrivilegesRequired=lowest
 OutputDir=.
-OutputBaseFilename=Ukikura-Setup-v{#MyAppVersion}
+OutputBaseFilename={#OutputName}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -51,8 +69,8 @@ UninstallDisplayName={#MyAppFullTitle}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "channel_public"; Description: "Versi Publik (Rilis Stabil — Penggunaan Sehari-hari)"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: exclusive
-Name: "channel_debug"; Description: "Versi Debug (Rilis Pengembang — Fitur Baru & Pelacakan Log)"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: exclusive unchecked
+Name: "channel_public"; Description: "Versi Publik (Rilis Stabil — Penggunaan Sehari-hari)"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: {#PublicTaskFlags}
+Name: "channel_debug"; Description: "Versi Debug (Rilis Pengembang — Fitur Baru & Pelacakan Log)"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: {#DebugTaskFlags}
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "autostart"; Description: "Jalankan Ukikura otomatis saat Windows menyala (Direkomendasikan)"; GroupDescription: "Opsi Startup:"
 
@@ -110,13 +128,43 @@ begin
 end;
 
 procedure InitializeWizard;
+begin
+  DownloadPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), SetupMessage(msgPreparingDesc), @OnDownloadProgress);
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
 var
   ExistingVerFile: String;
   VerContent: AnsiString;
 begin
-  DownloadPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), SetupMessage(msgPreparingDesc), @OnDownloadProgress);
+  // Saat halaman tugas (wpSelectTasks) atau persiapan instalasi (wpReady), {app} sudah terinisialisasi
+  if (CurPageID = wpSelectTasks) or (CurPageID = wpReady) then begin
+    ExistingVerFile := ExpandConstant('{app}\version.json');
+    if FileExists(ExistingVerFile) then begin
+      if LoadStringFromFile(ExistingVerFile, VerContent) then begin
+        if Pos('"channel": "debug"', VerContent) > 0 then begin
+          WizardSelectTasks('!channel_public,channel_debug');
+        end else if Pos('"channel": "public"', VerContent) > 0 then begin
+          WizardSelectTasks('channel_public,!channel_debug');
+        end;
+      end;
+    end;
+  end;
+end;
 
-  // Jika melakukan in-place update, periksa apakah pengguna sebelumnya memasang Versi Debug atau Versi Publik
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+  ExistingVerFile: String;
+  VerContent: AnsiString;
+begin
+  // Tutup instans Ukikura lama dan PowerShell bridge agar proses update mulus tanpa file terkunci
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\powershell.exe'), '-NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match ''winrt-bridge'' } | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(400);
+
+  // Jika installer dijalankan dalam mode in-place update tanpa membuka halaman tugas,
+  // deteksi dan pertahankan otomatis kode versi lama (debug vs public)
   ExistingVerFile := ExpandConstant('{app}\version.json');
   if FileExists(ExistingVerFile) then begin
     if LoadStringFromFile(ExistingVerFile, VerContent) then begin
@@ -127,16 +175,7 @@ begin
       end;
     end;
   end;
-end;
 
-function PrepareToInstall(var NeedsRestart: Boolean): String;
-var
-  ResultCode: Integer;
-begin
-  // Tutup instans Ukikura lama dan PowerShell bridge agar proses update mulus tanpa file terkunci
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec(ExpandConstant('{sys}\powershell.exe'), '-NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match ''winrt-bridge'' } | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Sleep(400);
   Result := '';
 end;
 
