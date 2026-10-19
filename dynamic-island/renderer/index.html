@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nusa — Living Notch</title>
+    <!-- Stylesheets Modular Nusa Dynamic Island -->
+    <link rel="stylesheet" href="./styles/core-notch.css">
+    <link rel="stylesheet" href="./styles/pages-media-notif.css">
+    <link rel="stylesheet" href="./styles/pages-lms-tools.css">
+    <link rel="stylesheet" href="./styles/calendar-modals.css">
+</head>
+<body>
+
+<div class="mn-holder" id="mnHolder">
+    <div class="mn" id="mn" data-s="pet" role="region" aria-label="Nusa Living Notch">
+
+        <!-- 1. MODE RESTING: MASKOT MATA BERKEDIP KHAS NUSA -->
+        <div class="ly l-pet" id="l-pet" title="Sentuh untuk membuka Dynamic Island">
+            <div class="ambient"></div>
+            <span class="pet-left-eq bars"><i></i><i></i><i></i><i></i></span>
+            <span class="pet-emote" id="pet-emote"></span>
+            <div class="eyes">
+                <i class="eye"></i>
+                <i class="eye"></i>
+            </div>
+            <span class="pet-badge" id="pet-badge">
+                <i class="pet-wa-dot"></i>
+                <span id="pet-count">0</span>
+            </span>
+        </div>
+
+        <!-- 2. MODE CLOSED: RING/ART + LAGU/COUNTDOWN + BARS KHAS NUSA -->
+        <div class="ly l-idle" id="l-idle" title="Sentuh untuk membuka Dynamic Island">
+            <div class="idle-row">
+                <span class="idle-art" id="idle-art"></span>
+                <span class="ring" id="idle-ring"></span>
+                <span class="idle-center" id="idle-center">--:--</span>
+                <span class="bars"><i></i><i></i><i></i><i></i><i></i></span>
+            </div>
+        </div>
+
+        <!-- 3. MODE PEEK POPUP: SAAT ADA NOTIFIKASI WA / HP BARU MASUK -->
+        <div class="ly l-peek" id="l-peek" title="Klik untuk membuka pesan / notifikasi">
+            <span class="a pk-ring">
+                <svg viewBox="0 0 30 30">
+                    <circle cx="15" cy="15" r="11" fill="none" stroke="rgba(37,211,102,.25)" stroke-width="4.5"/>
+                    <circle class="arc" id="pk-arc" cx="15" cy="15" r="11" fill="none" stroke="#25d366" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="69.1" stroke-dashoffset="69.1"/>
+                </svg>
+            </span>
+            <svg class="a c" style="left:34px;top:32px;width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+            <div class="pk-body">
+                <div class="pk-title-row">
+                    <span class="pk-app-tag" id="pk-app">WhatsApp</span>
+                    <span class="pk-title" id="pk-title">Pesan Baru</span>
+                </div>
+                <div class="pk-sub" id="pk-sub">Ketuk untuk melihat detail notifikasi</div>
+            </div>
+            <img class="a c pk-sticker" id="pk-sticker" alt="Stiker" />
+            <span class="a c" style="right:14px;top:32px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.12);display:grid;place-items:center">
+                <svg viewBox="0 0 10 10" style="width:9px;height:9px;stroke:#fff;stroke-width:2.2;fill:none"><path d="M3.5 1.5 7 5l-3.5 3.5"/></svg>
+            </span>
+        </div>
+
+        <!-- 3B. MODE PEEK CAS LAPTOP (Nusa Charging Peek) -->
+        <div class="ly l-charge" id="l-charge" title="Status Baterai & Pengisian Daya Laptop">
+            <span class="a pk-ring" style="left:35px;top:30px">
+                <svg viewBox="0 0 30 30">
+                    <circle cx="15" cy="15" r="11" fill="none" stroke="rgba(51,224,122,.28)" stroke-width="5"/>
+                    <circle class="arc" id="chg-arc" cx="15" cy="15" r="11" fill="none" stroke="#33e07a" stroke-width="5" stroke-linecap="round" stroke-dasharray="69.1" stroke-dashoffset="69.1"/>
+                </svg>
+            </span>
+            <svg class="a c" style="left:35px;top:30px;width:11px;height:13px" viewBox="0 0 10 14"><path d="M6 0 0 8h4l-1 6 6-8H5z" fill="#fff"/></svg>
+            <span class="a vc sb" id="chg-title" style="left:64px;top:22px;font-size:15px">Charging</span>
+            <span class="a vc dim" id="chg-sub" style="left:64px;top:40px;font-size:11.5px">Charger connected</span>
+            <span class="a vc b" id="chg-pct" style="right:22px;top:30px;font-size:23px;font-family:var(--mono)">100%</span>
+        </div>
+
+        <!-- 3C. MODE PEEK BATERAI HP & BLUETOOTH (Nusa BT Peek) -->
+        <div class="ly l-bt" id="l-bt" title="Status Baterai HP & Perangkat Bluetooth">
+            <span class="a pk-ring" style="left:35px;top:30px">
+                <svg viewBox="0 0 30 30">
+                    <circle cx="15" cy="15" r="11" fill="none" stroke="rgba(94,194,255,.22)" stroke-width="5"/>
+                    <circle class="arc" id="bt-arc" cx="15" cy="15" r="11" fill="none" stroke="#5ec2ff" stroke-width="5" stroke-linecap="round" stroke-dasharray="69.1" stroke-dashoffset="69.1"/>
+                </svg>
+            </span>
+            <svg class="a c" style="left:35px;top:30px;width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></svg>
+            <span class="a vc sb" id="bt-title" style="left:64px;top:22px;font-size:14px;max-width:178px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Redmi Note 13 Pro+ 5G</span>
+            <span class="a vc dim" id="bt-sub" style="left:64px;top:40px;font-size:11.5px">Baterai HP · 20%</span>
+            <span class="a c" style="left:282px;top:30px;width:38px;height:38px;border-radius:50%;box-shadow:0 0 0 1.5px rgba(94,194,255,.35), 0 0 0 5px rgba(94,194,255,.08)"></span>
+            <span class="a c" style="left:282px;top:30px;width:30px;height:30px;border-radius:50%;background:#0d1a26;display:grid;place-items:center;box-shadow:inset 0 0 0 1.5px rgba(94,194,255,.55)">
+                <svg id="bt-icon-svg" viewBox="0 0 24 24" style="width:15px;height:15px" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            </span>
+        </div>
+
+        <!-- HEADER SAAT TERBUKA -->
+        <div class="ly l-hdr">
+            <div class="hdr-bar">
+                <div class="hdr-title" id="hdr-title">
+                    <span>Now</span><span style="color:#5ec2ff">Playing</span>
+                </div>
+                <div class="hdr-center">
+                    <span class="ring" id="hdr-ring" title="Baterai Laptop"></span>
+                    <span class="hdr-bat-pill" id="hdr-laptop-bat" title="Klik untuk lihat status cas & baterai laptop">
+                        <svg id="hdr-chg-bolt" viewBox="0 0 10 14" style="width:8px;height:10px;display:none"><path d="M6 0 0 8h4l-1 6 6-8H5z" fill="currentColor"/></svg>
+                        <span id="hdr-laptop-pct">--%</span>
+                    </span>
+                    <span class="hdr-bat-pill" id="hdr-phone-bat" style="display:none;color:#7fd6ff" title="Baterai HP Terdeteksi">
+                        <svg viewBox="0 0 24 24" style="width:9px;height:9px;stroke:currentColor;stroke-width:2.2;fill:none"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/></svg>
+                        <span id="hdr-phone-pct">--%</span>
+                    </span>
+                    <span id="js-date">Mon 19 Oct</span>
+                    <b id="js-time">12:00</b>
+                </div>
+                <div class="hdr-actions">
+                    <button class="hdr-icon-btn" id="btn-wa-quick" title="Buka / Tautkan WhatsApp, Notifikasi & Baterai HP">
+                        <span class="hdr-badge-dot"></span>
+                        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    </button>
+                    <button class="hdr-icon-btn" id="btn-sync" title="Sinkronisasi LMS Sekarang">
+                        <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    </button>
+                    <button class="hdr-icon-btn" id="btn-login" title="Login / Tautkan Sesi LMS Background">
+                        <svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    </button>
+                    <button class="hdr-icon-btn" id="btn-pin" title="Sematkan Tetap Terbuka (Pin)">
+                        <svg viewBox="0 0 24 24"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+                    </button>
+                    <button class="hdr-icon-btn" id="btn-tuck" title="Lipat Tipis ke Bezel Atas">
+                        <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANAH NAVIGASI KIRI & KANAN KHAS NUSA -->
+        <div class="ly l-nav">
+            <button class="a arw c" id="btn-prev" style="left:21px;top:98px" title="Halaman Sebelumnya">
+                <svg viewBox="0 0 10 10"><path d="M6.5 1.5 3 5l3.5 3.5"/></svg>
+            </button>
+            <button class="a arw c" id="btn-next" style="right:-1px;top:98px;transform:translate(-50%,-50%)" title="Halaman Berikutnya">
+                <svg viewBox="0 0 10 10"><path d="M3.5 1.5 7 5l-3.5 3.5"/></svg>
+            </button>
+        </div>
+
+        <!-- TITIK HALAMAN BAWAH (.dots) KHAS NUSA -->
+        <div class="ly l-dots">
+            <div class="a dots">
+                <button type="button" data-page="music" title="Musik & Lirik Live"></button>
+                <button type="button" data-page="notif" title="Baterai Laptop/HP & Notifikasi WA"></button>
+                <button type="button" data-page="todo" title="Daftar Tugas & Kuis LMS"></button>
+                <button type="button" data-page="cal" title="Kalender & Jadwal Tugas"></button>
+                <button type="button" data-page="pomo" title="Deadline Terdekat & Focus Timer"></button>
+                <button type="button" data-page="shelf" title="File Shelf"></button>
+                <button type="button" data-page="config" title="Pengaturan Sinkronisasi & Tampilan"></button>
+            </div>
+        </div>
+
+        <!-- ================= HALAMAN 1A: MUSIK PLAYER KHAS NUSA ================= -->
+        <div class="ly l-music">
+            <span class="a art" id="music-art-1" style="left:46px;top:40px;width:68px;height:68px"></span>
+            <div class="a" style="left:128px;right:48px;top:42px">
+                <span class="music-app-badge" id="music-app-1">Windows Media</span>
+                <div class="sb" id="music-title-1" style="font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Putar Musik di PC / Browser</div>
+                <div class="dim" id="music-artist-1" style="font-size:11.5px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Spotify, YouTube, Brave, Chrome, Apple Music</div>
+            </div>
+
+            <span class="a vc" id="music-pos-1" style="left:46px;top:124px;font-family:var(--mono);font-size:10.5px;color:rgba(255,255,255,.72)">00:00</span>
+            <span class="a prog vc" style="left:88px;right:88px;top:124px"><i id="music-prog-1"></i></span>
+            <span class="a vc" id="music-rem-1" style="right:46px;top:124px;font-family:var(--mono);font-size:10.5px;color:rgba(255,255,255,.72)">-00:00</span>
+
+            <button class="a bub-btn c" id="btn-open-lyrics" style="left:74px;top:152px" title="Tampilkan Lirik tersinkronisasi (Synced Lyrics)">
+                <svg class="bub" viewBox="0 0 18 16"><path d="M4 .8h10a3.2 3.2 0 0 1 3.2 3.2v4.6a3.2 3.2 0 0 1-3.2 3.2H8.4L4.6 15l.5-3.2H4A3.2 3.2 0 0 1 .8 8.6V4A3.2 3.2 0 0 1 4 .8z" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.4"/><circle cx="6.3" cy="5.4" r="1.3" fill="rgba(255,255,255,.85)"/><circle cx="11.3" cy="5.4" r="1.3" fill="rgba(255,255,255,.85)"/></svg>
+            </button>
+            <button class="a ctl-btn c" data-mcmd="PREV" style="left:192px;top:152px" title="Lagu Sebelumnya">
+                <svg class="ctl" viewBox="0 0 24 24"><path d="M11 6 3 12l8 6zM21 6l-8 6 8 6z"/></svg>
+            </button>
+            <button class="a ctl-btn play-main c" data-mcmd="PLAYPAUSE" style="left:240px;top:152px" title="Putar / Jeda">
+                <svg class="ctl" id="play-icon-1" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button class="a ctl-btn c" data-mcmd="NEXT" style="left:288px;top:152px" title="Lagu Berikutnya">
+                <svg class="ctl" viewBox="0 0 24 24"><path d="m13 6 8 6-8 6zM3 6l8 6-8 6z"/></svg>
+            </button>
+        </div>
+
+        <!-- ================= HALAMAN 1B: MODE LIRIK MELEBAR (520px) KHAS NUSA ================= -->
+        <div class="ly l-lyrics">
+            <div class="ambient"></div>
+            <span class="a art" id="music-art-2" style="left:42px;top:42px;width:58px;height:58px"></span>
+            <div class="a" style="left:110px;width:134px;top:48px">
+                <div class="sb" id="music-title-2" style="font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Putar Musik</div>
+                <div class="dim" id="music-artist-2" style="font-size:10.5px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Artis</div>
+            </div>
+
+            <span class="a vc" id="music-pos-2" style="left:42px;top:118px;font-family:var(--mono);font-size:9.8px">00:00</span>
+            <span class="a prog vc" style="left:78px;width:124px;top:118px"><i id="music-prog-2"></i></span>
+            <span class="a vc" id="music-rem-2" style="left:208px;top:118px;font-family:var(--mono);font-size:9.8px">-00:00</span>
+
+            <button class="a bub-btn c" id="btn-close-lyrics" style="left:60px;top:148px" title="Kembali ke Pemutar Standar">
+                <svg class="bub" viewBox="0 0 18 16"><path d="M4 .8h10a3.2 3.2 0 0 1 3.2 3.2v4.6a3.2 3.2 0 0 1-3.2 3.2H8.4L4.6 15l.5-3.2H4A3.2 3.2 0 0 1 .8 8.6V4A3.2 3.2 0 0 1 4 .8z" fill="#fff"/><circle cx="6.3" cy="5.4" r="1.3" fill="#000"/><circle cx="11.3" cy="5.4" r="1.3" fill="#000"/></svg>
+            </button>
+            <button class="a ctl-btn c" data-mcmd="PREV" style="left:112px;top:148px" title="Sebelumnya">
+                <svg class="ctl" viewBox="0 0 24 24"><path d="M11 6 3 12l8 6zM21 6l-8 6 8 6z"/></svg>
+            </button>
+            <button class="a ctl-btn play-main c" data-mcmd="PLAYPAUSE" style="left:154px;top:148px" title="Putar / Jeda">
+                <svg class="ctl" id="play-icon-2" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button class="a ctl-btn c" data-mcmd="NEXT" style="left:196px;top:148px" title="Berikutnya">
+                <svg class="ctl" viewBox="0 0 24 24"><path d="m13 6 8 6-8 6zM3 6l8 6-8 6z"/></svg>
+            </button>
+
+            <span class="a" style="left:252px;top:40px;width:1px;height:118px;background:rgba(255,255,255,.14)"></span>
+            <div class="a lyr">
+                <ol id="lyr-list">
+                    <li class="on">Menunggu musik diputar...</li>
+                    <li>Lirik otomatis mengikuti lagu</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- ================= HALAMAN 2: BATERAI LAPTOP/HP & NOTIFIKASI WA ================= -->
+        <div class="ly l-notif">
+            <div class="notif-left">
+                <div style="display:flex;flex-direction:column;gap:3px;max-height:112px;overflow-y:auto;padding-right:2px" id="battery-cards-wrap">
+                    <div class="bat-card" id="bat-card-laptop" title="Klik untuk tampilkan animasi Peek Cas Laptop">
+                        <div class="bat-card-left">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#33e07a" stroke-width="2.2"><rect x="2" y="4" width="18" height="12" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+                            <span class="bat-card-name" id="bat-laptop-label">Laptop</span>
+                        </div>
+                        <span class="bat-card-pct" id="bat-laptop-val">--%</span>
+                    </div>
+                    <div class="bat-card" id="bat-card-phone" title="Klik untuk tampilkan animasi Peek Baterai HP">
+                        <div class="bat-card-left">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#5ec2ff" stroke-width="2.2"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
+                            <span class="bat-card-name" id="bat-phone-label">Baterai HP</span>
+                        </div>
+                        <span class="bat-card-pct" id="bat-phone-val" style="color:#5ec2ff">--%</span>
+                    </div>
+                    <div class="bat-card" id="bat-card-audio" title="Klik untuk tampilkan animasi Peek TWS / Audio">
+                        <div class="bat-card-left">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2"><path d="M4 15v-3a8 8 0 0 1 16 0v3M4 15h3v5H5a1 1 0 0 1-1-1zM20 15h-3v5h2a1 1 0 0 0 1-1z"/></svg>
+                            <span class="bat-card-name" id="bat-audio-label">TWS / Audio</span>
+                        </div>
+                        <span class="bat-card-pct" id="bat-audio-val" style="color:#c4b5fd">--%</span>
+                    </div>
+                    <div class="bat-card" id="bat-card-periph" title="Klik untuk tampilkan animasi Peek Mouse / Keyboard / Perangkat Lain">
+                        <div class="bat-card-left">
+                            <svg id="bat-periph-svg" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2"><rect x="6" y="3" width="12" height="18" rx="6"/><line x1="12" y1="7" x2="12" y2="11"/></svg>
+                            <span class="bat-card-name" id="bat-periph-label">Mouse / Periferal</span>
+                        </div>
+                        <span class="bat-card-pct" id="bat-periph-val" style="color:#38bdf8">--</span>
+                    </div>
+                </div>
+                <div style="display:flex;gap:4px">
+                    <button class="pill wa-btn" id="btn-link-wa" style="flex:1;padding:0 6px;font-size:10px" title="Tautkan / Buka WhatsApp">
+                        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                        WA
+                    </button>
+                    <button class="pill" id="btn-link-phone" style="flex:1;padding:0 6px;font-size:10px" title="Buka Koneksi ke HP (Phone Link)">
+                        <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                        HP Link
+                    </button>
+                </div>
+            </div>
+            <div class="notif-list-wrap" id="notif-list"></div>
+        </div>
+
+        <!-- ================= HALAMAN 3: LMS TODOLIST ================= -->
+        <div class="ly l-todo">
+            <div class="todo-left">
+                <div>
+                    <div class="todo-big-num" id="todo-ratio">0/0</div>
+                    <div class="todo-sub" id="todo-sub-text">Tugas Selesai</div>
+                    <div class="filter-strip">
+                        <button class="flt-chip active" data-filter="active">Aktif</button>
+                        <button class="flt-chip" data-filter="urgent">Mendesak</button>
+                        <button class="flt-chip" data-filter="assign">Tugas</button>
+                        <button class="flt-chip" data-filter="quiz">Kuis</button>
+                        <button class="flt-chip" data-filter="done">Selesai</button>
+                    </div>
+                </div>
+                <div class="todo-left-btns">
+                    <button class="pill" id="btn-open-courses" style="flex:1">
+                        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        Courses
+                    </button>
+                    <button class="pill primary" id="btn-open-ai-1" style="flex:1">
+                        <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                        AI
+                    </button>
+                </div>
+            </div>
+            <div class="todo-list-wrap" id="todo-list"></div>
+        </div>
+
+        <!-- ================= HALAMAN 3B: KALENDER & JADWAL TUGAS ================= -->
+        <div class="ly l-cal">
+            <div class="cal-wrap">
+                <div class="cal-left">
+                    <div class="cal-hdr">
+                        <button class="cal-nav-btn" id="cal-prev-month" title="Bulan Sebelumnya">&lsaquo;</button>
+                        <button class="cal-month-btn" id="cal-month-label" title="Klik untuk kembali ke Hari Ini">Okt 2026</button>
+                        <button class="cal-nav-btn" id="cal-next-month" title="Bulan Berikutnya">&rsaquo;</button>
+                    </div>
+                    <div class="cal-weekdays">
+                        <span>Sn</span><span>Sl</span><span>Rb</span><span>Km</span><span>Jm</span><span>Sb</span><span>Mg</span>
+                    </div>
+                    <div class="cal-grid" id="cal-grid"></div>
+                </div>
+                <div class="cal-right">
+                    <div class="cal-sel-hdr">
+                        <span class="cal-sel-title" id="cal-sel-title">Senin, 19 Okt 2026</span>
+                        <span class="cal-sel-badge" id="cal-sel-badge">0 Jadwal</span>
+                    </div>
+                    <div class="cal-events-list" id="cal-events-list"></div>
+                    <div class="cal-add-row">
+                        <input type="text" class="cal-add-input" id="cal-add-input" placeholder="+ Catatan / jadwal di tanggal ini..." />
+                        <button class="pill primary" id="cal-add-btn" style="height:23px;padding:0 9px;font-size:10px">Tambah</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= HALAMAN 4: DEADLINE TERDEKAT & FOCUS TIMER ================= -->
+        <div class="ly l-pomo">
+            <span class="a pglow"></span>
+            <span class="a pring"></span>
+            <svg class="a c" style="left:86px;top:96px;width:28px;height:28px" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+                <circle cx="12" cy="13.5" r="8"/><path d="M12 13.5V9M10 2.5h4M12 2.5v3"/>
+            </svg>
+            <div class="pomo-body">
+                <div>
+                    <div class="pomo-timer-row">
+                        <span class="pomo-time" id="pomo-main-timer">--:--:--</span>
+                        <button class="hdr-icon-btn" id="btn-pomo-mode" title="Ganti antara Hitung Mundur Deadline LMS / Pomodoro 25 Menit">
+                            <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4"/></svg>
+                        </button>
+                    </div>
+                    <div class="pomo-task-title" id="pomo-title">Semua Tugas Selesai</div>
+                    <div class="pomo-task-course" id="pomo-course">Tidak ada tenggat waktu mendesak</div>
+                </div>
+                <div class="pomo-controls">
+                    <button class="pill urgent-btn" id="btn-pomo-open">
+                        <svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                        Buka Tugas & AI
+                    </button>
+                    <button class="pill" id="btn-pomo-toggle-focus">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><polyline points="12 8 12 12 15 15"/></svg>
+                        <span id="pomo-focus-label">Fokus 25m</span>
+                    </button>
+                    <button class="pill" id="btn-pomo-done">
+                        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        Selesai
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= HALAMAN 5: FILE SHELF DENGAN CAHAYA GULP NUSA ================= -->
+        <div class="ly l-shelf" id="shelf">
+            <canvas class="a" id="shCv" width="960" height="372" style="left:0;top:0;width:480px;height:186px;pointer-events:none" aria-hidden="true"></canvas>
+            <div class="shelf-cards" id="shelf-cards"></div>
+            <div class="a sh-zone" id="sh-zone">
+                <span class="a zone"></span>
+                <svg class="a c sh-icon" style="left:192px;top:38px;width:30px;height:30px" viewBox="-15 -22 30 32">
+                    <path d="M-10.2-8h20.4l3.2 7.8h-26.8z" fill="rgba(255,255,255,.28)"/>
+                    <path class="sh-arrow" d="M-1.7-21h3.4v6.5h3.5L0-8.5l-5.2-6H-1.7z" fill="rgba(255,255,255,.5)"/>
+                    <path d="M-14 1h8.8l1.6 3.2h7.2L5.2 1H14v8h-28z" fill="rgba(255,255,255,.85)"/>
+                </svg>
+                <span class="a c" style="left:192px;top:72px;font-size:13px;font-weight:600">Drop files here</span>
+                <span class="a c dim" style="left:192px;top:90px;font-size:10px">Simpan sementara file tugas Word/PDF · klik untuk buka</span>
+            </div>
+        </div>
+
+        <!-- ================= HALAMAN 6: PENGATURAN SINKRONISASI LMS & TAMPILAN ================= -->
+        <div class="ly l-config">
+            <div class="cfg-body">
+                <div>
+                    <div class="cfg-label">URL Kalender iCal LMS (Sync Otomatis 24/7)</div>
+                    <div class="cfg-input-row">
+                        <input type="text" class="cfg-input" id="ics-input" placeholder="https://lms.telkomuniversity.ac.id/calendar/export_execute.php?..." />
+                        <button class="pill primary" id="btn-save-ics">Simpan</button>
+                    </div>
+                </div>
+                <div class="cfg-bottom-row">
+                    <span class="dim" id="last-sync-text" style="font-size:10.5px">Menunggu sinkronisasi...</span>
+                    <div style="display:flex;gap:4px">
+                        <button class="pill" id="btn-check-update" title="Cek versi terbaru Ukikura di direktori GitHub">
+                            <span id="update-label">v1.0.0 · Cek Update</span>
+                        </button>
+                        <button class="pill" id="btn-toggle-autostart" title="Jalankan Ukikura otomatis saat Windows menyala">
+                            Auto Start: <span id="autostart-label">ON</span>
+                        </button>
+                        <button class="pill" id="btn-toggle-closed-style" title="Pilih gaya saat tertutup: Mata Maskot vs Baris Status">
+                            Mode: <span id="closed-style-label">Maskot</span>
+                        </button>
+                        <button class="pill" id="btn-recenter">Tengahkan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+    <!-- Modul-Modul Renderer Nusa Dynamic Island -->
+    <script src="./js/core-state.js"></script>
+    <script src="./js/music-lyrics.js"></script>
+    <script src="./js/power-bluetooth.js"></script>
+    <script src="./js/notifications-wa.js"></script>
+    <script src="./js/lms-pomodoro.js"></script>
+    <script src="./js/shelf-actions.js"></script>
+    <script src="./js/smart-calendar.js"></script>
+    <script src="./js/mascot-engine.js"></script>
+</body>
+</html>

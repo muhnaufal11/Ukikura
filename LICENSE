@@ -1,0 +1,122 @@
+                    GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+================================================================================
+ UKIKURA (浮き蔵) — COPYRIGHT & GPLv3 NOTICE
+ Copyright (C) 2026 Nauflix (muhnaufal11)
+ Project: Ukikura (Uki [Terapung / Floating Island] + Kura [Gudang Data & Tugas])
+================================================================================
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+--------------------------------------------------------------------------------
+KEY TERMS OF GNU GPLv3 FOR CONTRIBUTORS & FORKS (RINGKASAN KETENTUAN WAJIB):
+--------------------------------------------------------------------------------
+1. Open Source Copyleft (Wajib Tetap Terbuka):
+   Setiap modifikasi, fork, atau distribusi ulang dari perangkat lunak ini
+   (baik dalam bentuk kode sumber maupun installer biner/eksekusi) WAJIB
+   dilisensikan di bawah GNU GPLv3 dan WAJIB menyertakan kode sumber lengkapnya.
+   DILARANG mengubah perangkat lunak ini menjadi aplikasi tertutup (closed-source).
+
+2. Attribution (Wajib Mencantumkan Pembuat Asli):
+   Pemberitahuan hak cipta asli ("Copyright (C) 2026 Nauflix / muhnaufal11 — Ukikura")
+   dan lisensi ini wajib dipertahankan pada seluruh salinan dan turunan kode.
+
+3. State Changes (Pencatatan Perubahan):
+   Jika Anda memodifikasi file apa pun di dalam proyek ini, Anda wajib mencantumkan
+   catatan yang jelas pada file tersebut bahwa Anda telah mengubahnya beserta tanggalnya.
+
+4. No Warranty & No Liability (Tanpa Jaminan & Pembebasan Tanggung Jawab):
+   Perangkat lunak ini disediakan "APA ADANYA" (AS IS) tanpa jaminan apa pun.
+   Pembuat tidak bertanggung jawab atas segala kerugian, kehilangan data, atau
+   konsekuensi penggunaan perangkat lunak ini.
+
+================================================================================
+                         TERMS AND CONDITIONS
+================================================================================
+
+  0. Definitions.
+  "This License" refers to version 3 of the GNU General Public License.
+  "Copyright" also means copyright-like laws that apply to other kinds of
+works, such as semiconductor masks.
+  "The Program" refers to any copyrightable work licensed under this
+License. Each licensee is addressed as "you".
+
+  1. Source Code.
+  The "source code" for a work means the preferred form of the work
+for making modifications to it. "Object code" means any non-source
+form of a work.
+
+  2. Basic Permissions.
+  All rights granted under this License are granted for the term of
+copyright on the Program, and are irrevocable provided the stated
+conditions are met. This License explicitly affirms your unlimited
+permission to run the unmodified Program.
+
+  3. Protecting Users' Legal Rights From Anti-Circumvention Law.
+  No covered work shall be deemed part of an effective technological
+measure under any applicable law fulfilling obligations under article
+11 of the WIPO copyright treaty adopted on 20 December 1996, or
+similar laws prohibiting or restricting circumvention of such
+measures.
+
+  4. Conveying Verbatim Copies.
+  You may convey verbatim copies of the Program's source code as you
+receive it, in any medium, provided that you conspicuously and
+appropriately publish on each copy an appropriate copyright notice;
+keep intact all notices stating that this License and any
+non-permissive terms added in accord with section 7 apply to the code;
+keep intact all notices of the absence of any warranty; and give all
+recipients a copy of this License along with the Program.
+
+  5. Conveying Modified Source Versions.
+  You may convey a work based on the Program, or the modifications to
+produce it from the Program, in the form of source code under the
+terms of section 4, provided that you also meet all of these conditions:
+    a) The work must carry prominent notices stating that you modified
+    it, and giving a relevant date.
+    b) The work must carry prominent notices stating that it is
+    released under this License and any conditions added under section
+    7.
+    c) You must license the entire work, as a whole, under this
+    License to anyone who comes into possession of a copy.
+    d) If the work has interactive user interfaces, each must display
+    Appropriate Legal Notices.
+
+  6. Conveying Non-Source Forms.
+  You may convey a covered work in object code form under the terms
+of sections 4 and 5, provided that you also convey the
+machine-readable Corresponding Source under the terms of this License.
+
+  15. Disclaimer of Warranty.
+  THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
+APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
+HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
+OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE.
+
+  16. Limitation of Liability.
+  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
+THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
+GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
+USE OR INABILITY TO USE THE PROGRAM.
+
+Full text of the GNU General Public License v3.0 is available at:
+https://www.gnu.org/licenses/gpl-3.0.txt

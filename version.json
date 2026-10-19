@@ -1,0 +1,16 @@
+{
+  "name": "Ukikura",
+  "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
+  "version": "1.0.0",
+  "author": "Nauflix",
+  "githubRepo": "muhnaufal11/Ukikura",
+  "fallbackRepos": [
+    "muhnaufal11/Ukikura",
+    "Nauflix/Ukikura"
+  ],
+  "branch": "main",
+  "installerFile": "installer/Ukikura-Setup-v1.0.0.exe",
+  "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
+  "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
+  "changelog": "Rilis v1.0.0 Ukikura: Installer siap pakai (Ukikura-Setup-v1.0.0.exe), arsitektur modular penuh, Audio-to-Text Forced Alignment Lyrics (Jepang Kanji/Romaji + Indonesia), WhatsApp Live Companion, Baterai Bluetooth/Phone Link, Smart Calendar, & Island Gulp File Shelf."
+}

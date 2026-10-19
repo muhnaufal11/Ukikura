@@ -1,0 +1,223 @@
+    /* ================= HALAMAN 1: PEMUTAR MUSIK & LIRIK KHAS NUSA ================= */
+    .art {
+        border-radius: 12px;
+        overflow: hidden;
+        background-color: #162238;
+        background-image:
+            linear-gradient(115deg, transparent 0 46%, rgba(255,255,255,.65) 46% 48%, transparent 48%),
+            radial-gradient(circle at 34% 58%, #2e7fe0 0 22%, transparent 23%),
+            radial-gradient(circle at 34% 58%, transparent 0 30%, #5aa6f2 31% 33%, transparent 34%),
+            linear-gradient(160deg, #dcebff, #b8d5fa);
+        background-size: cover;
+        background-position: center;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+    }
+
+    .music-app-badge {
+        display: inline-block;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        color: #7fd0ff;
+        margin-bottom: 4px;
+    }
+
+    .prog {
+        height: 4.5px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.22);
+        overflow: hidden;
+    }
+
+    .prog i {
+        display: block;
+        height: 100%;
+        background: #fff;
+        border-radius: 3px;
+        width: 0%;
+        transition: width 0.45s linear;
+    }
+
+    .ctl-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: #fff;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        padding: 0;
+        transition: background 0.18s ease, transform 0.18s ease;
+    }
+
+    .ctl-btn:hover {
+        background: rgba(255, 255, 255, 0.16);
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    .ctl-btn.play-main {
+        width: 34px;
+        height: 34px;
+        background: rgba(255, 255, 255, 0.14);
+    }
+
+    .ctl-btn svg.ctl {
+        width: 17px;
+        height: 17px;
+        fill: #fff;
+    }
+
+    .bub-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        padding: 0;
+        transition: background 0.18s ease, transform 0.18s ease;
+    }
+
+    .bub-btn:hover {
+        background: rgba(255, 255, 255, 0.16);
+        transform: translate(-50%, -50%) scale(1.08);
+    }
+
+    .bub {
+        width: 17px;
+        height: 15px;
+    }
+
+    /* Lirik Bergulir Khas Nusa */
+    .l-lyrics .ambient {
+        background: linear-gradient(90deg, #2c64b8, #3a7ad0 50%, #2a5aa8);
+        height: 82%;
+        opacity: 0.92;
+    }
+
+    .lyr {
+        left: 262px;
+        width: 216px;
+        top: 38px;
+        bottom: 24px;
+        overflow: hidden;
+        -webkit-mask: linear-gradient(transparent, #000 20%, #000 80%, transparent);
+                mask: linear-gradient(transparent, #000 20%, #000 80%, transparent);
+    }
+
+    .lyr ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .lyr li {
+        font-weight: 700;
+        font-size: 13.5px;
+        line-height: 1.3;
+        padding: 4.5px 0;
+        color: rgba(255, 255, 255, 0.28);
+        transform: scale(0.94);
+        transform-origin: left center;
+        transition: color 0.15s ease, transform 0.18s ease;
+    }
+
+    .lyr li.on {
+        color: #fff;
+        transform: scale(1);
+    }
+
+    /* ================= HALAMAN 2: NOTIFIKASI HP & WHATSAPP ================= */
+    .notif-left {
+        position: absolute;
+        left: 44px;
+        top: 38px;
+        width: 132px;
+        bottom: 22px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .notif-list-wrap {
+        position: absolute;
+        left: 184px;
+        right: 42px;
+        top: 36px;
+        bottom: 22px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        padding-right: 4px;
+    }
+
+    .notif-list-wrap::-webkit-scrollbar {
+        width: 3px;
+    }
+
+    .notif-list-wrap::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.35);
+        border-radius: 2px;
+    }
+
+    .nrow {
+        min-height: 36px;
+        border-radius: 9px;
+        background: rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 5px 9px;
+        font-size: 11.2px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .nrow:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .nrow.wa {
+        border-left: 2.5px solid var(--wa-green);
+    }
+
+    .nrow.phone {
+        border-left: 2.5px solid var(--cyan);
+    }
+
+    .nrow-sticker {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        border-radius: 6px;
+        flex-shrink: 0;
+        filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
+        transition: transform 0.22s var(--spring);
+    }
+
+    .nrow:hover .nrow-sticker {
+        transform: scale(1.22);
+    }
+
+    .pk-sticker {
+        right: 48px;
+        top: 32px;
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        border-radius: 6px;
+        display: none;
+        filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
+    }
+

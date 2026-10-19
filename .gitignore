@@ -1,0 +1,5 @@
+node_modules/
+dist/
+dynamic-island/data/config.json
+dynamic-island/data/tasks.json
+*.log

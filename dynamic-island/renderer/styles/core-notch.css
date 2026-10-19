@@ -1,0 +1,1016 @@
+    :root {
+        color-scheme: dark;
+        --cyan: #19b8ff;
+        --indigo: #2d5bff;
+        --violet: #7b4bff;
+        --urgent-red: #ff4b55;
+        --emerald: #33e07a;
+        --wa-green: #25d366;
+        --glow: linear-gradient(90deg, var(--cyan), var(--indigo) 55%, var(--violet));
+        --glow-urgent: linear-gradient(90deg, #ff5a6e, #ff2d55 55%, #ff8a00);
+        --glow-wa: linear-gradient(90deg, #19b8ff, #25d366 55%, #128c7e);
+        --ui: "Segoe UI Variable Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        --mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+        --spring: cubic-bezier(0.34, 1.32, 0.5, 1);
+    }
+
+    * {
+        box-sizing: border-box;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        overflow: hidden;
+        font-family: var(--ui);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* Holder tepat di tengah atas layar (y = 0), menyatu 100% dengan frame atas */
+    .mn-holder {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        transform-origin: top center;
+        transition: opacity 0.16s ease, transform 0.2s ease;
+    }
+
+    /* Tembus pandang & tembus klik saat kursor berada di area tab browser */
+    .mn-holder.passthrough {
+        opacity: 0.12;
+        transform: translateX(-50%) scale(0.92);
+        pointer-events: none;
+    }
+
+    /* Notch Nusa (.mn) */
+    .mn {
+        --w: 176px;
+        --h: 25px;
+        --r: 13px;
+        --e: 9px;
+        position: relative;
+        width: var(--w);
+        height: var(--h);
+        transform-origin: 50% 0;
+        background: #000;
+        border-radius: 0 0 var(--r) var(--r);
+        transition:
+            width 0.62s var(--spring),
+            height 0.62s var(--spring),
+            border-radius 0.45s ease,
+            opacity 0.2s ease;
+        font-family: var(--ui);
+        color: #fff;
+        font-size: 12.5px;
+        line-height: 1;
+        box-shadow: 0 14px 34px -16px rgba(0, 0, 0, 0.95);
+    }
+
+    /* Telinga konkaf kiri & kanan khas Nusa agar menyatu mulus dengan bezel atas */
+    .mn::before,
+    .mn::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        width: var(--e);
+        height: var(--e);
+        transition: width 0.45s ease, height 0.45s ease;
+        pointer-events: none;
+    }
+
+    .mn::before {
+        right: 100%;
+        background: radial-gradient(circle at 0 100%, transparent calc(var(--e) - 0.5px), #000 var(--e));
+    }
+
+    .mn::after {
+        left: 100%;
+        background: radial-gradient(circle at 100% 100%, transparent calc(var(--e) - 0.5px), #000 var(--e));
+    }
+
+    /* Mode Terlipat Tipis (Tucked) */
+    .mn[data-s="tucked"] {
+        --w: 140px;
+        --h: 6px;
+        --r: 6px;
+        --e: 6px;
+        cursor: pointer;
+    }
+
+    /* Mode Peek Popup (Notifikasi WA / HP Masuk) */
+    .mn[data-s="peek"] {
+        --w: 340px;
+        --h: 64px;
+        --r: 20px;
+        --e: 14px;
+        cursor: pointer;
+    }
+
+    /* Mode Peek Cas Laptop & Baterai HP/Bluetooth Khas Nusa */
+    .mn[data-s="charge"],
+    .mn[data-s="bt"] {
+        --w: 320px;
+        --h: 60px;
+        --r: 19px;
+        --e: 13px;
+        cursor: pointer;
+    }
+
+    /* Mode Terbuka Standar (music, notif, todo, cal, pomo, shelf, config) */
+    .mn[data-s="music"],
+    .mn[data-s="notif"],
+    .mn[data-s="todo"],
+    .mn[data-s="cal"],
+    .mn[data-s="pomo"],
+    .mn[data-s="shelf"],
+    .mn[data-s="config"] {
+        --w: 480px;
+        --h: 186px;
+        --r: 32px;
+        --e: 22px;
+    }
+
+    /* Mode Lirik Melebar Khas Nusa (520px) */
+    .mn[data-s="lyrics"] {
+        --w: 520px;
+        --h: 186px;
+        --r: 32px;
+        --e: 22px;
+    }
+
+    /* Layer di dalam Notch */
+    .ly {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        border-radius: inherit;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        pointer-events: none;
+    }
+
+    .mn[data-s="pet"] .l-pet,
+    .mn[data-s="idle"] .l-idle,
+    .mn[data-s="peek"] .l-peek,
+    .mn[data-s="charge"] .l-charge,
+    .mn[data-s="bt"] .l-bt,
+    .mn[data-s="music"] .l-music,
+    .mn[data-s="lyrics"] .l-lyrics,
+    .mn[data-s="notif"] .l-notif,
+    .mn[data-s="todo"] .l-todo,
+    .mn[data-s="cal"] .l-cal,
+    .mn[data-s="pomo"] .l-pomo,
+    .mn[data-s="shelf"] .l-shelf,
+    .mn[data-s="config"] .l-config {
+        opacity: 1;
+        pointer-events: auto;
+        transition: opacity 0.32s ease 0.14s;
+    }
+
+    .mn:is([data-s="music"], [data-s="lyrics"], [data-s="notif"], [data-s="todo"], [data-s="cal"], [data-s="pomo"], [data-s="shelf"], [data-s="config"]) :is(.l-hdr, .l-dots, .l-nav) {
+        opacity: 1;
+        pointer-events: none;
+        transition: opacity 0.32s ease 0.14s;
+    }
+
+    .l-hdr, .l-dots, .l-nav {
+        z-index: 5;
+        pointer-events: none !important;
+    }
+
+    .mn:is([data-s="music"], [data-s="lyrics"], [data-s="notif"], [data-s="todo"], [data-s="cal"], [data-s="pomo"], [data-s="shelf"], [data-s="config"]) :is(.hdr-bar, .arw, .dots, .dots button, .hdr-icon-btn) {
+        pointer-events: auto;
+    }
+
+    /* Cahaya Ambient Bawah Khas Nusa (Living Aurora Flow) */
+    .ambient {
+        position: absolute;
+        inset: auto -15% 0 -15%;
+        height: 95%;
+        pointer-events: none;
+        background: linear-gradient(110deg, #19b8ff 0%, #2d5bff 28%, #33e07a 54%, #7b4bff 80%, #19b8ff 100%);
+        background-size: 260% 200%;
+        animation: auroraFlow 5.2s ease-in-out infinite alternate, auroraBreathe 3.2s ease-in-out infinite alternate;
+        filter: saturate(1.18);
+        -webkit-mask: linear-gradient(to top, #000, rgba(0, 0, 0, 0.62) 34%, rgba(0, 0, 0, 0.16) 74%, transparent);
+                mask: linear-gradient(to top, #000, rgba(0, 0, 0, 0.62) 34%, rgba(0, 0, 0, 0.16) 74%, transparent);
+    }
+
+    .mn.urgent .ambient {
+        background: linear-gradient(110deg, #ff5a6e 0%, #ff2d55 35%, #ff8a00 68%, #ff2d55 100%);
+        background-size: 260% 200%;
+    }
+
+    .mn.has-wa .l-pet .ambient {
+        background: linear-gradient(110deg, #00d2ff 0%, #19b8ff 26%, #25d366 58%, #00f5a0 84%, #19b8ff 100%);
+        background-size: 260% 200%;
+    }
+
+    @keyframes auroraFlow {
+        0% {
+            background-position: 0% 50%;
+            transform: translateX(-4%) scaleX(1.02);
+        }
+        50% {
+            background-position: 55% 50%;
+            transform: translateX(2%) scaleX(1.06);
+        }
+        100% {
+            background-position: 100% 50%;
+            transform: translateX(4%) scaleX(1.02);
+        }
+    }
+
+    @keyframes auroraBreathe {
+        0% { opacity: 0.82; height: 86%; }
+        100% { opacity: 1; height: 98%; }
+    }
+
+    /* Mata Maskot Hidup Khas Nusa (Living Eyes: Lirik Kursor + 11 Emosi + Beat Musik) */
+    .eyes {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 14px;
+        transform: translate3d(var(--ex, 0px), var(--ey, 0px), 0) rotate(var(--etilt, 0deg));
+        transition: gap 0.35s var(--spring);
+        will-change: transform;
+    }
+
+    .mn.playing .eyes {
+        animation: eyeBeatBob 0.65s ease-in-out infinite alternate;
+    }
+
+    @keyframes eyeBeatBob {
+        0% { margin-top: 0.5px; }
+        100% { margin-top: -2px; }
+    }
+
+    .eye {
+        position: relative;
+        width: 9px;
+        height: 12.8px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow:
+            0 0 7px 1.5px rgba(120, 210, 255, 0.78),
+            0 0 16px 4px rgba(51, 224, 122, 0.34);
+        transform:
+            translate3d(var(--px, 0px), var(--py, 0px), 0)
+            rotate(var(--erot, 0deg))
+            scale(var(--sx, 1), var(--sy, 1));
+        transition:
+            border-radius 0.24s ease,
+            width 0.26s var(--spring),
+            height 0.26s var(--spring),
+            background 0.25s ease,
+            box-shadow 0.3s ease,
+            clip-path 0.24s ease;
+        will-change: transform;
+    }
+
+    /* Kilau pupil kecil agar mata tampak hidup & berbinar */
+    .eye::after {
+        content: "";
+        position: absolute;
+        top: 2.2px;
+        right: 2px;
+        width: 2.6px;
+        height: 2.6px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: -2.8px 4.2px 0 -0.7px rgba(255, 255, 255, 0.65);
+        opacity: 0.9;
+        transition: opacity 0.2s ease;
+    }
+
+    .eye:first-child {
+        --px: var(--lx, 0px);
+        --py: var(--ly, 0px);
+        --sx: var(--lsx, 1);
+        --sy: var(--lsy, 1);
+        --erot: var(--lrot, 0deg);
+    }
+
+    .eye:last-child {
+        --px: var(--rx, 0px);
+        --py: var(--ry, 0px);
+        --sx: var(--rsx, 1);
+        --sy: var(--rsy, 1);
+        --erot: var(--rrot, 0deg);
+    }
+
+    /* 1. Ekspresi Senang / Bahagia (^ ^) */
+    .eyes.mood-happy .eye {
+        width: 11px;
+        height: 7.5px;
+        background: transparent;
+        border-top: 3.2px solid #fff;
+        border-radius: 12px 12px 2px 2px;
+        box-shadow: 0 -3px 9px rgba(90, 245, 165, 0.85);
+        animation: moodHappyBounce 0.55s ease-in-out infinite alternate;
+    }
+    .eyes.mood-happy .eye::after { opacity: 0; }
+
+    @keyframes moodHappyBounce {
+        0% { margin-top: 1px; }
+        100% { margin-top: -2px; }
+    }
+
+    /* 2. Ekspresi Jatuh Cinta / Gemas (♥ ♥) */
+    .eyes.mood-love .eye {
+        width: 10.5px;
+        height: 11.5px;
+        background: #ff6b9d;
+        border-radius: 50% 50% 42% 42%;
+        box-shadow:
+            0 0 9px 2px rgba(255, 90, 155, 0.95),
+            0 0 18px 5px rgba(255, 45, 115, 0.55);
+        animation: moodHeartBeat 0.48s ease-in-out infinite alternate;
+    }
+    .l-pet.mood-love .ambient {
+        background: linear-gradient(110deg, #ff4b8b 0%, #ff7eb3 35%, #a855f7 70%, #ff4b8b 100%);
+        background-size: 260% 200%;
+    }
+
+    @keyframes moodHeartBeat {
+        0% { transform: translate3d(var(--px, 0px), 0, 0) scale(0.95, 0.95); }
+        100% { transform: translate3d(var(--px, 0px), -1px, 0) scale(1.16, 1.16); }
+    }
+
+    /* 3. Ekspresi Kedip Sebelah / Genit (^ •) */
+    .eyes.mood-wink .eye:first-child {
+        width: 11px;
+        height: 7px;
+        background: transparent;
+        border-top: 3.2px solid #fff;
+        border-radius: 12px 12px 2px 2px;
+        box-shadow: 0 -2px 8px rgba(90, 245, 165, 0.85);
+    }
+    .eyes.mood-wink .eye:first-child::after { opacity: 0; }
+    .eyes.mood-wink .eye:last-child {
+        width: 9.8px;
+        height: 13px;
+    }
+
+    /* 4. Ekspresi Penasaran / Detektif (o O) */
+    .eyes.mood-curious {
+        gap: 13px;
+    }
+    .eyes.mood-curious .eye:first-child {
+        width: 8.5px;
+        height: 7.5px;
+        border-radius: 3px 3px 8px 8px;
+    }
+    .eyes.mood-curious .eye:last-child {
+        width: 10.6px;
+        height: 13.8px;
+        box-shadow: 0 0 10px 2px rgba(94, 194, 255, 0.95);
+    }
+
+    /* 5. Ekspresi Kaget / Terkejut (O O !) */
+    .eyes.mood-surprised {
+        gap: 16px;
+    }
+    .eyes.mood-surprised .eye {
+        width: 11.4px;
+        height: 13.4px;
+        border-radius: 50%;
+        box-shadow:
+            0 0 11px 2.5px rgba(120, 235, 255, 0.98),
+            0 0 20px 6px rgba(25, 184, 255, 0.55);
+        animation: moodShockJitter 0.14s ease-in-out infinite alternate;
+    }
+
+    @keyframes moodShockJitter {
+        0% { margin-left: -0.6px; margin-top: -0.5px; }
+        100% { margin-left: 0.6px; margin-top: 0.5px; }
+    }
+
+    /* 6. Ekspresi Galak Lucu / Fokus Serius (\ /) */
+    .eyes.mood-angry .eye {
+        width: 10.2px;
+        height: 11px;
+        background: #ffe8e8;
+        box-shadow:
+            0 0 9px 2px rgba(255, 75, 85, 0.95),
+            0 0 18px 5px rgba(255, 110, 40, 0.55);
+    }
+    .eyes.mood-angry .eye:first-child {
+        clip-path: polygon(0 8%, 100% 38%, 100% 100%, 0 100%);
+    }
+    .eyes.mood-angry .eye:last-child {
+        clip-path: polygon(0 38%, 100% 8%, 100% 100%, 0 100%);
+    }
+    .l-pet.mood-angry .ambient {
+        background: linear-gradient(110deg, #ff3b30 0%, #ff7b00 45%, #ff2d55 100%);
+        background-size: 260% 200%;
+    }
+
+    /* 7. Ekspresi Sedih / Memelas (/ \) */
+    .eyes.mood-sad .eye {
+        width: 9.8px;
+        height: 11.2px;
+        background: #dcf2ff;
+        box-shadow:
+            0 0 8px 2px rgba(80, 175, 255, 0.9),
+            0 0 16px 4px rgba(45, 91, 255, 0.5);
+    }
+    .eyes.mood-sad .eye:first-child {
+        clip-path: polygon(0 38%, 100% 10%, 100% 100%, 0 100%);
+    }
+    .eyes.mood-sad .eye:last-child {
+        clip-path: polygon(0 10%, 100% 38%, 100% 100%, 0 100%);
+    }
+
+    /* 8. Ekspresi Mengantuk / Tidur (u u + Zzz) */
+    .eyes.mood-sleepy .eye {
+        width: 10.5px;
+        height: 6.5px;
+        background: transparent;
+        border-bottom: 3px solid rgba(255, 255, 255, 0.9);
+        border-radius: 2px 2px 12px 12px;
+        box-shadow: 0 3px 8px rgba(130, 150, 255, 0.65);
+    }
+    .eyes.mood-sleepy .eye::after { opacity: 0; }
+
+    /* 9. Ekspresi Curiga / Melirik Tajam (¬ ¬) */
+    .eyes.mood-suspicious .eye {
+        width: 10.5px;
+        height: 6.2px;
+        border-radius: 1.5px 1.5px 8px 8px;
+        box-shadow: 0 0 8px 1.5px rgba(255, 210, 90, 0.85);
+    }
+
+    /* 10. Ekspresi Berbinar Antusias (✦ ✦) */
+    .eyes.mood-starry .eye {
+        width: 10.5px;
+        height: 13px;
+        background: #fffbe6;
+        box-shadow:
+            0 0 10px 2.5px rgba(255, 225, 95, 0.98),
+            0 0 20px 5px rgba(51, 224, 122, 0.55);
+    }
+
+    /* 11. Ekspresi Pusing / Berputar (@ @) */
+    .eyes.mood-dizzy .eye {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        box-shadow:
+            0 0 9px 2px rgba(185, 110, 255, 0.95),
+            0 0 18px 5px rgba(25, 184, 255, 0.5);
+    }
+
+    /* Balon Emote Kecil di Sebelah Mata Maskot (♥, !, ?, zZ, ♪, ✦) */
+    .pet-emote {
+        position: absolute;
+        left: 34px;
+        top: 50%;
+        transform: translateY(-50%) scale(0.4);
+        font-size: 10.5px;
+        font-weight: 800;
+        color: #fff;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.85);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.35s var(--spring);
+    }
+
+    .pet-emote.show {
+        opacity: 1;
+        transform: translateY(-56%) scale(1);
+        animation: emoteFloat 0.9s ease-in-out infinite alternate;
+    }
+
+    @keyframes emoteFloat {
+        0% { margin-top: 1px; }
+        100% { margin-top: -2.2px; }
+    }
+
+    .mn.urgent .eye {
+        box-shadow: 0 0 7px 1.5px rgba(255, 110, 110, 0.82), 0 0 16px 4px rgba(255, 60, 60, 0.42);
+    }
+
+    /* Indikator kecil di mode Pet */
+    .pet-left-eq {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+
+    .mn.playing .pet-left-eq {
+        opacity: 1;
+    }
+
+    .pet-badge {
+        position: absolute;
+        right: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: var(--mono);
+        font-size: 9.5px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.88);
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(4px);
+        padding: 2.5px 6px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        gap: 4.5px;
+        box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+    }
+
+    .pet-wa-dot {
+        position: relative;
+        width: 5.5px;
+        height: 5.5px;
+        border-radius: 50%;
+        background: var(--wa-green);
+        box-shadow: 0 0 6px var(--wa-green);
+        display: none;
+        animation: waDotPulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes waDotPulse {
+        0%, 100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 4px var(--wa-green), 0 0 0 0 rgba(37, 211, 102, 0.55);
+        }
+        50% {
+            transform: scale(1.18);
+            box-shadow: 0 0 9px var(--wa-green), 0 0 0 4px rgba(37, 211, 102, 0);
+        }
+    }
+
+    .mn.has-wa .pet-wa-dot {
+        display: inline-block;
+    }
+
+    .mn.urgent .pet-badge {
+        background: rgba(255, 75, 85, 0.28);
+        color: #ffb4b8;
+    }
+
+    /* Utilitas Posisi Nusa */
+    .a { position: absolute; }
+    .vc { transform: translateY(-50%); }
+    .hc { transform: translateX(-50%); }
+    .c { transform: translate(-50%, -50%); }
+    .dim { color: rgba(255, 255, 255, 0.5); }
+    .sb { font-weight: 600; }
+    .b { font-weight: 700; }
+
+    /* Ring Progress & Equalizer Bars Khas Nusa */
+    .ring {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: conic-gradient(#33e07a 0 var(--p, 72%), rgba(51, 224, 122, 0.25) 0);
+        -webkit-mask: radial-gradient(circle, transparent 4.6px, #000 5px);
+                mask: radial-gradient(circle, transparent 4.6px, #000 5px);
+        flex-shrink: 0;
+    }
+
+    .mn.urgent .ring {
+        background: conic-gradient(#ff4b55 0 var(--p, 85%), rgba(255, 75, 85, 0.25) 0);
+    }
+
+    .bars {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+        height: 13px;
+        flex-shrink: 0;
+    }
+
+    .bars i {
+        width: 2px;
+        border-radius: 2px;
+        background: #fff;
+        height: 30%;
+        animation: eq 0.9s ease-in-out infinite alternate;
+        animation-play-state: paused;
+    }
+
+    .mn.playing .bars i {
+        animation-play-state: running;
+        background: #5ec2ff;
+    }
+
+    .bars i:nth-child(2) { animation-delay: -0.3s; }
+    .bars i:nth-child(3) { animation-delay: -0.6s; }
+    .bars i:nth-child(4) { animation-delay: -0.15s; }
+    .bars i:nth-child(5) { animation-delay: -0.45s; }
+
+    @keyframes eq {
+        to { height: 100%; }
+    }
+
+    /* Baris Tertutup (Idle Mode) */
+    .idle-row {
+        position: absolute;
+        inset: 0;
+        padding: 0 13px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .idle-art {
+        width: 17px;
+        height: 17px;
+        border-radius: 4px;
+        background-size: cover;
+        background-position: center;
+        display: none;
+        flex-shrink: 0;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
+
+    .mn.playing .idle-art.has-art {
+        display: block;
+    }
+
+    .mn.playing .idle-art.has-art + .ring {
+        display: none;
+    }
+
+    .idle-center {
+        font-family: var(--ui);
+        font-size: 11.2px;
+        font-weight: 600;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        letter-spacing: -0.1px;
+        flex: 1;
+        text-align: center;
+    }
+
+    /* ================= PEEK POPUP (NOTIFIKASI WA & HP MASUK KHAS NUSA) ================= */
+    .pk-ring {
+        left: 34px;
+        top: 32px;
+        width: 32px;
+        height: 32px;
+        transform: translate(-50%, -50%);
+    }
+
+    .pk-ring svg {
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+    }
+
+    .pk-ring .arc {
+        transition: stroke-dashoffset 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s;
+    }
+
+    .mn[data-s="peek"] .l-peek .arc,
+    .mn[data-s="charge"] .l-charge .arc,
+    .mn[data-s="bt"] .l-bt .arc {
+        stroke-dashoffset: var(--arc-off, 18);
+    }
+
+    .hdr-bat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-family: var(--mono);
+        font-size: 9.8px;
+        font-weight: 700;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 999px;
+    }
+
+    .hdr-bat-pill.charging {
+        background: rgba(51, 224, 122, 0.22);
+        color: #5ef296;
+    }
+
+    .bat-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 5px;
+        padding: 4.5px 7px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        font-size: 10px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .bat-card:hover {
+        background: rgba(255, 255, 255, 0.16);
+    }
+
+    .bat-card-left {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .bat-card-left svg {
+        width: 11px;
+        height: 11px;
+        flex-shrink: 0;
+    }
+
+    .bat-card-name {
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .bat-card-pct {
+        font-family: var(--mono);
+        font-size: 9.5px;
+        font-weight: 700;
+        color: #5ef296;
+        flex-shrink: 0;
+    }
+
+    .pk-body {
+        position: absolute;
+        left: 60px;
+        right: 54px;
+        top: 12px;
+        bottom: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+    }
+
+    .pk-title-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .pk-app-tag {
+        font-size: 8.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 1.5px 5px;
+        border-radius: 4px;
+        background: rgba(37, 211, 102, 0.22);
+        color: #4df08a;
+        letter-spacing: 0.3px;
+    }
+
+    .pk-app-tag.phone {
+        background: rgba(25, 184, 255, 0.22);
+        color: #7fd6ff;
+    }
+
+    .pk-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .pk-sub {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.68);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Header Bar saat Terbuka */
+    .hdr-bar {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        top: 10px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .hdr-title {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: -0.2px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+
+    .hdr-center {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.72);
+        -webkit-app-region: drag;
+        cursor: grab;
+        padding: 2px 8px;
+    }
+
+    .hdr-actions {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .hdr-icon-btn {
+        position: relative;
+        width: 21px;
+        height: 21px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        padding: 0;
+        transition: background 0.18s ease, transform 0.18s ease;
+    }
+
+    .hdr-icon-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: scale(1.06);
+    }
+
+    .hdr-icon-btn.active {
+        background: var(--indigo);
+    }
+
+    .hdr-icon-btn svg {
+        width: 11px;
+        height: 11px;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .hdr-icon-btn.spinning svg {
+        animation: spin 0.9s linear infinite;
+    }
+
+    .hdr-badge-dot {
+        position: absolute;
+        top: -1px;
+        right: -1px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--wa-green);
+        display: none;
+    }
+
+    .mn.has-wa .hdr-badge-dot {
+        display: block;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Panah Navigasi Kiri & Kanan Khas Nusa */
+    .arw {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.22);
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        padding: 0;
+        transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .arw:hover {
+        background: rgba(255, 255, 255, 0.38);
+        transform: translate(-50%, -50%) scale(1.08);
+    }
+
+    .arw svg {
+        width: 9px;
+        height: 9px;
+        stroke: #fff;
+        stroke-width: 2.4;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    /* Titik Halaman Bawah Khas Nusa (.dots) */
+    .dots {
+        left: 50%;
+        bottom: 7px;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+
+    .dots button {
+        width: 4px;
+        height: 4px;
+        border-radius: 2px;
+        border: none;
+        padding: 0;
+        background: rgba(255, 255, 255, 0.42);
+        cursor: pointer;
+        transition: width 0.4s var(--spring), background 0.3s ease;
+    }
+
+    .mn:is([data-s="music"], [data-s="lyrics"]) .dots button:nth-child(1),
+    .mn[data-s="notif"] .dots button:nth-child(2),
+    .mn[data-s="todo"] .dots button:nth-child(3),
+    .mn[data-s="cal"] .dots button:nth-child(4),
+    .mn[data-s="pomo"] .dots button:nth-child(5),
+    .mn[data-s="shelf"] .dots button:nth-child(6),
+    .mn[data-s="config"] .dots button:nth-child(7) {
+        width: 16px;
+        background: #fff;
+    }
+
+    /* Tombol Pill Khas Nusa */
+    .pill {
+        height: 25px;
+        padding: 0 10px;
+        border-radius: 13px;
+        border: none;
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-family: var(--ui);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.18s ease, transform 0.18s ease;
+    }
+
+    .pill:hover {
+        background: rgba(255, 255, 255, 0.22);
+    }
+
+    .pill.primary {
+        background: var(--indigo);
+    }
+
+    .pill.primary:hover {
+        background: #3b6aff;
+    }
+
+    .pill.wa-btn {
+        background: rgba(37, 211, 102, 0.24);
+        color: #5ef296;
+    }
+
+    .pill.wa-btn:hover {
+        background: rgba(37, 211, 102, 0.38);
+    }
+
+    .pill.urgent-btn {
+        background: var(--urgent-red);
+    }
+
+    .pill svg {
+        width: 11px;
+        height: 11px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2.1;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+

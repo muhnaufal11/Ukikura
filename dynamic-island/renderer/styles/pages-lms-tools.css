@@ -1,0 +1,472 @@
+    /* ================= HALAMAN 3: LMS TODOLIST (Nusa Todo Style) ================= */
+    .todo-left {
+        position: absolute;
+        left: 44px;
+        top: 38px;
+        width: 132px;
+        bottom: 22px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .todo-big-num {
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: -0.8px;
+        line-height: 1;
+    }
+
+    .todo-sub {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.55);
+        margin-top: 3px;
+    }
+
+    .filter-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3.5px;
+        margin-top: 6px;
+    }
+
+    .flt-chip {
+        font-family: var(--ui);
+        font-size: 9.5px;
+        font-weight: 600;
+        padding: 3px 6.5px;
+        border-radius: 999px;
+        border: none;
+        background: rgba(255, 255, 255, 0.09);
+        color: rgba(255, 255, 255, 0.65);
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .flt-chip:hover {
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+    }
+
+    .flt-chip.active {
+        background: #fff;
+        color: #05060c;
+    }
+
+    .todo-left-btns {
+        display: flex;
+        gap: 5px;
+    }
+
+    .todo-list-wrap {
+        position: absolute;
+        left: 184px;
+        right: 42px;
+        top: 36px;
+        bottom: 22px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        padding-right: 4px;
+    }
+
+    .todo-list-wrap::-webkit-scrollbar {
+        width: 3px;
+    }
+
+    .todo-list-wrap::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.35);
+        border-radius: 2px;
+    }
+
+    /* Baris Tugas (.trow khas Nusa) */
+    .trow {
+        min-height: 32px;
+        border-radius: 9px;
+        background: rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 7px;
+        padding: 4px 8px 4px 7px;
+        font-size: 11.5px;
+        color: rgba(255, 255, 255, 0.92);
+        transition: background 0.15s ease;
+    }
+
+    .trow:hover {
+        background: rgba(255, 255, 255, 0.14);
+    }
+
+    .trow.urgent {
+        background: rgba(255, 65, 75, 0.22);
+    }
+
+    .trow.done {
+        background: rgba(40, 120, 60, 0.34);
+        color: rgba(255, 255, 255, 0.68);
+    }
+
+    .chk {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(255, 255, 255, 0.45);
+        background: transparent;
+        display: grid;
+        place-items: center;
+        flex: none;
+        cursor: pointer;
+        padding: 0;
+        transition: all 0.15s ease;
+    }
+
+    .chk:hover {
+        border-color: #2fd06b;
+    }
+
+    .trow.done .chk {
+        background: #2fd06b;
+        border-color: #2fd06b;
+    }
+
+    .chk svg {
+        width: 9px;
+        height: 9px;
+        stroke: #fff;
+        stroke-width: 2.6;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        opacity: 0;
+    }
+
+    .trow.done .chk svg {
+        opacity: 1;
+    }
+
+    .trow-main {
+        min-width: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        cursor: pointer;
+    }
+
+    .trow-title-line {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 0;
+    }
+
+    .trow-badge {
+        font-size: 8.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 1.5px 4.5px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.14);
+        color: #cbd5e1;
+        flex-shrink: 0;
+    }
+
+    .trow-badge.quiz {
+        background: rgba(25, 184, 255, 0.22);
+        color: #8ce0ff;
+    }
+
+    .trow-badge.assign {
+        background: rgba(123, 75, 255, 0.28);
+        color: #d6c2ff;
+    }
+
+    .trow-title {
+        font-weight: 600;
+        font-size: 11.2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .trow.done .trow-title {
+        text-decoration: line-through;
+    }
+
+    .trow-sub {
+        font-size: 9.5px;
+        color: rgba(255, 255, 255, 0.5);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .trow-right {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-shrink: 0;
+    }
+
+    .trow-timer {
+        font-family: var(--mono);
+        font-size: 9.8px;
+        font-weight: 700;
+        color: #7fd0ff;
+    }
+
+    .trow.urgent .trow-timer {
+        color: #ff8f96;
+    }
+
+    .trow-open {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        border: none;
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .trow-open:hover {
+        background: var(--indigo);
+    }
+
+    .trow-open svg {
+        width: 10px;
+        height: 10px;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        fill: none;
+    }
+
+    /* ================= HALAMAN 4: DEADLINE & POMODORO FOCUS (Nusa Pomo Style) ================= */
+    .pring {
+        left: 86px;
+        top: 96px;
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        background: conic-gradient(from 200deg, #ff5a6e, #ff3a3a, #ff6b5f, #ff5a6e);
+        -webkit-mask: radial-gradient(circle, transparent 26.5px, #000 27px);
+                mask: radial-gradient(circle, transparent 26.5px, #000 27px);
+        box-shadow: 0 0 18px rgba(255, 70, 70, 0.35);
+    }
+
+    .pglow {
+        left: 86px;
+        top: 96px;
+        width: 94px;
+        height: 94px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(circle, rgba(255, 60, 60, 0.32), transparent 65%);
+    }
+
+    .pomo-body {
+        position: absolute;
+        left: 146px;
+        right: 44px;
+        top: 42px;
+        bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .pomo-timer-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .pomo-time {
+        font-family: var(--mono);
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.6px;
+    }
+
+    .pomo-task-title {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .pomo-task-course {
+        font-size: 10.5px;
+        color: rgba(255, 255, 255, 0.55);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+    }
+
+    .pomo-controls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* ================= HALAMAN 5: FILE SHELF (Nusa Shelf + Island Gulp) ================= */
+    .sh-zone {
+        left: 48px;
+        top: 40px;
+        width: 384px;
+        height: 118px;
+        transition: opacity 0.35s ease;
+    }
+
+    .sh-zone .zone {
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 16px;
+        border: 1.4px dashed rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.03);
+        transition: border-color 0.3s, background 0.3s, transform 0.4s var(--spring);
+    }
+
+    .l-shelf.hover .zone {
+        border-color: rgba(255, 255, 255, 0.85);
+        background: rgba(255, 255, 255, 0.08);
+        transform: scale(1.02);
+    }
+
+    .l-shelf.has .sh-zone {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .l-shelf.has.hover .sh-zone {
+        opacity: 1;
+    }
+
+    .shelf-cards {
+        position: absolute;
+        left: 48px;
+        right: 48px;
+        top: 42px;
+        bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        overflow-x: auto;
+    }
+
+    .sh-card {
+        width: 72px;
+        padding: 6px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.07);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        animation: fall 0.65s cubic-bezier(0.34, 1.6, 0.5, 1) both;
+    }
+
+    .sh-card:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    @keyframes fall {
+        from { transform: translateY(-28px) scale(0.7); opacity: 0; }
+        to { transform: none; opacity: 1; }
+    }
+
+    .sh-thumb {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(145deg, #2d5bff, #19b8ff);
+        display: grid;
+        place-items: center;
+    }
+
+    .sh-thumb svg {
+        width: 20px;
+        height: 20px;
+        stroke: #fff;
+        fill: none;
+        stroke-width: 2;
+    }
+
+    .sh-name {
+        margin-top: 6px;
+        font-size: 10px;
+        font-weight: 600;
+        max-width: 64px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .sh-size {
+        margin-top: 2px;
+        font-size: 8.8px;
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* ================= HALAMAN 6: LMS SYNC & CONFIG ================= */
+    .cfg-body {
+        position: absolute;
+        left: 48px;
+        right: 48px;
+        top: 40px;
+        bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .cfg-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.55);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    .cfg-input-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 5px;
+    }
+
+    .cfg-input {
+        flex: 1;
+        height: 28px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.07);
+        color: #fff;
+        padding: 0 10px;
+        font-family: var(--ui);
+        font-size: 11px;
+        outline: none;
+    }
+
+    .cfg-input:focus {
+        border-color: var(--cyan);
+    }
+
+    .cfg-bottom-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+

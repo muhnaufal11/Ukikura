@@ -1,0 +1,20 @@
+{
+  "name": "nusa-island-and-lms-suite",
+  "version": "4.1.0",
+  "description": "Modular Workspace: Nusa Dynamic Island (dynamic-island/) & Asisten LMS SEB Proxy (asisten-lms/)",
+  "main": "dynamic-island/main.js",
+  "scripts": {
+    "start": "node asisten-lms/server.js",
+    "island": "electron dynamic-island/main.js",
+    "generate-ca": "node asisten-lms/generate-ca.js"
+  },
+  "dependencies": {
+    "node-forge": "^1.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "electron": "^44.9.0"
+  }
+}
