@@ -341,14 +341,15 @@ function buildIslandMenu() {
             }
         },
         {
-            label: `Kanal Versi: ${getLocalVersionInfo().channel === 'debug' ? 'Debug (Pengembang)' : 'Publik (Stabil)'}`,
+            label: `Edisi: ${getLocalVersionInfo().channel === 'debug' ? `Debug (Fix #${getLocalVersionInfo().fixCount || 5})` : 'Publik (Stabil)'}`,
             submenu: [
                 {
-                    label: 'Versi Publik (Rilis Stabil)',
+                    label: `Versi Publik (Rilis Stabil v${getLocalVersionInfo().version})`,
                     type: 'radio',
                     checked: getLocalVersionInfo().channel === 'public',
                     click: async () => {
                         setUpdateChannel('public');
+                        refreshTrayMenu();
                         if (mainWindow && !mainWindow.isDestroyed()) {
                             mainWindow.webContents.send('version-info', getLocalVersionInfo());
                         }
@@ -356,11 +357,12 @@ function buildIslandMenu() {
                     }
                 },
                 {
-                    label: 'Versi Debug (Kanal Pengembang & Pelacakan)',
+                    label: `Versi Debug (Kanal Pengembang · Fix #${getLocalVersionInfo().fixCount || 5})`,
                     type: 'radio',
                     checked: getLocalVersionInfo().channel === 'debug',
                     click: async () => {
                         setUpdateChannel('debug');
+                        refreshTrayMenu();
                         if (mainWindow && !mainWindow.isDestroyed()) {
                             mainWindow.webContents.send('version-info', getLocalVersionInfo());
                         }

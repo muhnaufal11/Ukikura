@@ -1,5 +1,6 @@
 # ==============================================================================
 # Build Script Installer Ukikura (浮き蔵) — Inno Setup Compiler Wrapper
+# Mendukung Rilis Universal, Versi Publik (Stabil), dan Versi Debug (Pengembang)
 # ==============================================================================
 
 $ErrorActionPreference = 'Stop'
@@ -24,22 +25,46 @@ if (-not $iscc) {
     Write-Host "[Ukikura Builder] Inno Setup 6 (ISCC.exe) belum terpasang di lokasi standar." -ForegroundColor Yellow
     Write-Host "Silakan pasang Inno Setup 6 melalui winget:" -ForegroundColor Cyan
     Write-Host "  winget install -e --id JRSoftware.InnoSetup" -ForegroundColor White
-    Write-Host "Atau buka file '$issFile' langsung di aplikasi Inno Setup Compiler lalu tekan Ctrl+F9 (Compile)." -ForegroundColor Cyan
     exit 1
 }
 
-Write-Host "[Ukikura Builder] Mengompilasi installer Ukikura menggunakan: $iscc" -ForegroundColor Cyan
+$certSubject = "CN=Nauflix (Ukikura Open Source), O=Nauflix, C=ID"
+$cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert -ErrorAction SilentlyContinue | Where-Object { $_.Subject -eq $certSubject } | Select-Object -First 1
+if (-not $cert) {
+    $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject $certSubject -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -CertStoreLocation "Cert:\CurrentUser\My" -NotAfter (Get-Date).AddYears(5)
+}
+
+$outputFile = "Ukikura-Setup-v1.0.0.exe"
+$targetPath = Join-Path $PSScriptRoot $outputFile
+
+Write-Host "[Ukikura Builder] Memulai kompilasi installer terpadu Ukikura v1.0.0 menggunakan: $iscc" -ForegroundColor Cyan
 & $iscc $issFile
-if ($LASTEXITCODE -eq 0) {
-    $exePath = Join-Path $PSScriptRoot "Ukikura-Setup-v1.0.0.exe"
-    if (Test-Path $exePath) {
-        $certSubject = "CN=Nauflix (Ukikura Open Source), O=Nauflix, C=ID"
-        $cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert -ErrorAction SilentlyContinue | Where-Object { $_.Subject -eq $certSubject } | Select-Object -First 1
-        if (-not $cert) {
-            $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject $certSubject -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -CertStoreLocation "Cert:\CurrentUser\My" -NotAfter (Get-Date).AddYears(5)
-        }
-        Set-AuthenticodeSignature -FilePath $exePath -Certificate $cert -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com" | Out-Null
-        Write-Host "[Ukikura Builder] Installer berhasil ditandatangani (Authenticode SHA-256 + DigiCert Timestamp)." -ForegroundColor Green
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Gagal mengompilasi installer Ukikura"
+}
+
+if (Test-Path $targetPath) {
+    Write-Host "[Ukikura Builder] Menandatangani digital (SHA-256)..." -ForegroundColor Yellow
+    Set-AuthenticodeSignature -FilePath $targetPath -Certificate $cert -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com" | Out-Null
+    Copy-Item $targetPath (Join-Path $distDir $outputFile) -Force
+    
+    $ukikuraInstallerDir = Join-Path $rootDir "Ukikura\installer"
+    if (Test-Path $ukikuraInstallerDir) {
+        Copy-Item $targetPath (Join-Path $ukikuraInstallerDir $outputFile) -Force
+        Copy-Item $issFile (Join-Path $ukikuraInstallerDir "Ukikura-Setup.iss") -Force
     }
-    Write-Host "[Ukikura Builder] Selesai! File installer siap didistribusikan: $exePath" -ForegroundColor Green
+    
+    # Hapus file split lama jika masih tersisa
+    @("Ukikura-Setup-v1.0.0-public.exe", "Ukikura-Setup-v1.0.0-debug.exe") | ForEach-Object {
+        $old1 = Join-Path $PSScriptRoot $_
+        $old2 = Join-Path $distDir $_
+        $old3 = Join-Path $ukikuraInstallerDir $_
+        if (Test-Path $old1) { Remove-Item $old1 -Force }
+        if (Test-Path $old2) { Remove-Item $old2 -Force }
+        if (Test-Path $old3) { Remove-Item $old3 -Force }
+    }
+    
+    Write-Host "`n[Ukikura Builder] Berhasil! Installer tunggal terpadu siap:" -ForegroundColor Green
+    Write-Host "  -> $targetPath" -ForegroundColor White
+    Write-Host "  -> $(Join-Path $distDir $outputFile)" -ForegroundColor White
 }

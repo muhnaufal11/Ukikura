@@ -2,9 +2,11 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "version": "1.0.0",
-  "versionCode": "1.0.0-debug",
+  "fixCount": 5,
   "channel": "debug",
-  "channelName": "Debug (Kanal Pengembang)",
+  "channelName": "Debug",
+  "versionCode": "1.0.0-debug.5",
+  "displayVersion": "v1.0.0-debug (Fix #5)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -15,5 +17,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.0.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Build Pengembang v1.0.0-debug: Dilengkapi Developer Tools terintegrasi (F12), live logging (%LOCALAPPDATA%\\Ukikura\\logs), pembaruan kanal debug, dan pelacakan event WinRT."
+  "changelog": "Build Debug v1.0.0-debug (Fix #5): Layout kontrol simetris, transisi buka-tutup mulus tanpa glitch, installer in-place update otomatis, dan pelacakan kode versi fix terpadu."
 }

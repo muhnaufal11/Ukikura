@@ -10,29 +10,13 @@
 #define MyAppName "Ukikura"
 #define MyAppFullTitle "Ukikura (浮倉) — Floating Island & Task Vault"
 #define MyAppVersion "1.0.0"
+#define MyFixCount "5"
 #define MyAppPublisher "Nauflix (muhnaufal11)"
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
 #define MyAppExeName "electron.exe"
 #define MyAppEntryArgs "dynamic-island\main.js"
 #define ElectronZipUrl "https://github.com/electron/electron/releases/download/v33.2.0/electron-v33.2.0-win32-x64.zip"
-
-#ifndef DefaultChannel
-  #define DefaultChannel "universal"
-#endif
-
-#if DefaultChannel == "debug"
-  #define OutputName "Ukikura-Setup-v" + MyAppVersion + "-debug"
-  #define PublicTaskFlags "exclusive unchecked"
-  #define DebugTaskFlags "exclusive"
-#elif DefaultChannel == "public"
-  #define OutputName "Ukikura-Setup-v" + MyAppVersion + "-public"
-  #define PublicTaskFlags "exclusive"
-  #define DebugTaskFlags "exclusive unchecked"
-#else
-  #define OutputName "Ukikura-Setup-v" + MyAppVersion
-  #define PublicTaskFlags "exclusive"
-  #define DebugTaskFlags "exclusive unchecked"
-#endif
+#define OutputName "Ukikura-Setup-v" + MyAppVersion
 
 [Setup]
 AppId={{8F4B9A2E-6D31-4E9C-A7C2-91E40B85D3F1}
@@ -69,8 +53,8 @@ UninstallDisplayName={#MyAppFullTitle}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "channel_public"; Description: "Versi Publik (Rilis Stabil — Penggunaan Sehari-hari)"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: {#PublicTaskFlags}
-Name: "channel_debug"; Description: "Versi Debug (Rilis Pengembang — Fitur Baru & Pelacakan Log)"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: {#DebugTaskFlags}
+Name: "channel_public"; Description: "Versi Publik (Rilis Stabil v{#MyAppVersion})"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: exclusive
+Name: "channel_debug"; Description: "Versi Debug (Kanal Pengembang v{#MyAppVersion}-debug · Fix #{#MyFixCount})"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: exclusive unchecked
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "autostart"; Description: "Jalankan Ukikura otomatis saat Windows menyala (Direkomendasikan)"; GroupDescription: "Opsi Startup:"
 

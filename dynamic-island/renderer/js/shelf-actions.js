@@ -220,18 +220,19 @@ let currentChannel = 'public';
 function updateChannelUI(info) {
     if (!info) return;
     currentChannel = (info.channel === 'debug') ? 'debug' : 'public';
+    const fixCount = info.fixCount || 5;
     if (channelNameLabelEl) {
-        channelNameLabelEl.textContent = (currentChannel === 'debug') ? 'Debug' : 'Publik';
+        channelNameLabelEl.textContent = (currentChannel === 'debug') ? `Debug (Fix #${fixCount})` : 'Publik';
     }
     if (btnToggleChannelEl) {
         if (currentChannel === 'debug') {
             btnToggleChannelEl.style.color = '#f59e0b';
             btnToggleChannelEl.style.borderColor = 'rgba(245,158,11,0.45)';
-            btnToggleChannelEl.title = 'Versi Debug aktif: menerima update kanal pengembang (Klik untuk ganti ke Publik)';
+            btnToggleChannelEl.title = `Versi Debug aktif: menerima update kanal pengembang (Fix #${fixCount}). Klik untuk ganti ke Publik`;
         } else {
             btnToggleChannelEl.style.color = '#38bdf8';
             btnToggleChannelEl.style.borderColor = 'rgba(56,189,248,0.35)';
-            btnToggleChannelEl.title = 'Versi Publik aktif: menerima update rilis stabil (Klik untuk ganti ke Debug)';
+            btnToggleChannelEl.title = 'Versi Publik aktif: menerima update rilis stabil. Klik untuk ganti ke Debug';
         }
     }
 }
@@ -247,7 +248,9 @@ if (btnToggleChannelEl) {
 ipcRenderer.on('version-info', (event, info) => {
     updateChannelUI(info);
     if (info && updateLabelEl && !latestUpdateAvailable) {
-        updateLabelEl.textContent = `v${info.versionCode || (info.version + '-' + info.channel)} · Cek Update`;
+        const isDebug = info.channel === 'debug';
+        const display = info.displayVersion || (isDebug ? `v${info.version}-debug (Fix #${info.fixCount || 5})` : `v${info.version}`);
+        updateLabelEl.textContent = `${display} · Cek Update`;
     }
 });
 
@@ -258,7 +261,8 @@ if (btnCheckUpdateEl) {
         if (latestUpdateAvailable) {
             ipcRenderer.send('island-open-update');
         } else {
-            if (updateLabelEl) updateLabelEl.textContent = `Mengecek (${currentChannel === 'debug' ? 'Debug' : 'Publik'})...`;
+            const isDebug = currentChannel === 'debug';
+            if (updateLabelEl) updateLabelEl.textContent = `Mengecek (${isDebug ? 'Debug' : 'Publik'})...`;
             ipcRenderer.send('island-check-update', true);
         }
     });
@@ -267,33 +271,37 @@ if (btnCheckUpdateEl) {
 ipcRenderer.on('update-status', (event, status) => {
     if (!status || !updateLabelEl || !btnCheckUpdateEl) return;
     if (status.currentChannel) {
-        updateChannelUI({ channel: status.currentChannel });
+        updateChannelUI({ channel: status.currentChannel, fixCount: status.fixCount });
     }
     if (status.checking) {
-        updateLabelEl.textContent = `Mengecek (${status.currentChannel === 'debug' ? 'Debug' : 'Publik'})...`;
+        const isDebug = status.currentChannel === 'debug';
+        updateLabelEl.textContent = `Mengecek (${isDebug ? `Debug Fix #${status.fixCount || 5}` : 'Publik'})...`;
         return;
     }
     latestUpdateAvailable = Boolean(status.hasUpdate);
-    const chanTag = status.currentChannel === 'debug' ? 'Debug' : 'Publik';
+    const isDebug = status.currentChannel === 'debug';
+    const currentDisplay = status.displayVersion || (isDebug ? `v${status.currentVersion}-debug (Fix #${status.fixCount || 5})` : `v${status.currentVersion}`);
+
     if (status.hasUpdate) {
-        updateLabelEl.textContent = `Update ${chanTag} v${status.latestVersion} Ada!`;
+        const nextFixText = (isDebug && status.latestFixCount) ? `Fix #${status.latestFixCount}` : `v${status.latestVersion}`;
+        updateLabelEl.textContent = `Update ${isDebug ? 'Debug ' + nextFixText : 'Publik v' + status.latestVersion} Ada!`;
         btnCheckUpdateEl.style.color = '#38d36f';
         btnCheckUpdateEl.style.borderColor = 'rgba(56,211,111,0.55)';
         if (typeof triggerPeekPopup === 'function') {
             triggerPeekPopup({
-                app: `Ukikura (${chanTag})`,
-                sender: `Update v${status.latestVersionCode || status.latestVersion} Tersedia!`,
+                app: `Ukikura (${isDebug ? 'Debug' : 'Publik'})`,
+                sender: `Update ${nextFixText} Tersedia!`,
                 message: status.changelog || 'Klik di Pengaturan untuk mengunduh versi terbaru dari GitHub.',
                 isWhatsApp: false,
                 isPhone: false
             });
         }
     } else {
-        updateLabelEl.textContent = `v${status.currentVersionCode || (status.currentVersion + '-' + currentChannel)} · Terbaru`;
+        updateLabelEl.textContent = `${currentDisplay} · Terbaru`;
         btnCheckUpdateEl.style.color = 'rgba(255,255,255,0.75)';
         btnCheckUpdateEl.style.borderColor = 'rgba(255,255,255,0.14)';
         if (status.manualTrigger && lastSyncTextEl) {
-            lastSyncTextEl.textContent = `Ukikura ${chanTag} v${status.currentVersion} sudah versi terbaru di GitHub`;
+            lastSyncTextEl.textContent = `Ukikura ${currentDisplay} sudah versi terbaru di GitHub`;
         }
     }
 });

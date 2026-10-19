@@ -70,11 +70,14 @@ function getLocalVersionInfo() {
         }
     } catch (_) {}
 
-    // 3. Normalisasi kode versi dan nama kanal
+    // 3. Normalisasi kode versi dan nama kanal yang menandakan jumlah fix
     const isDebug = (info.channel === 'debug');
+    const fixNum = info.fixCount || 5;
+    info.fixCount = fixNum;
     info.channel = isDebug ? 'debug' : 'public';
-    info.channelName = isDebug ? 'Debug (Kanal Pengembang)' : 'Publik (Rilis Stabil)';
-    info.versionCode = `${info.version}-${info.channel}`;
+    info.channelName = isDebug ? `Debug (Fix #${fixNum})` : 'Publik';
+    info.versionCode = isDebug ? `${info.version}-debug.${fixNum}` : `${info.version}`;
+    info.displayVersion = isDebug ? `v${info.version}-debug (Fix #${fixNum})` : `v${info.version}`;
 
     return info;
 }
@@ -109,6 +112,12 @@ function isNewerVersion(remoteVer, localVer) {
     return false;
 }
 
+function isNewer(remoteVer, remoteFix, localVer, localFix, isDebug) {
+    if (isNewerVersion(remoteVer, localVer)) return true;
+    if (isDebug && (remoteFix || 0) > (localFix || 0)) return true;
+    return false;
+}
+
 async function fetchJsonWithTimeout(url, timeoutMs = 6000) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -140,6 +149,8 @@ async function checkGitHubForUpdates(manualTrigger = false) {
             checking: true,
             currentVersion: local.version,
             currentVersionCode: local.versionCode,
+            displayVersion: local.displayVersion,
+            fixCount: local.fixCount,
             currentChannel: local.channel,
             repo: local.githubRepo
         });
@@ -172,9 +183,12 @@ async function checkGitHubForUpdates(manualTrigger = false) {
                     ? candidate.assets.find(a => a && /\.exe$|\.msi$|\.zip$/i.test(a.name || ''))
                     : null;
                 const cleanVer = String(candidate.tag_name).replace(/^[vV]/, '').split('-')[0];
+                const rawFix = (String(candidate.tag_name).match(/fix[#\.-]?(\d+)/i) || String(candidate.tag_name).match(/debug\.(\d+)/i) || [])[1];
+                const candFix = rawFix ? parseInt(rawFix, 10) : 0;
                 remoteData = {
                     version: cleanVer,
-                    versionCode: `${cleanVer}-${local.channel}`,
+                    fixCount: candFix,
+                    versionCode: isDebugChannel ? `${cleanVer}-debug.${candFix || 1}` : cleanVer,
                     releaseUrl: (exeAsset && exeAsset.browser_download_url) || candidate.html_url || `https://github.com/${repo}/releases`,
                     changelog: candidate.body || candidate.name || `Pembaruan kanal ${local.channel} tersedia di GitHub.`
                 };
@@ -200,11 +214,13 @@ async function checkGitHubForUpdates(manualTrigger = false) {
 
             if (rawVer && rawVer.version) {
                 const cleanVer = String(rawVer.version).replace(/^[vV]/, '').split('-')[0];
+                const rawFix = Number(rawVer.fixCount) || (rawVer.versionCode ? parseInt((String(rawVer.versionCode).match(/debug\.(\d+)/) || [])[1], 10) : 0);
                 remoteData = {
                     version: cleanVer,
-                    versionCode: `${cleanVer}-${local.channel}`,
+                    fixCount: rawFix,
+                    versionCode: isDebugChannel ? `${cleanVer}-debug.${rawFix || 1}` : cleanVer,
                     releaseUrl: rawVer.releaseUrl || rawVer.downloadUrl || `https://github.com/${repo}`,
-                    changelog: rawVer.changelog || `Versi ${cleanVer}-${local.channel} terdeteksi di branch ${branch}.`
+                    changelog: rawVer.changelog || `Versi ${cleanVer}${isDebugChannel ? ` (Fix #${rawFix})` : ''} terdeteksi di GitHub.`
                 };
                 matchedRepo = repo;
                 break;
@@ -213,20 +229,23 @@ async function checkGitHubForUpdates(manualTrigger = false) {
         if (remoteData) break;
     }
 
-    const hasUpdate = Boolean(remoteData && isNewerVersion(remoteData.version, local.version));
+    const hasUpdate = Boolean(remoteData && isNewer(remoteData.version, remoteData.fixCount, local.version, local.fixCount, isDebugChannel));
     const statusPayload = {
         checking: false,
         manualTrigger,
         hasUpdate,
         currentVersion: local.version,
         currentVersionCode: local.versionCode,
+        displayVersion: local.displayVersion,
+        fixCount: local.fixCount,
+        latestFixCount: remoteData ? (remoteData.fixCount || local.fixCount) : local.fixCount,
         currentChannel: local.channel,
-        channelName: local.channel === 'debug' ? 'Debug' : 'Publik',
+        channelName: local.channelName,
         latestVersion: remoteData ? remoteData.version : local.version,
         latestVersionCode: remoteData ? remoteData.versionCode : local.versionCode,
         repo: matchedRepo,
         downloadUrl: remoteData ? remoteData.releaseUrl : `https://github.com/${local.githubRepo}`,
-        changelog: remoteData ? remoteData.changelog : `Ukikura (${local.channel === 'debug' ? 'Kanal Debug' : 'Kanal Publik'}) sudah berada di versi terbaru.`,
+        changelog: remoteData ? remoteData.changelog : `Ukikura (${local.displayVersion}) sudah berada di versi terbaru.`,
         checkedAt: Date.now()
     };
 
@@ -247,8 +266,10 @@ function getLastUpdateStatus() {
         hasUpdate: false,
         currentVersion: local.version,
         currentVersionCode: local.versionCode,
+        displayVersion: local.displayVersion,
+        fixCount: local.fixCount,
         currentChannel: local.channel,
-        channelName: local.channel === 'debug' ? 'Debug' : 'Publik',
+        channelName: local.channelName,
         latestVersion: local.version,
         latestVersionCode: local.versionCode,
         repo: local.githubRepo,

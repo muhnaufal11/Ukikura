@@ -2,9 +2,11 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "version": "1.0.0",
-  "versionCode": "1.0.0-public",
+  "fixCount": 5,
   "channel": "public",
-  "channelName": "Publik (Rilis Stabil)",
+  "channelName": "Publik",
+  "versionCode": "1.0.0",
+  "displayVersion": "v1.0.0 (Publik)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -15,5 +17,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.0.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Rilis Stabil v1.0.0-public: Dynamic Island & Task Vault siap pakai dengan tata letak simetris, forced alignment lirik, kalender LMS, dan file shelf."
+  "changelog": "Rilis Stabil v1.0.0: Dynamic Island & Task Vault siap pakai dengan tata letak simetris, forced alignment lirik, kalender LMS, dan file shelf."
 }
