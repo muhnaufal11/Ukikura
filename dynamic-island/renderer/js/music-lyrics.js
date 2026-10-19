@@ -185,11 +185,13 @@ lyrListEl.addEventListener('click', (e) => {
     lyricTimeOffset = syncedLyrics[idx].time - rawLoopPos - 0.18;
     activeLyricIndex = idx;
     scrollLyricsToActive();
+    updateLyricOffsetLabel();
 });
 
 lyrListEl.addEventListener('dblclick', (e) => {
     e.stopPropagation();
     lyricTimeOffset = 0;
+    updateLyricOffsetLabel();
     updateMediaProgressUI();
 });
 
@@ -198,6 +200,7 @@ lyrListEl.addEventListener('wheel', (e) => {
     e.preventDefault();
     e.stopPropagation();
     lyricTimeOffset += (e.deltaY > 0 ? 0.15 : -0.15);
+    updateLyricOffsetLabel();
     updateMediaProgressUI();
 }, { passive: false });
 

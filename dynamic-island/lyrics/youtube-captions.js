@@ -235,7 +235,7 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     const scoreLang = (t) => {
         const lang = String(t.languageCode || '').toLowerCase();
         let s = 0;
-        if (meta.likelyJapanese) {
+        if (meta && meta.likelyJapanese) {
             if (lang.startsWith('ja')) s += 60;
             else if (lang.startsWith('id') || lang.startsWith('en')) s += 20;
         } else {

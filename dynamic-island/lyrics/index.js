@@ -104,6 +104,20 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     else if (bestDb && bestDb.lines.length > 0) {
         finalLines = bestDb.lines;
         syncMethod = `${bestDb.source} Synced LRC`;
+
+        // Kompensasi Otomatis Intro Sinematik Official MV:
+        // Pada Official Music Video YouTube tanpa CC, umumnya ada intro visual 4-35 detik sebelum vokal/musik dimulai.
+        // Jika durasi video YouTube > durasi audio album studio, geser waktu lirik ke depan agar pas dengan vokal video!
+        const isOfficialMv = /(?:official\s*(?:music\s*)?video|official\s*mv|\bmv\b|music\s*video)/i.test(rawTitle);
+        const dbDur = Number(bestDb.duration) || 0;
+        if (isOfficialMv && mediaDur > 45 && dbDur > 45 && (mediaDur - dbDur >= 4) && (mediaDur - dbDur <= 35)) {
+            const introShift = Math.max(0, mediaDur - dbDur);
+            finalLines = bestDb.lines.map(l => ({
+                ...l,
+                time: Math.round((l.time + introShift) * 100) / 100
+            }));
+            syncMethod = `${bestDb.source} Synced (+${introShift}s MV Intro)`;
+        }
     }
     // KASUS 4: Fallback ke aliran TimedText YouTube (.srv3) jika lagu cover indie belum terdaftar di database mana pun
     else if (ytCaptions && ytCaptions.lines.length >= 3) {
