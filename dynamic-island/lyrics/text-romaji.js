@@ -146,7 +146,7 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         .replace(/[【\[]([^】\]]+)[】\]]/g, (_, p1) => NOISE_BRACKET_RE.test(p1.trim()) ? ' ' : ` ${p1} `)
         .replace(/\(([^)]+)\)/g, (_, p1) => NOISE_BRACKET_RE.test(p1.trim()) ? ' ' : ` ${p1} `)
         .replace(/(?:covered\s+by|cover\s+by|vocal\s*[:：]?|vo\s*[.．:：]|cv\s*[.．:：]|feat\.?|ft\.?)\s+[^-|/•·【「『(\[]+/gi, ' ')
-        .replace(/\b(?:official\s+music\s+video|official\s+lyric\s+video|official\s+video|official\s+audio|lyric\s+video|lyrics\s+video|lirik\s+lagu|full\s+lirik|lirik\s+dan\s+terjemahan|romaji\s+lyrics|sub\s+indonesia|sub\s+indo|歌ってみた|うたってみた)\b/gi, ' ')
+        .replace(/\b(?:official\s+music\s+video|official\s+lyric\s+video|official\s+video|official\s+audio|lyric\s+video|lyrics\s+video|lirik\s+lagu|full\s+lirik|lirik\s+dan\s+terjemahan|romaji\s+lyrics|sub\s+indonesia|sub\s+indo|nyanyi\s+bareng|nyangi\s+bareng|sing\s+along|歌ってみた|うたってみた)\b/gi, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
@@ -168,16 +168,19 @@ function parseTrackMetadata(rawTitle, rawArtist) {
     // Prioritas 1: Jika ada 『Judul』 atau 「Judul」 khas MV/Cover Jepang
     if (jpQuotes.length > 0) {
         const qTitle = jpQuotes[0];
+        if (cleanChannel && !isLyricChannel) {
+            queries.push(`${cleanChannel} ${qTitle}`);
+        }
         for (const seg of segments) {
-            if (seg !== qTitle && seg.length >= 2 && seg.length <= 40) {
-                queries.push(`${qTitle} ${seg}`);
+            const segWithoutQuote = seg.replace(qTitle, '').replace(/\s+/g, ' ').trim();
+            if (segWithoutQuote && segWithoutQuote.length >= 2 && segWithoutQuote.length <= 40) {
+                queries.push(`${segWithoutQuote} ${qTitle}`);
+            } else if (seg !== qTitle && seg.length >= 2 && seg.length <= 40) {
+                queries.push(seg);
             }
         }
         if (squareBrackets.length > 0 && squareBrackets[0] !== qTitle) {
             queries.push(`${squareBrackets[0]} ${qTitle}`);
-        }
-        if (cleanChannel && !isLyricChannel) {
-            queries.push(`${cleanChannel} ${qTitle}`);
         }
         queries.push(qTitle);
     }
@@ -185,9 +188,15 @@ function parseTrackMetadata(rawTitle, rawArtist) {
     // Prioritas 2: Kombinasi segmen "Artis - Judul" atau "Judul / Artis"
     if (segments.length >= 2) {
         queries.push(`${segments[0]} ${segments[1]}`);
+        if (cleanChannel && !isLyricChannel) {
+            const lastSeg = segments[segments.length - 1];
+            if (!lastSeg.toLowerCase().includes(cleanChannel.toLowerCase())) {
+                queries.push(`${cleanChannel} ${lastSeg}`);
+            }
+        }
         queries.push(`${segments[1]} ${segments[0]}`);
+        queries.push(segments[segments.length - 1]);
         queries.push(segments[0]);
-        queries.push(segments[1]);
     } else if (segments.length === 1) {
         if (cleanChannel && !isLyricChannel && !segments[0].toLowerCase().includes(cleanChannel.toLowerCase())) {
             queries.push(`${cleanChannel} ${segments[0]}`);

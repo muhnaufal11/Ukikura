@@ -1,6 +1,6 @@
 "use strict";
 const { ANDROID_CLIENT, IOS_CLIENT, WEB_CLIENT, httpRequestRaw, httpRequestJson } = require("./http-client");
-const { normalizePhoneticLatin } = require("./text-romaji");
+const { normalizePhoneticLatin, hasJapaneseChars } = require("./text-romaji");
 
 // ==================== ENGINE 2: YOUTUBE CAPTIONS STREAM (.SRV3 / TIMEDTEXT) ====================
 
@@ -154,7 +154,7 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: searchBody,
-        timeout: 8500
+        timeout: 4200
     });
 
     if (!searchRes.body) return null;
@@ -213,7 +213,7 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
             ua: client.ua,
             headers: { 'Content-Type': 'application/json' },
             body: pBody,
-            timeout: 8500
+            timeout: 4200
         });
         const tracks = pJson &&
             pJson.captions &&
@@ -260,8 +260,8 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     const bestManual = manualCandidates[0] || null;
 
     const [asrXmlRes, manualXmlRes] = await Promise.all([
-        bestAsr ? httpRequestRaw(`${bestAsr.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 6500 }) : Promise.resolve({ body: '' }),
-        bestManual ? httpRequestRaw(`${bestManual.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 6500 }) : Promise.resolve({ body: '' })
+        bestAsr ? httpRequestRaw(`${bestAsr.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 4000 }) : Promise.resolve({ body: '' }),
+        bestManual ? httpRequestRaw(`${bestManual.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 4000 }) : Promise.resolve({ body: '' })
     ]);
 
     const parsedAsr = (asrXmlRes && asrXmlRes.body && asrXmlRes.body.length > 50)

@@ -8,18 +8,39 @@
 
 const http = require('http');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
-const DATA_DIR = path.resolve(__dirname, '../data');
+function resolveWritableDataDir() {
+    const localDir = path.resolve(__dirname, '../data');
+    if (!/program files/i.test(localDir)) {
+        try {
+            if (!fs.existsSync(localDir)) fs.mkdirSync(localDir, { recursive: true });
+            const testFile = path.join(localDir, '.write-test');
+            fs.writeFileSync(testFile, 'ok');
+            fs.unlinkSync(testFile);
+            return localDir;
+        } catch (_) {}
+    }
+    const appDataDir = path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'Ukikura', 'data');
+    try {
+        if (!fs.existsSync(appDataDir)) fs.mkdirSync(appDataDir, { recursive: true });
+    } catch (_) {}
+    return appDataDir;
+}
+
+const DATA_DIR = resolveWritableDataDir();
 const TASKS_FILE = path.join(DATA_DIR, 'tasks.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 
 let sseClients = new Set();
 
 function ensureDataDir() {
-    if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
+    try {
+        if (!fs.existsSync(DATA_DIR)) {
+            fs.mkdirSync(DATA_DIR, { recursive: true });
+        }
+    } catch (_) {}
 }
 
 function loadKuraConfig() {

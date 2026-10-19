@@ -14,12 +14,14 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     }
 
     const meta = parseTrackMetadata(rawTitle, rawArtist);
-    let fastSent = false;
+    let bestFastScore = -1;
 
     const maybeEmitFast = (cand) => {
-        if (fastSent || typeof onFastResult !== 'function') return;
+        if (typeof onFastResult !== 'function') return;
         if (cand && cand.hasSyncedTimestamps && Array.isArray(cand.lines) && cand.lines.length >= 4) {
-            fastSent = true;
+            const candScore = Number(cand.score) || 0;
+            if (candScore <= bestFastScore) return;
+            bestFastScore = candScore;
             try {
                 onFastResult({
                     title: rawTitle,
@@ -33,28 +35,33 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     };
 
     // Jalankan pencarian Multi-Source Database & Ekstraksi Stream Caption YouTube secara paralel!
-    const [neRes, lrcRes, kgRes, ytCaptions] = await Promise.all([
+    const dbPromise = Promise.all([
         searchNetEaseLyrics(meta, mediaDur).then(r => { maybeEmitFast(r); return r; }).catch(() => null),
         searchLrclibLyrics(meta, mediaDur).then(r => { maybeEmitFast(r); return r; }).catch(() => null),
-        searchKuGouLyrics(meta, mediaDur).then(r => { maybeEmitFast(r); return r; }).catch(() => null),
+        searchKuGouLyrics(meta, mediaDur).then(r => { maybeEmitFast(r); return r; }).catch(() => null)
+    ]).then(([ne, lrc, kg]) => {
+        const cands = [ne, lrc, kg].filter(Boolean).sort((a, b) => b.score - a.score);
+        const top = cands[0] || null;
+        if (top && top.isJapanese && top.source !== 'NetEase' && ne && ne.lines.some(l => l.romaText)) {
+            const romaPool = ne.lines
+                .filter(l => l.romaText)
+                .map(l => ({ time: l.time, text: l.romaText }));
+            top.lines = mergeJapaneseAndRomajiLines(
+                top.lines.map(l => ({ time: l.time, text: l.rawText || l.text })),
+                romaPool
+            );
+            top.score += 25;
+        }
+        if (top) maybeEmitFast(top);
+        return { neRes: ne, lrcRes: lrc, kgRes: kg, bestDb: top };
+    });
+
+    const [dbBundle, ytCaptions] = await Promise.all([
+        dbPromise,
         fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta).catch(() => null)
     ]);
 
-    const dbCandidates = [neRes, lrcRes, kgRes].filter(Boolean);
-    dbCandidates.sort((a, b) => b.score - a.score);
-
-    let bestDb = dbCandidates[0] || null;
-
-    // Jika pemenang utama dari LRCLIB/KuGou adalah lagu Jepang tanpa Romaji, dan NetEase punya Romaji untuk lagu yang sama, gabungkan Romaji-nya!
-    if (bestDb && bestDb.isJapanese && bestDb.source !== 'NetEase' && neRes && neRes.lines.some(l => l.romaText)) {
-        const romaPool = neRes.lines
-            .filter(l => l.romaText)
-            .map(l => ({ time: l.time, text: l.romaText }));
-        bestDb.lines = mergeJapaneseAndRomajiLines(
-            bestDb.lines.map(l => ({ time: l.time, text: l.rawText || l.text })),
-            romaPool
-        );
-    }
+    let bestDb = dbBundle.bestDb;
 
     let finalLines = [];
     let syncMethod = '';

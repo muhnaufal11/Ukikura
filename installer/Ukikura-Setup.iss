@@ -29,7 +29,6 @@ LicenseFile=..\LICENSE
 SetupIconFile=..\assets\ukikura-logo.ico
 UninstallDisplayIcon={app}\assets\ukikura-logo.ico
 PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=.
 OutputBaseFilename=Ukikura-Setup-v{#MyAppVersion}
 Compression=lzma2/ultra64
@@ -72,7 +71,7 @@ Filename: "{sys}\tar.exe"; Parameters: "-xf ""{tmp}\electron-runtime.zip"" -C ""
 Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; Description: "Jalankan {#MyAppFullTitle} sekarang"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-Filename: "powershell.exe"; Parameters: "-NoProfile -WindowStyle Hidden -Command ""Get-CimInstance Win32_Process | Where-Object {{ $_.CommandLine -match 'dynamic-island' }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }}"""; Flags: runhidden; RunOnceId: "StopUkikuraProcesses"
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopUkikuraProcesses"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\runtime"
@@ -97,7 +96,7 @@ function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   if CurPageID = wpReady then begin
     DownloadPage.Clear;
-    if not FileExists(ExpandConstant('{app}\runtime\electron.exe')) then begin
+    if (not FileExists(ExpandConstant('{app}\runtime\electron.exe'))) or (not FileExists(ExpandConstant('{app}\runtime\icudtl.dat'))) then begin
       DownloadPage.Add('{#ElectronZipUrl}', 'electron-runtime.zip', '');
       DownloadPage.Show;
       try

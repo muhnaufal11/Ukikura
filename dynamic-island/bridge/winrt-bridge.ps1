@@ -199,14 +199,17 @@ $initialNotifPass = $true
 $tickCount = 0
 
 $cmdFile = Join-Path $PSScriptRoot ".media-cmd"
+$tempCmdFile = Join-Path $env:TEMP "ukikura-media.cmd"
 $ytFrameFile = Join-Path $PSScriptRoot ".yt-frame.png"
 $lastOcrText = ""
 
 function Process-MediaCmd {
     try {
-        if ([System.IO.File]::Exists($cmdFile)) {
-            $cmd = [System.IO.File]::ReadAllText($cmdFile).Trim().ToUpperInvariant()
-            [System.IO.File]::Delete($cmdFile)
+        $activeCmdFile = if ([System.IO.File]::Exists($tempCmdFile)) { $tempCmdFile } elseif ([System.IO.File]::Exists($cmdFile)) { $cmdFile } else { $null }
+        if ($activeCmdFile) {
+            $cmd = [System.IO.File]::ReadAllText($activeCmdFile).Trim().ToUpperInvariant()
+            try { [System.IO.File]::Delete($tempCmdFile) } catch {}
+            try { [System.IO.File]::Delete($cmdFile) } catch {}
             if (-not $cmd) { return }
             $handled = $false
             if ($mediaMgr) {
@@ -269,22 +272,21 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
                 $dur = if ($tl) { [math]::Round($tl.EndTime.TotalSeconds, 3) } else { 0 }
                 $appId = if ($session.SourceAppUserModelId) { [string]$session.SourceAppUserModelId } else { "" }
 
-                $needFullProps = (-not $FastOnly) -or (-not $script:lastMediaTitle) -or ([math]::Abs($dur - $script:lastMediaDur) -gt 1.5)
-                if ($needFullProps) {
-                    $info = Await ($session.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
-                    $newTitle = if ($info -and $info.Title) { [string]$info.Title } else { "" }
-                    $newArtist = if ($info -and $info.Artist) { [string]$info.Artist } else { "" }
-                    $trackChanged = ($newTitle -ne $script:lastMediaTitle) -or ($newArtist -ne $script:lastMediaArtist)
-                    $script:lastMediaTitle = $newTitle
-                    $script:lastMediaArtist = $newArtist
-                    $script:lastMediaDur = $dur
+                $info = Await ($session.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
+                $newTitle = if ($info -and $info.Title) { [string]$info.Title } else { "" }
+                $newArtist = if ($info -and $info.Artist) { [string]$info.Artist } else { "" }
+                $trackChanged = ($newTitle -ne $script:lastMediaTitle) -or ($newArtist -ne $script:lastMediaArtist)
+                $script:lastMediaTitle = $newTitle
+                $script:lastMediaArtist = $newArtist
+                $script:lastMediaDur = $dur
 
-                    if ($trackChanged) {
-                        $script:lastThumbB64 = ""
-                        $script:lastThumbIsAppIcon = $false
-                    }
+                if ($trackChanged) {
+                    $script:lastThumbB64 = ""
+                    $script:lastThumbIsAppIcon = $false
+                }
 
-                    if ($info -and $info.Thumbnail -and ($trackChanged -or -not $script:lastThumbB64 -or $script:lastThumbIsAppIcon)) {
+                $needThumb = $trackChanged -or ((-not $FastOnly) -and (-not $script:lastThumbB64 -or $script:lastThumbIsAppIcon))
+                if ($info -and $info.Thumbnail -and $needThumb) {
                         try {
                             $winrtStream = Await ($info.Thumbnail.OpenReadAsync()) ([Windows.Storage.Streams.IRandomAccessStreamWithContentType])
                             if ($winrtStream) {
@@ -306,7 +308,6 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
                                 }
                             }
                         } catch {}
-                    }
                     # Segarkan kembali timeline tepat setelah operasi async selesai agar $pos 0ms akurat
                     $tl = $session.GetTimelineProperties()
                 }
@@ -420,7 +421,7 @@ while ($true) {
     } catch {}
 
     # 4. Baca Baterai Laptop, Status Cas, Baterai HP (Redmi Note 13 Pro+ 5G, dll.) & TWS/Headset Bluetooth
-    if (($tickCount % 2) -eq 0) {
+    if (($tickCount % 5) -eq 0) {
         try {
             $ps = [System.Windows.Forms.SystemInformation]::PowerStatus
             $laptopPct = [math]::Round($ps.BatteryLifePercent * 100)

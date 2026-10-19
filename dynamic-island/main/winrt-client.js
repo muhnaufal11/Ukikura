@@ -49,7 +49,16 @@ function startWinRtBridge() {
                             const trackKey = `${msg.title}|${msg.artist || ''}`;
                             if (trackKey !== lastLyricsTrackKey) {
                                 lastLyricsTrackKey = trackKey;
-                                fetchSyncedLyrics(msg.title, msg.artist || '', Number(msg.dur) || 0);
+                                emptyRetryCount = 0;
+                                fetchSyncedLyrics(msg.title, msg.artist || '', Number(msg.dur) || 0, true);
+                            } else if (
+                                !inFlightTitle &&
+                                (!lastLyricsPayload || lastLyricsPayload.title !== msg.title || !Array.isArray(lastLyricsPayload.lines) || lastLyricsPayload.lines.length === 0) &&
+                                emptyRetryCount < 3 &&
+                                (Date.now() - lastFetchEndedAt) > 3200
+                            ) {
+                                emptyRetryCount++;
+                                fetchSyncedLyrics(msg.title, msg.artist || '', Number(msg.dur) || 0, true);
                             }
                         }
                     } else if (msg.type === 'notifs' && Array.isArray(msg.items)) {
@@ -77,20 +86,38 @@ function startWinRtBridge() {
 }
 
 function sendMediaCommand(cmd) {
+    const val = String(cmd || '').trim();
     try {
-        const fs = require('fs');
-        fs.writeFileSync(path.join(BRIDGE_DIR, '.media-cmd'), String(cmd || '').trim(), 'utf8');
+        const os = require('os');
+        fs.writeFileSync(path.join(os.tmpdir(), 'ukikura-media.cmd'), val, 'utf8');
+    } catch (_) {}
+    try {
+        fs.writeFileSync(path.join(BRIDGE_DIR, '.media-cmd'), val, 'utf8');
     } catch (_) {}
 }
 
 let lastMediaPayload = null;
 let lastLyricsPayload = null;
 let currentLyricsReqId = 0;
+let inFlightTitle = '';
+let inFlightStartedAt = 0;
+let lastFetchEndedAt = 0;
+let emptyRetryCount = 0;
 
 // Ambil lirik tersinkronisasi 100% menggunakan Multi-Source Database (NetEase JP/Romaji/ID + LRCLIB + KuGou)
 // + YouTube Captions Stream (.srv3 TimedText) + Audio-to-Text Forced Alignment
-async function fetchSyncedLyrics(rawTitle, rawArtist, explicitDur = 0) {
+async function fetchSyncedLyrics(rawTitle, rawArtist, explicitDur = 0, forceNew = false) {
+    if (!rawTitle) return;
+    // Cegah double-request dari renderer membatalkan pencarian yang sedang berjalan untuk judul lagu yang sama
+    if (!forceNew && inFlightTitle === rawTitle && (Date.now() - inFlightStartedAt) < 10000) {
+        return;
+    }
+
     const reqId = ++currentLyricsReqId;
+    inFlightTitle = rawTitle;
+    inFlightStartedAt = Date.now();
+    let deliveredFast = false;
+
     try {
         const mediaDur = explicitDur > 0
             ? explicitDur
@@ -99,6 +126,7 @@ async function fetchSyncedLyrics(rawTitle, rawArtist, explicitDur = 0) {
         const result = await getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur, (fastRes) => {
             if (reqId !== currentLyricsReqId) return;
             if (fastRes && Array.isArray(fastRes.lines) && fastRes.lines.length > 0) {
+                deliveredFast = true;
                 lastLyricsPayload = {
                     title: rawTitle,
                     track: fastRes.track || rawTitle,
@@ -112,6 +140,9 @@ async function fetchSyncedLyrics(rawTitle, rawArtist, explicitDur = 0) {
             }
         });
         if (reqId !== currentLyricsReqId) return;
+
+        inFlightTitle = '';
+        lastFetchEndedAt = Date.now();
 
         if (result && Array.isArray(result.lines) && result.lines.length > 0) {
             lastLyricsPayload = {
@@ -128,13 +159,21 @@ async function fetchSyncedLyrics(rawTitle, rawArtist, explicitDur = 0) {
             return;
         }
 
-        const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send('lyrics-update', { title: rawTitle, track: rawTitle, lines: [] });
+        if (!deliveredFast) {
+            const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('lyrics-update', { title: rawTitle, track: rawTitle, lines: [] });
+            }
         }
     } catch (err) {
         console.warn('[Dynamic Island] Lyrics engine error:', err && err.message ? err.message : err);
-        const mainWindow = getMainWindow(); if (reqId === currentLyricsReqId && mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send('lyrics-update', { title: rawTitle, track: rawTitle, lines: [] });
+        if (reqId === currentLyricsReqId) {
+            inFlightTitle = '';
+            lastFetchEndedAt = Date.now();
+            if (!deliveredFast) {
+                const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('lyrics-update', { title: rawTitle, track: rawTitle, lines: [] });
+                }
+            }
         }
     }
 }
