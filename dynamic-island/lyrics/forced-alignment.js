@@ -110,12 +110,15 @@ function forceAlignLyricsToAudioStream(canonicalLines, ytCaptionData, hasStudioL
 
         const expectedTime = hasStudioLrc ? canonicalLines[i].time : ((i / Math.max(1, N)) * (mediaDur || 200));
         const prevAnchorTime = i > 0 ? findLastAnchorTime(anchors, i - 1) : -1;
+        const maxIntroShift = (hasStudioLrc && mediaDur > 30 && dbDur > 30)
+            ? Math.max(5, Math.min(75, (mediaDur - dbDur) + 6))
+            : 75;
 
         for (let k = minTokenSearchIdx; k < M; k++) {
             const tokTime = tokens[k].time;
             if (prevAnchorTime >= 0 && tokTime < prevAnchorTime + 0.25) continue;
-            // Izinkan offset intro MV hingga +75 detik dari waktu studio, namun cegah lompatan terlalu jauh
-            if (hasStudioLrc && (tokTime - expectedTime < -20 || tokTime - expectedTime > 75)) continue;
+            // Batasi offset intro MV sesuai selisih durasi video vs durasi studio agar Auto-ASR tidak melompat ke reff akhir
+            if (hasStudioLrc && (tokTime - expectedTime < -12 || tokTime - expectedTime > maxIntroShift)) continue;
 
             let matchScore = 0;
 
@@ -212,9 +215,9 @@ function forceAlignLyricsToAudioStream(canonicalLines, ytCaptionData, hasStudioL
             .sort((a, b) => a - b);
         const medianOffset = diffs[Math.floor(diffs.length / 2)] || 0;
 
-        // Jika durasi video sama dengan durasi studio (selisih <= 2.5s) dan offset vokal <= 1.8s,
-        // berarti ini audio studio yang sama persis -> pertahankan 100% waktu LRC studio asli tanpa distorsi ASR!
-        const isSameStudioArrangement = (mediaDur > 30 && dbDur > 30 && Math.abs(dbDur - mediaDur) <= 2.5 && Math.abs(medianOffset) <= 1.8);
+        // Jika durasi video sama dengan durasi studio (selisih <= 3.5s),
+        // berarti ini aransemen/audio studio yang sama persis -> pertahankan 100% waktu LRC studio asli tanpa distorsi ASR!
+        const isSameStudioArrangement = (mediaDur > 30 && dbDur > 30 && Math.abs(dbDur - mediaDur) <= 3.5);
         const globalOffset = (isSameStudioArrangement || Math.abs(medianOffset) < 0.85) ? 0 : medianOffset;
 
         return canonicalLines.map((l, i) => Object.assign({}, l, {

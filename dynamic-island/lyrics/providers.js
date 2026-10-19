@@ -2,6 +2,7 @@
 const { httpRequestJson } = require("./http-client");
 const {
     hasJapaneseChars,
+    hasKanji,
     hasHiraganaOrKatakana,
     kanaToRomaji,
     parseLrcText,
@@ -14,7 +15,7 @@ const {
 
 async function searchNetEaseLyrics(meta, mediaDur) {
     const candidates = [];
-    const primaryQueries = meta.queries.slice(0, 2);
+    const primaryQueries = meta.queries.slice(0, 3);
     const searchResults = await Promise.all(
         primaryQueries.map(qStr =>
             httpRequestJson(`https://music.163.com/api/search/get?s=${encodeURIComponent(qStr)}&type=1&limit=8`, {
@@ -117,7 +118,7 @@ async function searchNetEaseLyrics(meta, mediaDur) {
         if (finalLines.length >= 4) {
             let bonus = 60;
             if (meta.likelyJapanese && (isJpLrc || romaLines.length >= 4)) bonus += 85;
-            if (romaLines.length >= 4 && lrcLines.length >= 4) bonus += 40;
+            if (romaLines.length >= 4 && lrcLines.length >= 4) bonus += 80;
 
             const candidateRes = {
                 source: 'NetEase',
@@ -141,7 +142,7 @@ async function searchNetEaseLyrics(meta, mediaDur) {
 
 async function searchLrclibLyrics(meta, mediaDur) {
     let bestCandidate = null;
-    const primaryQueries = meta.queries.slice(0, 2);
+    const primaryQueries = meta.queries.slice(0, 3);
     const searchLists = await Promise.all(
         primaryQueries.map(qStr =>
             httpRequestJson(`https://lrclib.net/api/search?q=${encodeURIComponent(qStr)}`, { timeout: 4200 })
@@ -196,8 +197,8 @@ async function searchLrclibLyrics(meta, mediaDur) {
         evaluateList(list);
     }
 
-    if ((!bestCandidate || bestCandidate.score < 120) && meta.queries.length > 2) {
-        const extraList = await httpRequestJson(`https://lrclib.net/api/search?q=${encodeURIComponent(meta.queries[2])}`, { timeout: 3500 });
+    if ((!bestCandidate || bestCandidate.score < 120) && meta.queries.length > 3) {
+        const extraList = await httpRequestJson(`https://lrclib.net/api/search?q=${encodeURIComponent(meta.queries[3])}`, { timeout: 3500 });
         evaluateList(extraList);
     }
 
@@ -215,7 +216,7 @@ async function searchLrclibLyrics(meta, mediaDur) {
                 time: l.time,
                 text: l.text,
                 rawText: l.text,
-                romaText: hasHiraganaOrKatakana(l.text) ? kanaToRomaji(l.text) : ''
+                romaText: (!hasKanji(l.text) && hasHiraganaOrKatakana(l.text)) ? kanaToRomaji(l.text) : ''
             }));
         }
     }
@@ -231,7 +232,7 @@ async function searchLrclibLyrics(meta, mediaDur) {
             time: Math.round((6 + idx * step) * 100) / 100,
             text,
             rawText: text,
-            romaText: hasHiraganaOrKatakana(text) ? kanaToRomaji(text) : ''
+            romaText: (!hasKanji(text) && hasHiraganaOrKatakana(text)) ? kanaToRomaji(text) : ''
         }));
     }
 
@@ -252,12 +253,20 @@ async function searchLrclibLyrics(meta, mediaDur) {
 // ==================== DATABASE 3: KUGOU MUSIC LRC ====================
 
 async function searchKuGouLyrics(meta, mediaDur) {
-    const qStr = meta.queries[0];
-    if (!qStr) return null;
+    const primaryQueries = meta.queries.slice(0, 2);
+    if (primaryQueries.length === 0) return null;
     const durMs = mediaDur > 30 ? Math.round(mediaDur * 1000) : 210000;
-    const searchUrl = `http://lyrics.kugou.com/search?ver=1&man=yes&client=pc&keyword=${encodeURIComponent(qStr)}&duration=${durMs}&hash=`;
-    const sJson = await httpRequestJson(searchUrl, { timeout: 4500 });
-    const cands = sJson && Array.isArray(sJson.candidates) ? sJson.candidates : [];
+    const searchLists = await Promise.all(
+        primaryQueries.map(qStr =>
+            httpRequestJson(`http://lyrics.kugou.com/search?ver=1&man=yes&client=pc&keyword=${encodeURIComponent(qStr)}&duration=${durMs}&hash=`, { timeout: 4200 })
+        )
+    );
+    const cands = [];
+    for (const sJson of searchLists) {
+        if (sJson && Array.isArray(sJson.candidates)) {
+            cands.push(...sJson.candidates);
+        }
+    }
     if (cands.length === 0) return null;
 
     for (const c of cands.slice(0, 3)) {
@@ -266,7 +275,7 @@ async function searchKuGouLyrics(meta, mediaDur) {
         if (sim < 22) continue;
 
         const dlUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${c.id}&accesskey=${c.accesskey}&fmt=lrc&charset=utf8`;
-        const dlJson = await httpRequestJson(dlUrl, { timeout: 4500 });
+        const dlJson = await httpRequestJson(dlUrl, { timeout: 4200 });
         if (!dlJson || !dlJson.content) continue;
 
         let rawLrc = '';
@@ -294,7 +303,7 @@ async function searchKuGouLyrics(meta, mediaDur) {
                     time: l.time,
                     text: l.text,
                     rawText: l.text,
-                    romaText: hasHiraganaOrKatakana(l.text) ? kanaToRomaji(l.text) : ''
+                    romaText: (!hasKanji(l.text) && hasHiraganaOrKatakana(l.text)) ? kanaToRomaji(l.text) : ''
                 }))
             };
         }

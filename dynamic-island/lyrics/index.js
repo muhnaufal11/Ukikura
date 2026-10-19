@@ -1,6 +1,6 @@
 "use strict";
 const { lyricsCache } = require("./http-client");
-const { hasHiraganaOrKatakana, kanaToRomaji, parseTrackMetadata, mergeJapaneseAndRomajiLines } = require("./text-romaji");
+const { hasKanji, hasHiraganaOrKatakana, kanaToRomaji, parseTrackMetadata, mergeJapaneseAndRomajiLines } = require("./text-romaji");
 const { searchNetEaseLyrics, searchLrclibLyrics, searchKuGouLyrics } = require("./providers");
 const { fetchYouTubeCaptionStream } = require("./youtube-captions");
 const { forceAlignLyricsToAudioStream } = require("./forced-alignment");
@@ -16,9 +16,13 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     const meta = parseTrackMetadata(rawTitle, rawArtist);
     let bestFastScore = -1;
 
-    const maybeEmitFast = (cand) => {
+    const maybeEmitFast = (cand, isFinalDbMerge = false) => {
         if (typeof onFastResult !== 'function') return;
         if (cand && cand.hasSyncedTimestamps && Array.isArray(cand.lines) && cand.lines.length >= 4) {
+            // Untuk lagu Jepang, tunggu hasil gabungan Romaji NetEase (isFinalDbMerge) jika kandidat awal belum punya Romaji
+            if (!isFinalDbMerge && meta.likelyJapanese && !cand.lines.some(l => l.romaText)) {
+                return;
+            }
             const candScore = Number(cand.score) || 0;
             if (candScore <= bestFastScore) return;
             bestFastScore = candScore;
@@ -36,9 +40,9 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
 
     // Jalankan pencarian Multi-Source Database & Ekstraksi Stream Caption YouTube secara paralel!
     const dbPromise = Promise.all([
-        searchNetEaseLyrics(meta, mediaDur).then(r => { maybeEmitFast(r); return r; }).catch(() => null),
-        searchLrclibLyrics(meta, mediaDur).then(r => { maybeEmitFast(r); return r; }).catch(() => null),
-        searchKuGouLyrics(meta, mediaDur).then(r => { maybeEmitFast(r); return r; }).catch(() => null)
+        searchNetEaseLyrics(meta, mediaDur).then(r => { maybeEmitFast(r, false); return r; }).catch(() => null),
+        searchLrclibLyrics(meta, mediaDur).then(r => { maybeEmitFast(r, false); return r; }).catch(() => null),
+        searchKuGouLyrics(meta, mediaDur).then(r => { maybeEmitFast(r, false); return r; }).catch(() => null)
     ]).then(([ne, lrc, kg]) => {
         const cands = [ne, lrc, kg].filter(Boolean).sort((a, b) => b.score - a.score);
         const top = cands[0] || null;
@@ -52,7 +56,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             );
             top.score += 25;
         }
-        if (top) maybeEmitFast(top);
+        if (top) maybeEmitFast(top, true);
         return { neRes: ne, lrcRes: lrc, kgRes: kg, bestDb: top };
     });
 
@@ -85,8 +89,8 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     // KASUS 2: Video YouTube punya Subtitle Resmi / Manual CC dari kreator (misal cover utattemita unik)
     else if (ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4) {
         finalLines = ytCaptions.lines.map(l => {
-            const isJp = hasHiraganaOrKatakana(l.text);
-            const roma = isJp ? kanaToRomaji(l.text) : '';
+            const isPureKana = !hasKanji(l.text) && hasHiraganaOrKatakana(l.text);
+            const roma = isPureKana ? kanaToRomaji(l.text) : '';
             return {
                 time: l.time,
                 text: (roma && roma.toLowerCase() !== l.text.toLowerCase()) ? `${roma} · ${l.text}` : l.text,
@@ -104,8 +108,8 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     // KASUS 4: Fallback ke aliran TimedText YouTube (.srv3) jika lagu cover indie belum terdaftar di database mana pun
     else if (ytCaptions && ytCaptions.lines.length >= 3) {
         finalLines = ytCaptions.lines.map(l => {
-            const isJp = hasHiraganaOrKatakana(l.text);
-            const roma = isJp ? kanaToRomaji(l.text) : '';
+            const isPureKana = !hasKanji(l.text) && hasHiraganaOrKatakana(l.text);
+            const roma = isPureKana ? kanaToRomaji(l.text) : '';
             return {
                 time: l.time,
                 text: (roma && roma.toLowerCase() !== l.text.toLowerCase()) ? `${roma} · ${l.text}` : l.text,

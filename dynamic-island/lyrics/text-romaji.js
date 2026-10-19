@@ -5,6 +5,10 @@ function hasJapaneseChars(str) {
     return /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f]/.test(String(str || ''));
 }
 
+function hasKanji(str) {
+    return /[\u3400-\u4dbf\u4e00-\u9fff]/.test(String(str || ''));
+}
+
 function hasHiraganaOrKatakana(str) {
     return /[\u3040-\u30ff\uff66-\uff9f]/.test(String(str || ''));
 }
@@ -116,6 +120,14 @@ function normalizePhoneticLatin(str) {
 
 const NOISE_BRACKET_RE = /^(?:official.*|mv|music\s*video|lyric.*|lirik.*|audio.*|video.*|visualizer.*|cover.*|歌ってみた.*|うたってみた.*|utattemita.*|karaoke.*|instrumental.*|off\s*vocal.*|romaji.*|kanji.*|sub\s*indo.*|indo\s*sub.*|terjemahan.*|hd|4k|hq|live.*|pv|オリジナル.*|original.*|full.*|tv\s*size.*|short\s*ver.*)$/i;
 
+function stripParensNoise(str) {
+    return String(str || '')
+        .replace(/（[^）]*）/g, ' ')
+        .replace(/\([^)]*\)/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 function parseTrackMetadata(rawTitle, rawArtist) {
     const origTitle = String(rawTitle || '').trim();
     const origArtist = String(rawArtist || '').replace(/-\s*topic$/i, '').replace(/VEVO$/i, '').trim();
@@ -140,10 +152,18 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         }
     }
 
+    // Cek apakah di luar kurung siku 【...】 sudah ada teks judul utama
+    const textOutsideSquareBrackets = origTitle.replace(/[【\[][^】\]]*[】\]]/g, '').trim();
+
     // 2. Bersihkan tag noise dari judul tanpa menghapus judul lagu utama
     let cleaned = origTitle
         .replace(/[『「]([^』」]+)[』」]/g, (_, p1) => NOISE_BRACKET_RE.test(p1.trim()) ? ' ' : ` ${p1} `)
-        .replace(/[【\[]([^】\]]+)[】\]]/g, (_, p1) => NOISE_BRACKET_RE.test(p1.trim()) ? ' ' : ` ${p1} `)
+        .replace(/[【\[]([^】\]]+)[】\]]/g, (_, p1) => {
+            if (NOISE_BRACKET_RE.test(p1.trim())) return ' ';
+            // Jika sudah ada judul jelas di luar 【...】 (contoh: 【オリジナル楽曲】Judul / Artis【IOSYS】), buang 【...】 agar kredit tidak merusak query
+            return textOutsideSquareBrackets.length >= 3 ? ' ' : ` ${p1} `;
+        })
+        .replace(/（([^）]+)）/g, ' ')
         .replace(/\(([^)]+)\)/g, (_, p1) => NOISE_BRACKET_RE.test(p1.trim()) ? ' ' : ` ${p1} `)
         .replace(/(?:covered\s+by|cover\s+by|vocal\s*[:：]?|vo\s*[.．:：]|cv\s*[.．:：]|feat\.?|ft\.?)\s+[^-|/•·【「『(\[]+/gi, ' ')
         .replace(/\b(?:official\s+music\s+video|official\s+lyric\s+video|official\s+video|official\s+audio|lyric\s+video|lyrics\s+video|lirik\s+lagu|full\s+lirik|lirik\s+dan\s+terjemahan|romaji\s+lyrics|sub\s+indonesia|sub\s+indo|nyanyi\s+bareng|nyangi\s+bareng|sing\s+along|歌ってみた|うたってみた)\b/gi, ' ')
@@ -153,12 +173,12 @@ function parseTrackMetadata(rawTitle, rawArtist) {
     // 3. Pisahkan berdasarkan pemisah umum: " - ", " / ", " ／ ", " | ", " • "
     const segments = cleaned
         .split(/\s*(?: - | \/ | ／ | \| | • | · )\s*/)
-        .map(s => s.replace(/^[-/•|:\s]+|[-/•|:\s]+$/g, '').trim())
+        .map(s => stripParensNoise(s).replace(/^[-/•|:\s]+|[-/•|:\s]+$/g, '').trim())
         .filter(s => s.length > 0 && !NOISE_BRACKET_RE.test(s));
 
     // Bersihkan nama channel jika nama channel adalah channel lirik (misal "FARFAD LYRICS", "Lirik Musik", dll.)
     const isLyricChannel = /\b(lyrics?|lirik|musik|music|ch\.|channel|official|ost|anime|vibes|records|entertainment)\b/i.test(origArtist);
-    const cleanChannel = origArtist
+    const cleanChannel = stripParensNoise(origArtist)
         .replace(/\b(official\s*channel|official|youtube\s*channel|ch\.|channel|lyrics?|lirik)\b/gi, '')
         .replace(/\s+/g, ' ')
         .trim();
@@ -180,7 +200,7 @@ function parseTrackMetadata(rawTitle, rawArtist) {
             }
         }
         if (squareBrackets.length > 0 && squareBrackets[0] !== qTitle) {
-            queries.push(`${squareBrackets[0]} ${qTitle}`);
+            queries.push(`${ stripParensNoise(squareBrackets[0]) } ${qTitle}`);
         }
         queries.push(qTitle);
     }
@@ -188,15 +208,18 @@ function parseTrackMetadata(rawTitle, rawArtist) {
     // Prioritas 2: Kombinasi segmen "Artis - Judul" atau "Judul / Artis"
     if (segments.length >= 2) {
         queries.push(`${segments[0]} ${segments[1]}`);
+        queries.push(segments[0]);
         if (cleanChannel && !isLyricChannel) {
             const lastSeg = segments[segments.length - 1];
             if (!lastSeg.toLowerCase().includes(cleanChannel.toLowerCase())) {
                 queries.push(`${cleanChannel} ${lastSeg}`);
             }
+            if (!segments[0].toLowerCase().includes(cleanChannel.toLowerCase())) {
+                queries.push(`${cleanChannel} ${segments[0]}`);
+            }
         }
         queries.push(`${segments[1]} ${segments[0]}`);
         queries.push(segments[segments.length - 1]);
-        queries.push(segments[0]);
     } else if (segments.length === 1) {
         if (cleanChannel && !isLyricChannel && !segments[0].toLowerCase().includes(cleanChannel.toLowerCase())) {
             queries.push(`${cleanChannel} ${segments[0]}`);
@@ -214,7 +237,7 @@ function parseTrackMetadata(rawTitle, rawArtist) {
     const likelyJapanese =
         hasJapaneseChars(origTitle) ||
         hasJapaneseChars(origArtist) ||
-        /\b(yoasobi|ado|vaundy|kenshi\s*yonezu|radwimps|lisa|aimer|eve|yorushika|zutomayo|hige\s*dism|official\s*higedandism|mrs\.\s*green\s*apple|fujii\s*kaze|majiko|yuuri|tuyu|mafumafu|kikuo|deco\*27|kanaria|pinocchiop|hoshimachi\s*suisei|hololive|nijisanji|utattemita|kokoronashi|shinunoga|unravel|gurenge|idol|sparkle|zenzenzense|nandemonaiya|suzume|kaijuu|odoriko|lemon|kick\s*back|blinding|specialz|ao\s*no\s*sumika|kaikai\s*kitan)\b/i.test(`${origTitle} ${origArtist}`);
+        /\b(yoasobi|ado|vaundy|kenshi\s*yonezu|radwimps|lisa|aimer|eve|yorushika|zutomayo|hige\s*dism|official\s*higedandism|mrs\.\s*green\s*apple|fujii\s*kaze|majiko|yuuri|tuyu|mafumafu|kikuo|deco\*27|kanaria|pinocchiop|hoshimachi\s*suisei|shigure\s*ui|hololive|nijisanji|utattemita|kokoronashi|shinunoga|unravel|gurenge|idol|sparkle|zenzenzense|nandemonaiya|suzume|kaijuu|odoriko|lemon|kick\s*back|blinding|specialz|ao\s*no\s*sumika|kaikai\s*kitan)\b/i.test(`${origTitle} ${origArtist}`);
 
     return {
         origTitle,
@@ -261,12 +284,13 @@ function mergeJapaneseAndRomajiLines(jpLines, romaLines) {
     if (!Array.isArray(jpLines) || jpLines.length === 0) return romaLines || [];
     if (!Array.isArray(romaLines) || romaLines.length === 0) {
         return jpLines.map(l => {
-            const autoRoma = hasHiraganaOrKatakana(l.text) ? kanaToRomaji(l.text) : '';
+            // Jangan tampilkan kanaToRomaji sebagai teks utama jika baris memiliki Kanji (karena Kanji tidak terkonversi dan menyatu tanpa spasi)
+            const pureKanaRoma = (!hasKanji(l.text) && hasHiraganaOrKatakana(l.text)) ? kanaToRomaji(l.text) : '';
             return {
                 time: l.time,
                 text: l.text,
                 rawText: l.text,
-                romaText: autoRoma
+                romaText: pureKanaRoma
             };
         });
     }
@@ -290,7 +314,7 @@ function mergeJapaneseAndRomajiLines(jpLines, romaLines) {
             time: jl.time,
             text: display,
             rawText: jl.text,
-            romaText: romaStr || kanaToRomaji(jl.text)
+            romaText: romaStr
         };
     });
 }
@@ -369,6 +393,7 @@ function computeMetadataSimilarity(candidateTitle, candidateArtist, meta) {
 
 module.exports = {
     hasJapaneseChars,
+    hasKanji,
     hasHiraganaOrKatakana,
     katakanaToHiragana,
     kanaToRomaji,
