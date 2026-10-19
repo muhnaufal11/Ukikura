@@ -341,35 +341,8 @@ function buildIslandMenu() {
             }
         },
         {
-            label: `Edisi: ${getLocalVersionInfo().channel === 'debug' ? `Debug (Fix #${getLocalVersionInfo().fixCount || 5})` : 'Publik (Stabil)'}`,
-            submenu: [
-                {
-                    label: `Versi Publik (Rilis Stabil v${getLocalVersionInfo().version})`,
-                    type: 'radio',
-                    checked: getLocalVersionInfo().channel === 'public',
-                    click: async () => {
-                        setUpdateChannel('public');
-                        refreshTrayMenu();
-                        if (mainWindow && !mainWindow.isDestroyed()) {
-                            mainWindow.webContents.send('version-info', getLocalVersionInfo());
-                        }
-                        await checkGitHubForUpdates(true);
-                    }
-                },
-                {
-                    label: `Versi Debug (Kanal Pengembang · Fix #${getLocalVersionInfo().fixCount || 5})`,
-                    type: 'radio',
-                    checked: getLocalVersionInfo().channel === 'debug',
-                    click: async () => {
-                        setUpdateChannel('debug');
-                        refreshTrayMenu();
-                        if (mainWindow && !mainWindow.isDestroyed()) {
-                            mainWindow.webContents.send('version-info', getLocalVersionInfo());
-                        }
-                        await checkGitHubForUpdates(true);
-                    }
-                }
-            ]
+            label: `Ukikura v${getLocalVersionInfo().versionName || '1.0.0'} (Kode: ${getLocalVersionInfo().versionCode || 7})`,
+            enabled: false
         },
         {
             label: 'Cek Pembaruan di GitHub...',

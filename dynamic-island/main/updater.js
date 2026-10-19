@@ -1,19 +1,17 @@
 "use strict";
 
 /**
- * Ukikura (浮き蔵) — GitHub Version & Channel Update Detector
- * Mendukung 2 Kode Versi & Kanal Rilis:
- * 1. KANAL PUBLIK (vX.X.X-public): Rilis stabil resmi untuk penggunaan harian.
- * 2. KANAL DEBUG (vX.X.X-debug): Rilis pengembang untuk pelacakan log & pengujian fitur cepat.
+ * Ukikura (浮き蔵) — GitHub Version & Update Detector
+ * Menggunakan model Android/Google Play:
+ * - Nama Versi (versionName, string): e.g. "1.0.0"
+ * - Kode Versi (versionCode, integer): e.g. 7 (menandakan iterasi fix)
  *
- * Penentuan update didasarkan pada KODE VERSI / KANAL yang sedang aktif:
- * - Versi Publik HANYA menerima update stabil (bukan pre-release/debug).
- * - Versi Debug mencari pre-release, rilis bertag -debug, serta commit pengembang terbaru.
+ * Penentuan update: remote.versionCode > local.versionCode
  */
 
 const fs = require('fs');
 const path = require('path');
-const { shell, app } = require('electron');
+const { shell } = require('electron');
 
 const ROOT_DIR = path.resolve(__dirname, '../..');
 const VERSION_FILE = path.join(ROOT_DIR, 'version.json');
@@ -22,15 +20,6 @@ const PKG_FILE = path.join(ROOT_DIR, 'package.json');
 let getMainWindow = () => null;
 let lastUpdateInfo = null;
 
-function getChannelFilePath() {
-    try {
-        const userData = app ? app.getPath('userData') : path.join(ROOT_DIR, 'data');
-        return path.join(userData, 'user-channel.json');
-    } catch (_) {
-        return path.join(ROOT_DIR, 'user-channel.json');
-    }
-}
-
 function initAutoUpdater(mainWinGetter) {
     getMainWindow = mainWinGetter;
 }
@@ -38,61 +27,38 @@ function initAutoUpdater(mainWinGetter) {
 function getLocalVersionInfo() {
     let info = {
         name: 'Ukikura',
+        versionName: '1.0.0',
+        versionCode: 7,
         version: '1.0.0',
-        versionCode: '1.0.0-public',
-        channel: 'public',
-        channelName: 'Publik (Rilis Stabil)',
+        fixCount: 7,
         githubRepo: 'muhnaufal11/Ukikura',
         fallbackRepos: ['muhnaufal11/Ukikura', 'Nauflix/Ukikura'],
-        branch: 'main',
-        debugBranch: 'debug'
+        branch: 'main'
     };
 
-    // 1. Baca metadata dasar dari version.json / package.json
     try {
         if (fs.existsSync(VERSION_FILE)) {
             const parsed = JSON.parse(fs.readFileSync(VERSION_FILE, 'utf8'));
             info = Object.assign(info, parsed);
         } else if (fs.existsSync(PKG_FILE)) {
             const pkg = JSON.parse(fs.readFileSync(PKG_FILE, 'utf8'));
-            if (pkg.version) info.version = pkg.version;
+            if (pkg.version) info.versionName = pkg.version;
         }
     } catch (_) {}
 
-    // 2. Baca preferensi kanal pengguna jika pernah diubah melalui UI atau installer
-    try {
-        const chanFile = getChannelFilePath();
-        if (fs.existsSync(chanFile)) {
-            const saved = JSON.parse(fs.readFileSync(chanFile, 'utf8'));
-            if (saved.channel === 'debug' || saved.channel === 'public') {
-                info.channel = saved.channel;
-            }
-        }
-    } catch (_) {}
+    const vCode = Number(info.versionCode) || Number(info.fixCount) || 7;
+    const vName = String(info.versionName || info.version || '1.0.0').trim().replace(/^[vV]/, '');
 
-    // 3. Normalisasi kode versi dan nama kanal yang menandakan jumlah fix
-    const isDebug = (info.channel === 'debug');
-    const fixNum = info.fixCount || 5;
-    info.fixCount = fixNum;
-    info.channel = isDebug ? 'debug' : 'public';
-    info.channelName = isDebug ? `Debug (Fix #${fixNum})` : 'Publik';
-    info.versionCode = isDebug ? `${info.version}-debug.${fixNum}` : `${info.version}`;
-    info.displayVersion = isDebug ? `v${info.version}-debug (Fix #${fixNum})` : `v${info.version}`;
+    info.versionCode = vCode;
+    info.versionName = vName;
+    info.version = vName;
+    info.fixCount = vCode;
+    info.displayVersion = `${vName} (Kode: ${vCode})`;
 
     return info;
 }
 
-function setUpdateChannel(targetChannel) {
-    const validChannel = (targetChannel === 'debug') ? 'debug' : 'public';
-    try {
-        const chanFile = getChannelFilePath();
-        const dir = path.dirname(chanFile);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(chanFile, JSON.stringify({
-            channel: validChannel,
-            updatedAt: Date.now()
-        }, null, 2), 'utf8');
-    } catch (_) {}
+function setUpdateChannel() {
     return getLocalVersionInfo();
 }
 
@@ -112,10 +78,13 @@ function isNewerVersion(remoteVer, localVer) {
     return false;
 }
 
-function isNewer(remoteVer, remoteFix, localVer, localFix, isDebug) {
-    if (isNewerVersion(remoteVer, localVer)) return true;
-    if (isDebug && (remoteFix || 0) > (localFix || 0)) return true;
-    return false;
+function isNewer(remoteVerCode, remoteVerName, localVerCode, localVerName) {
+    // 1. Prioritaskan Kode Versi (integer murni ala Google Play)
+    if (typeof remoteVerCode === 'number' && typeof localVerCode === 'number' && !isNaN(remoteVerCode) && !isNaN(localVerCode) && remoteVerCode > 0 && localVerCode > 0) {
+        return remoteVerCode > localVerCode;
+    }
+    // 2. Fallback ke semver Nama Versi jika kode versi tidak tersedia
+    return isNewerVersion(remoteVerName, localVerName);
 }
 
 async function fetchJsonWithTimeout(url, timeoutMs = 6000) {
@@ -142,16 +111,14 @@ async function fetchJsonWithTimeout(url, timeoutMs = 6000) {
 async function checkGitHubForUpdates(manualTrigger = false) {
     const local = getLocalVersionInfo();
     const mainWindow = getMainWindow();
-    const isDebugChannel = (local.channel === 'debug');
 
     if (manualTrigger && mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('update-status', {
             checking: true,
-            currentVersion: local.version,
+            currentVersion: local.versionName,
+            currentVersionName: local.versionName,
             currentVersionCode: local.versionCode,
             displayVersion: local.displayVersion,
-            fixCount: local.fixCount,
-            currentChannel: local.channel,
             repo: local.githubRepo
         });
     }
@@ -165,87 +132,68 @@ async function checkGitHubForUpdates(manualTrigger = false) {
     let matchedRepo = local.githubRepo;
 
     for (const repo of reposToCheck) {
-        // 1. Cek GitHub Releases API sesuai kode versi & kanal
-        const releases = await fetchJsonWithTimeout(`https://api.github.com/repos/${repo}/releases?per_page=10`, 5500);
+        // 1. Cek GitHub Releases API
+        const releases = await fetchJsonWithTimeout(`https://api.github.com/repos/${repo}/releases?per_page=5`, 5500);
         if (Array.isArray(releases) && releases.length > 0) {
-            let candidate = null;
-            if (isDebugChannel) {
-                // Kanal Debug: Cari pre-release atau rilis dengan tag berlabel '-debug' / '-dev'
-                candidate = releases.find(r => r && (r.prerelease || /debug|dev|beta/i.test(r.tag_name || '')));
-                if (!candidate) candidate = releases[0];
-            } else {
-                // Kanal Publik: HANYA terima rilis stabil (bukan pre-release dan bukan tag debug)
-                candidate = releases.find(r => r && !r.prerelease && !/debug|dev|beta|alpha/i.test(r.tag_name || ''));
-            }
-
+            const candidate = releases[0];
             if (candidate && candidate.tag_name) {
                 const exeAsset = Array.isArray(candidate.assets)
                     ? candidate.assets.find(a => a && /\.exe$|\.msi$|\.zip$/i.test(a.name || ''))
                     : null;
-                const cleanVer = String(candidate.tag_name).replace(/^[vV]/, '').split('-')[0];
-                const rawFix = (String(candidate.tag_name).match(/fix[#\.-]?(\d+)/i) || String(candidate.tag_name).match(/debug\.(\d+)/i) || [])[1];
-                const candFix = rawFix ? parseInt(rawFix, 10) : 0;
+                const cleanVer = String(candidate.tag_name).replace(/^[vV]/, '');
+                const codeMatch = String(candidate.tag_name).match(/[\+\-\.](\d+)$/) || String(candidate.tag_name).match(/code[-_]?(\d+)/i);
+                const candVCode = codeMatch ? parseInt(codeMatch[1], 10) : 0;
                 remoteData = {
                     version: cleanVer,
-                    fixCount: candFix,
-                    versionCode: isDebugChannel ? `${cleanVer}-debug.${candFix || 1}` : cleanVer,
+                    versionName: cleanVer,
+                    versionCode: candVCode,
                     releaseUrl: (exeAsset && exeAsset.browser_download_url) || candidate.html_url || `https://github.com/${repo}/releases`,
-                    changelog: candidate.body || candidate.name || `Pembaruan kanal ${local.channel} tersedia di GitHub.`
+                    changelog: candidate.body || candidate.name || 'Pembaruan versi Ukikura tersedia di GitHub.'
                 };
                 matchedRepo = repo;
                 break;
             }
         }
 
-        // 2. Cek file version.json langsung di direktori GitHub sesuai branch kanal
-        const targetBranches = isDebugChannel
-            ? [local.debugBranch || 'debug', local.branch || 'main', 'master']
-            : [local.branch || 'main', 'master'];
-
+        // 2. Cek file version.json langsung di direktori GitHub branch utama
+        const targetBranches = [local.branch || 'main', 'master'];
         for (const branch of targetBranches) {
-            const verFileUrl = isDebugChannel
-                ? `https://raw.githubusercontent.com/${repo}/${branch}/version-debug.json?t=${Date.now()}`
-                : `https://raw.githubusercontent.com/${repo}/${branch}/version-public.json?t=${Date.now()}`;
-
-            let rawVer = await fetchJsonWithTimeout(verFileUrl, 4500);
-            if (!rawVer || !rawVer.version) {
-                rawVer = await fetchJsonWithTimeout(`https://raw.githubusercontent.com/${repo}/${branch}/version.json?t=${Date.now()}`, 4500);
-            }
-
-            if (rawVer && rawVer.version) {
-                const cleanVer = String(rawVer.version).replace(/^[vV]/, '').split('-')[0];
-                const rawFix = Number(rawVer.fixCount) || (rawVer.versionCode ? parseInt((String(rawVer.versionCode).match(/debug\.(\d+)/) || [])[1], 10) : 0);
-                remoteData = {
-                    version: cleanVer,
-                    fixCount: rawFix,
-                    versionCode: isDebugChannel ? `${cleanVer}-debug.${rawFix || 1}` : cleanVer,
-                    releaseUrl: rawVer.releaseUrl || rawVer.downloadUrl || `https://github.com/${repo}`,
-                    changelog: rawVer.changelog || `Versi ${cleanVer}${isDebugChannel ? ` (Fix #${rawFix})` : ''} terdeteksi di GitHub.`
-                };
-                matchedRepo = repo;
-                break;
+            const verFileUrl = `https://raw.githubusercontent.com/${repo}/${branch}/version.json?t=${Date.now()}`;
+            const rawVer = await fetchJsonWithTimeout(verFileUrl, 4500);
+            if (rawVer) {
+                const rawVCode = Number(rawVer.versionCode) || Number(rawVer.fixCount) || 0;
+                const rawVName = String(rawVer.versionName || rawVer.version || '').replace(/^[vV]/, '');
+                if (rawVName || rawVCode > 0) {
+                    remoteData = {
+                        version: rawVName,
+                        versionName: rawVName,
+                        versionCode: rawVCode,
+                        releaseUrl: rawVer.releaseUrl || rawVer.downloadUrl || `https://github.com/${repo}`,
+                        changelog: rawVer.changelog || `Ukikura ${rawVName} (Kode: ${rawVCode}) tersedia di GitHub.`
+                    };
+                    matchedRepo = repo;
+                    break;
+                }
             }
         }
         if (remoteData) break;
     }
 
-    const hasUpdate = Boolean(remoteData && isNewer(remoteData.version, remoteData.fixCount, local.version, local.fixCount, isDebugChannel));
+    const hasUpdate = Boolean(remoteData && isNewer(remoteData.versionCode, remoteData.versionName, local.versionCode, local.versionName));
     const statusPayload = {
         checking: false,
         manualTrigger,
         hasUpdate,
-        currentVersion: local.version,
+        currentVersion: local.versionName,
+        currentVersionName: local.versionName,
         currentVersionCode: local.versionCode,
         displayVersion: local.displayVersion,
-        fixCount: local.fixCount,
-        latestFixCount: remoteData ? (remoteData.fixCount || local.fixCount) : local.fixCount,
-        currentChannel: local.channel,
-        channelName: local.channelName,
-        latestVersion: remoteData ? remoteData.version : local.version,
+        latestVersion: remoteData ? remoteData.versionName : local.versionName,
+        latestVersionName: remoteData ? remoteData.versionName : local.versionName,
         latestVersionCode: remoteData ? remoteData.versionCode : local.versionCode,
         repo: matchedRepo,
         downloadUrl: remoteData ? remoteData.releaseUrl : `https://github.com/${local.githubRepo}`,
-        changelog: remoteData ? remoteData.changelog : `Ukikura (${local.displayVersion}) sudah berada di versi terbaru.`,
+        changelog: remoteData ? remoteData.changelog : `Ukikura v${local.versionName} (Kode: ${local.versionCode}) sudah versi terbaru.`,
         checkedAt: Date.now()
     };
 
@@ -268,8 +216,6 @@ function getLastUpdateStatus() {
         currentVersionCode: local.versionCode,
         displayVersion: local.displayVersion,
         fixCount: local.fixCount,
-        currentChannel: local.channel,
-        channelName: local.channelName,
         latestVersion: local.version,
         latestVersionCode: local.versionCode,
         repo: local.githubRepo,

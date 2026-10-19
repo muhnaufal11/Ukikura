@@ -1,16 +1,14 @@
 ; ==============================================================================
 ; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT
 ; Uki (Terapung / Floating Island) + Kura (Gudang Penyimpanan Data & Tugas)
-; Mendukung 2 Edisi / Kode Versi:
-; - Versi Publik (1.0.0-public): Rilis stabil untuk penggunaan sehari-hari
-; - Versi Debug  (1.0.0-debug):  Rilis pengembang untuk pelacakan log & debug
+; Versi: 1.0.0 (Kode Versi: 7)
 ; License: GNU General Public License v3.0 (GPLv3)
 ; ==============================================================================
 
 #define MyAppName "Ukikura"
 #define MyAppFullTitle "Ukikura (浮倉) — Floating Island & Task Vault"
 #define MyAppVersion "1.0.0"
-#define MyFixCount "7"
+#define MyAppVersionCode "7"
 #define MyAppPublisher "Nauflix (muhnaufal11)"
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
 #define MyAppExeName "electron.exe"
@@ -53,8 +51,6 @@ UninstallDisplayName={#MyAppFullTitle}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "channel_public"; Description: "Versi Publik (Rilis Stabil v{#MyAppVersion})"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: exclusive
-Name: "channel_debug"; Description: "Versi Debug (Kanal Pengembang v{#MyAppVersion}-debug · Fix #{#MyFixCount})"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: exclusive unchecked
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "autostart"; Description: "Jalankan Ukikura otomatis saat Windows menyala (Direkomendasikan)"; GroupDescription: "Opsi Startup:"
 
@@ -65,11 +61,7 @@ Name: "{app}\runtime"
 ; Modul Utama Ukikura (100% terpisah dari Asisten LMS & tanpa data pribadi pengguna)
 Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*,*.md"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\Ukikura-Debug.bat"; DestDir: "{app}"; Flags: ignoreversion
-; Salin metadata versi sesuai kode versi / kanal yang dipilih pengguna
-Source: "..\version-public.json"; DestDir: "{app}"; DestName: "version.json"; Check: not IsDebugTaskSelected; Flags: ignoreversion
-Source: "..\version-debug.json"; DestDir: "{app}"; DestName: "version.json"; Check: IsDebugTaskSelected; Flags: ignoreversion
-Source: "..\version-public.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\version-debug.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\version.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\package.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
@@ -99,11 +91,6 @@ Type: filesandordirs; Name: "{app}\runtime"
 var
   DownloadPage: TDownloadWizardPage;
 
-function IsDebugTaskSelected: Boolean;
-begin
-  Result := WizardIsTaskSelected('channel_debug');
-end;
-
 function OnDownloadProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
 begin
   if Progress = ProgressMax then
@@ -116,49 +103,14 @@ begin
   DownloadPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), SetupMessage(msgPreparingDesc), @OnDownloadProgress);
 end;
 
-procedure CurPageChanged(CurPageID: Integer);
-var
-  ExistingVerFile: String;
-  VerContent: AnsiString;
-begin
-  // Saat halaman tugas (wpSelectTasks) atau persiapan instalasi (wpReady), {app} sudah terinisialisasi
-  if (CurPageID = wpSelectTasks) or (CurPageID = wpReady) then begin
-    ExistingVerFile := ExpandConstant('{app}\version.json');
-    if FileExists(ExistingVerFile) then begin
-      if LoadStringFromFile(ExistingVerFile, VerContent) then begin
-        if Pos('"channel": "debug"', VerContent) > 0 then begin
-          WizardSelectTasks('!channel_public,channel_debug');
-        end else if Pos('"channel": "public"', VerContent) > 0 then begin
-          WizardSelectTasks('channel_public,!channel_debug');
-        end;
-      end;
-    end;
-  end;
-end;
-
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
-  ExistingVerFile: String;
-  VerContent: AnsiString;
 begin
   // Tutup instans Ukikura lama dan PowerShell bridge agar proses update mulus tanpa file terkunci
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec(ExpandConstant('{sys}\powershell.exe'), '-NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match ''winrt-bridge'' } | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Sleep(400);
-
-  // Jika installer dijalankan dalam mode in-place update tanpa membuka halaman tugas,
-  // deteksi dan pertahankan otomatis kode versi lama (debug vs public)
-  ExistingVerFile := ExpandConstant('{app}\version.json');
-  if FileExists(ExistingVerFile) then begin
-    if LoadStringFromFile(ExistingVerFile, VerContent) then begin
-      if Pos('"channel": "debug"', VerContent) > 0 then begin
-        WizardSelectTasks('!channel_public,channel_debug');
-      end else if Pos('"channel": "public"', VerContent) > 0 then begin
-        WizardSelectTasks('channel_public,!channel_debug');
-      end;
-    end;
-  end;
 
   Result := '';
 end;
