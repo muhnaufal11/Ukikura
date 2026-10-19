@@ -120,7 +120,10 @@ function renderLyricItemHtml(l, i) {
     return `<li data-lidx="${i}" style="cursor:pointer">${escapeHtml(txt)}</li>`;
 }
 
+let isSeekingGlobal = false;
+
 function updateMediaProgressUI() {
+    if (isSeekingGlobal) return;
     const pos = getInterpolatedMediaPos();
     const dur = mediaState.dur || 0;
 
@@ -220,10 +223,15 @@ ipcRenderer.on('media-update', (event, msg) => {
         basePos: typeof msg.basePos === 'number' ? msg.basePos : (Number(msg.pos) || 0),
         lastUpdatedMs: Number(msg.lastUpdatedMs) || 0,
         dur: Number(msg.dur) || 0,
+        volume: typeof msg.volume === 'number' ? msg.volume : null,
         thumb: msg.thumb || (trackChanged ? '' : mediaState.thumb),
         isAppIcon: Boolean(msg.isAppIcon),
         updatedAt: Date.now()
     };
+
+    if (typeof msg.volume === 'number' && msg.volume >= 0) {
+        currentVolume = msg.volume;
+    }
 
     if (trackChanged && mediaState.title) {
         syncedLyrics = [];
@@ -283,4 +291,194 @@ ipcRenderer.on('lyrics-update', (event, payload) => {
         `;
     }
 });
+
+// ================= INTERACTIVE SEEK BAR & VOLUME WHEEL =================
+function initInteractiveProgressBar(fillId, posId, remId) {
+    const fillEl = document.getElementById(fillId);
+    if (!fillEl) return;
+    const containerEl = fillEl.parentElement;
+    if (!containerEl) return;
+    const posEl = document.getElementById(posId);
+    const remEl = document.getElementById(remId);
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'seek-tooltip';
+    containerEl.appendChild(tooltip);
+
+    function calcRatio(e) {
+        const rect = containerEl.getBoundingClientRect();
+        if (rect.width <= 0) return 0;
+        const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+        return x / rect.width;
+    }
+
+    function updatePreview(ratio) {
+        const dur = mediaState.dur || 0;
+        const previewSec = ratio * dur;
+        fillEl.style.width = `${(ratio * 100).toFixed(1)}%`;
+        if (posEl) posEl.textContent = formatMediaTime(previewSec);
+        if (remEl) remEl.textContent = `-${formatMediaTime(Math.max(0, dur - previewSec))}`;
+
+        const rect = containerEl.getBoundingClientRect();
+        const x = Math.max(0, Math.min(rect.width, ratio * rect.width));
+        tooltip.style.left = `${x}px`;
+        tooltip.textContent = formatMediaTime(previewSec);
+        tooltip.classList.add('active');
+    }
+
+    containerEl.addEventListener('mouseenter', () => {
+        if (mediaState.dur > 0) tooltip.classList.add('active');
+    });
+
+    containerEl.addEventListener('mouseleave', () => {
+        if (!isSeekingGlobal) tooltip.classList.remove('active');
+    });
+
+    containerEl.addEventListener('mousemove', (e) => {
+        if (mediaState.dur > 0 && !isSeekingGlobal) {
+            const ratio = calcRatio(e);
+            const previewSec = ratio * mediaState.dur;
+            const rect = containerEl.getBoundingClientRect();
+            const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+            tooltip.style.left = `${x}px`;
+            tooltip.textContent = formatMediaTime(previewSec);
+        }
+    });
+
+    containerEl.addEventListener('mousedown', (e) => {
+        if (!mediaState.dur || mediaState.dur <= 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        isSeekingGlobal = true;
+        containerEl.classList.add('seeking');
+        const ratio = calcRatio(e);
+        updatePreview(ratio);
+
+        function onMouseMove(ev) {
+            if (!isSeekingGlobal) return;
+            ev.preventDefault();
+            const r = calcRatio(ev);
+            updatePreview(r);
+        }
+
+        function onMouseUp(ev) {
+            if (!isSeekingGlobal) return;
+            isSeekingGlobal = false;
+            containerEl.classList.remove('seeking');
+            tooltip.classList.remove('active');
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+
+            const finalRatio = calcRatio(ev);
+            const targetSec = Math.max(0, Math.min(mediaState.dur, finalRatio * mediaState.dur));
+
+            mediaState.pos = targetSec;
+            mediaState.basePos = targetSec;
+            mediaState.lastUpdatedMs = Date.now();
+            mediaState.updatedAt = Date.now();
+            updateMediaProgressUI();
+
+            ipcRenderer.send('media-seek', targetSec);
+
+            if (syncedLyrics.length > 0) {
+                let idx = 0;
+                for (let i = 0; i < syncedLyrics.length; i++) {
+                    if (targetSec >= syncedLyrics[i].time) idx = i;
+                    else break;
+                }
+                activeLyricIndex = idx;
+                scrollLyricsToActive();
+            }
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    });
+}
+
+let currentVolume = 50;
+let volHudTimer = null;
+
+function ensureVolumeHud(artEl) {
+    if (!artEl) return null;
+    let hud = artEl.querySelector('.art-vol-hud');
+    if (!hud) {
+        hud = document.createElement('div');
+        hud.className = 'art-vol-hud';
+        hud.innerHTML = `
+            <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+            <span class="art-vol-text">50%</span>
+            <div class="art-vol-bar"><div class="art-vol-fill" style="width:50%"></div></div>
+        `;
+        artEl.appendChild(hud);
+    }
+    return hud;
+}
+
+function showVolumeHUD(vol, resetTimer = true) {
+    const artIds = ['music-art-1', 'music-art-2', 'idle-art'];
+    const safeVol = Math.max(0, Math.min(100, Math.round(vol)));
+
+    const iconSvg = safeVol === 0
+        ? '<path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2"/><line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2"/>'
+        : safeVol < 35
+        ? '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>'
+        : '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>';
+
+    artIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const hud = ensureVolumeHud(el);
+        if (!hud) return;
+        const svg = hud.querySelector('svg');
+        if (svg) svg.innerHTML = iconSvg;
+        const txt = hud.querySelector('.art-vol-text');
+        if (txt) txt.textContent = `${safeVol}%`;
+        const fill = hud.querySelector('.art-vol-fill');
+        if (fill) fill.style.width = `${safeVol}%`;
+        hud.classList.add('active');
+    });
+
+    if (resetTimer) {
+        if (volHudTimer) clearTimeout(volHudTimer);
+        volHudTimer = setTimeout(() => {
+            document.querySelectorAll('.art-vol-hud').forEach(h => h.classList.remove('active'));
+            volHudTimer = null;
+        }, 1100);
+    }
+}
+
+function setupAlbumArtVolumeWheel(artId) {
+    const el = document.getElementById(artId);
+    if (!el) return;
+    el.title = "Scroll roda mouse untuk mengatur volume pemutar musik";
+    ensureVolumeHud(el);
+
+    el.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const step = e.shiftKey ? 0.01 : 0.03;
+        const delta = e.deltaY < 0 ? step : -step;
+        currentVolume = Math.max(0, Math.min(100, Math.round(currentVolume + (delta * 100))));
+        showVolumeHUD(currentVolume, true);
+        ipcRenderer.send('volume-change', { delta });
+    }, { passive: false });
+}
+
+ipcRenderer.on('volume-update', (event, data) => {
+    if (data && typeof data.level === 'number') {
+        currentVolume = data.level;
+        if (volHudTimer) {
+            showVolumeHUD(currentVolume, true);
+        }
+    }
+});
+
+// Inisialisasi Seek Bar & Volume Wheel
+initInteractiveProgressBar('music-prog-1', 'music-pos-1', 'music-rem-1');
+initInteractiveProgressBar('music-prog-2', 'music-pos-2', 'music-rem-2');
+setupAlbumArtVolumeWheel('music-art-1');
+setupAlbumArtVolumeWheel('music-art-2');
+setupAlbumArtVolumeWheel('idle-art');
 

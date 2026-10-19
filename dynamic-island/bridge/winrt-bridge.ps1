@@ -154,6 +154,100 @@ public class BtBatteryReader {
         return false;
     }
 }
+
+[ComImport]
+[Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
+internal class MMDeviceEnumeratorComObject { }
+
+[Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IMMDeviceEnumerator {
+    int NotImpl1();
+    [PreserveSig]
+    int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice ppDevice);
+}
+
+[Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IMMDevice {
+    [PreserveSig]
+    int Activate(ref Guid iid, int dwClsCtx, IntPtr pActivationParams, [MarshalAs(UnmanagedType.IUnknown)] out object ppInterface);
+}
+
+[Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IAudioEndpointVolume {
+    int NotImpl1();
+    int NotImpl2();
+    int GetChannelCount(out uint pnChannelCount);
+    int SetMasterVolumeLevel(float fLevelDB, ref Guid pguidEventContext);
+    int SetMasterVolumeLevelScalar(float fLevel, ref Guid pguidEventContext);
+    int GetMasterVolumeLevel(out float pfLevelDB);
+    [PreserveSig]
+    int GetMasterVolumeLevelScalar(out float pfLevel);
+    int SetChannelVolumeLevel(uint nChannel, float fLevelDB, ref Guid pguidEventContext);
+    int SetChannelVolumeLevelScalar(uint nChannel, float fLevel, ref Guid pguidEventContext);
+    int GetChannelVolumeLevel(uint nChannel, out float pfLevelDB);
+    int GetChannelVolumeLevelScalar(uint nChannel, out float pfLevel);
+    int SetMute([MarshalAs(UnmanagedType.Bool)] bool bMute, ref Guid pguidEventContext);
+    int GetMute(out bool pbMute);
+    int GetVolumeStepInfo(out uint pnStep, out uint pnStepCount);
+    int VolumeStepUp(ref Guid pguidEventContext);
+    int VolumeStepDown(ref Guid pguidEventContext);
+}
+
+public class AudioMaster {
+    private static IAudioEndpointVolume GetVolumeControl() {
+        var enumerator = (IMMDeviceEnumerator)(new MMDeviceEnumeratorComObject());
+        IMMDevice dev;
+        enumerator.GetDefaultAudioEndpoint(0, 1, out dev);
+        Guid iid = typeof(IAudioEndpointVolume).GUID;
+        object o;
+        dev.Activate(ref iid, 1, IntPtr.Zero, out o);
+        return (IAudioEndpointVolume)o;
+    }
+
+    public static float GetVolume() {
+        try {
+            var vol = GetVolumeControl();
+            float level;
+            vol.GetMasterVolumeLevelScalar(out level);
+            return level;
+        } catch {
+            return -1f;
+        }
+    }
+
+    public static float SetVolume(float level) {
+        try {
+            var vol = GetVolumeControl();
+            float target = level;
+            if (target < 0f) target = 0f;
+            if (target > 1f) target = 1f;
+            Guid ctx = Guid.Empty;
+            vol.SetMasterVolumeLevelScalar(target, ref ctx);
+            return target;
+        } catch {
+            return -1f;
+        }
+    }
+
+    public static float ChangeVolume(float delta) {
+        try {
+            var vol = GetVolumeControl();
+            float level;
+            vol.GetMasterVolumeLevelScalar(out level);
+            float target = level + delta;
+            if (target < 0f) target = 0f;
+            if (target > 1f) target = 1f;
+            Guid ctx = Guid.Empty;
+            vol.SetMasterVolumeLevelScalar(target, ref ctx);
+            return target;
+        } catch {
+            if (delta > 0) BtBatteryReader.SendMediaKey(0xAF);
+            else if (delta < 0) BtBatteryReader.SendMediaKey(0xAE);
+            return -1f;
+        }
+    }
+}
+}
 "@
 Add-Type -TypeDefinition $btCode
 
@@ -207,47 +301,94 @@ function Process-MediaCmd {
     try {
         $activeCmdFile = if ([System.IO.File]::Exists($tempCmdFile)) { $tempCmdFile } elseif ([System.IO.File]::Exists($cmdFile)) { $cmdFile } else { $null }
         if ($activeCmdFile) {
-            $cmd = [System.IO.File]::ReadAllText($activeCmdFile).Trim().ToUpperInvariant()
+            $raw = [System.IO.File]::ReadAllText($activeCmdFile)
             try { [System.IO.File]::Delete($tempCmdFile) } catch {}
             try { [System.IO.File]::Delete($cmdFile) } catch {}
-            if (-not $cmd) { return }
-            $handled = $false
-            if ($mediaMgr) {
-                $curSess = $mediaMgr.GetCurrentSession()
-                if ($curSess) {
-                    $pbInfo = $curSess.GetPlaybackInfo()
-                    $ctrls = if ($pbInfo) { $pbInfo.Controls } else { $null }
-                    $appId = [string]$curSess.SourceAppUserModelId
-                    $isBrowser = $appId -match 'Brave|Chrome|msedge|Firefox|Opera|Vivaldi'
+            if (-not $raw) { return }
+            $lines = $raw -split "`r?`n"
+            foreach ($line in $lines) {
+                $cmd = $line.Trim().ToUpperInvariant()
+                if (-not $cmd) { continue }
+                $handled = $false
+                if ($mediaMgr) {
+                    $curSess = $mediaMgr.GetCurrentSession()
+                    if ($curSess) {
+                        $pbInfo = $curSess.GetPlaybackInfo()
+                        $ctrls = if ($pbInfo) { $pbInfo.Controls } else { $null }
+                        $appId = [string]$curSess.SourceAppUserModelId
+                        $isBrowser = $appId -match 'Brave|Chrome|msedge|Firefox|Opera|Vivaldi'
 
-                    if ($cmd -eq 'PLAYPAUSE') {
-                        $handled = [bool](Await ($curSess.TryTogglePlayPauseAsync()) ([bool]))
-                    } elseif ($cmd -eq 'NEXT') {
-                        if (-not $ctrls -or $ctrls.IsNextEnabled) {
-                            $handled = [bool](Await ($curSess.TrySkipNextAsync()) ([bool]))
-                        }
-                        if (-not $handled -and $isBrowser) {
-                            $handled = [BtBatteryReader]::SendYouTubeShortcut($true)
-                        }
-                    } elseif ($cmd -eq 'PREV') {
-                        if (-not $ctrls -or $ctrls.IsPreviousEnabled) {
-                            $handled = [bool](Await ($curSess.TrySkipPreviousAsync()) ([bool]))
-                        }
-                        if (-not $handled) {
-                            if ($ctrls -and $ctrls.IsPlaybackPositionEnabled) {
-                                $handled = [bool](Await ($curSess.TryChangePlaybackPositionAsync(0)) ([bool]))
+                        if ($cmd -eq 'PLAYPAUSE') {
+                            $handled = [bool](Await ($curSess.TryTogglePlayPauseAsync()) ([bool]))
+                        } elseif ($cmd -eq 'NEXT') {
+                            if (-not $ctrls -or $ctrls.IsNextEnabled) {
+                                $handled = [bool](Await ($curSess.TrySkipNextAsync()) ([bool]))
                             }
                             if (-not $handled -and $isBrowser) {
-                                $handled = [BtBatteryReader]::SendYouTubeShortcut($false)
+                                $handled = [BtBatteryReader]::SendYouTubeShortcut($true)
+                            }
+                        } elseif ($cmd -eq 'PREV') {
+                            if (-not $ctrls -or $ctrls.IsPreviousEnabled) {
+                                $handled = [bool](Await ($curSess.TrySkipPreviousAsync()) ([bool]))
+                            }
+                            if (-not $handled) {
+                                if ($ctrls -and $ctrls.IsPlaybackPositionEnabled) {
+                                    $handled = [bool](Await ($curSess.TryChangePlaybackPositionAsync(0)) ([bool]))
+                                }
+                                if (-not $handled -and $isBrowser) {
+                                    $handled = [BtBatteryReader]::SendYouTubeShortcut($false)
+                                }
+                            }
+                        } elseif ($cmd -match '^SEEK:([\d\.]+)') {
+                            $targetSec = [double]$Matches[1]
+                            $ticks = [long]([math]::Round($targetSec * 10000000))
+                            if (-not $ctrls -or $ctrls.IsPlaybackPositionEnabled) {
+                                $handled = [bool](Await ($curSess.TryChangePlaybackPositionAsync($ticks)) ([bool]))
+                            }
+                            if ($handled) {
+                                Poll-MediaSession $true
                             }
                         }
                     }
                 }
-            }
-            if (-not $handled) {
-                if ($cmd -eq 'PLAYPAUSE') { [BtBatteryReader]::SendMediaKey(0xB3) }
-                elseif ($cmd -eq 'NEXT') { [BtBatteryReader]::SendMediaKey(0xB0) }
-                elseif ($cmd -eq 'PREV') { [BtBatteryReader]::SendMediaKey(0xB1) }
+                if ($cmd -match '^VOL:([+-]?[\d\.]+)' -or $cmd -eq 'VOLUP' -or $cmd -eq 'VOLDOWN') {
+                    $delta = if ($cmd -eq 'VOLUP') { 0.02 } elseif ($cmd -eq 'VOLDOWN') { -0.02 } else { [double]$Matches[1] }
+                    $newVol = [AudioMaster]::ChangeVolume([float]$delta)
+                    if ($newVol -ge 0) {
+                        $volPayload = @{
+                            type = "volume"
+                            level = [math]::Round($newVol * 100)
+                        } | ConvertTo-Json -Compress
+                        [Console]::WriteLine($volPayload)
+                    }
+                    $handled = $true
+                } elseif ($cmd -match '^VOLSET:([\d\.]+)') {
+                    $target = [float]([double]$Matches[1] / 100.0)
+                    $newVol = [AudioMaster]::SetVolume($target)
+                    if ($newVol -ge 0) {
+                        $volPayload = @{
+                            type = "volume"
+                            level = [math]::Round($newVol * 100)
+                        } | ConvertTo-Json -Compress
+                        [Console]::WriteLine($volPayload)
+                    }
+                    $handled = $true
+                } elseif ($cmd -eq 'VOLGET') {
+                    $curVol = [AudioMaster]::GetVolume()
+                    if ($curVol -ge 0) {
+                        $volPayload = @{
+                            type = "volume"
+                            level = [math]::Round($curVol * 100)
+                        } | ConvertTo-Json -Compress
+                        [Console]::WriteLine($volPayload)
+                    }
+                    $handled = $true
+                }
+                if (-not $handled) {
+                    if ($cmd -eq 'PLAYPAUSE') { [BtBatteryReader]::SendMediaKey(0xB3) }
+                    elseif ($cmd -eq 'NEXT') { [BtBatteryReader]::SendMediaKey(0xB0) }
+                    elseif ($cmd -eq 'PREV') { [BtBatteryReader]::SendMediaKey(0xB1) }
+                }
             }
         }
     } catch {}
@@ -332,6 +473,9 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
                     $pos = [math]::Round($basePos, 3)
                 }
 
+                $curVol = [AudioMaster]::GetVolume()
+                $volPct = if ($curVol -ge 0) { [math]::Round($curVol * 100) } else { $null }
+
                 $mediaPayload = @{
                     type = "media"
                     active = ($script:lastMediaTitle.Length -gt 0)
@@ -342,6 +486,7 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
                     basePos = $rawBasePos
                     lastUpdatedMs = $lastUpdatedMs
                     dur = $dur
+                    volume = $volPct
                     app = $appId
                     thumb = $script:lastThumbB64
                     isAppIcon = [bool]$script:lastThumbIsAppIcon
@@ -664,10 +809,10 @@ while ($true) {
     }
 
     $tickCount++
-    for ($w = 0; $w -lt 9; $w++) {
-        Start-Sleep -Milliseconds 100
+    for ($w = 0; $w -lt 18; $w++) {
+        Start-Sleep -Milliseconds 50
         Process-MediaCmd
-        if ($w -eq 2 -or $w -eq 4 -or $w -eq 6 -or $w -eq 8) {
+        if ($w -eq 4 -or $w -eq 8 -or $w -eq 12 -or $w -eq 16) {
             Poll-MediaSession $true
         }
     }

@@ -424,6 +424,22 @@ ipcMain.on('media-control', (event, action) => {
     sendMediaCommand(action);
 });
 
+ipcMain.on('media-seek', (event, targetSec) => {
+    const sec = Math.max(0, Number(targetSec) || 0);
+    sendMediaCommand(`SEEK:${sec.toFixed(2)}`);
+});
+
+ipcMain.on('volume-change', (event, data) => {
+    const delta = typeof data === 'object' && data !== null ? data.delta : Number(data);
+    const num = Number(delta) || 0;
+    sendMediaCommand(`VOL:${num >= 0 ? '+' : ''}${num.toFixed(3)}`);
+});
+
+ipcMain.on('volume-set', (event, pct) => {
+    const p = Math.max(0, Math.min(100, Number(pct) || 0));
+    sendMediaCommand(`VOLSET:${p.toFixed(0)}`);
+});
+
 ipcMain.on('island-request-lyrics', (event, data) => {
     if (!data || !data.title) return;
     if (getLastLyricsPayload() && (getLastLyricsPayload() && getLastLyricsPayload().title) === data.title && Array.isArray(getLastLyricsPayload().lines) && getLastLyricsPayload().lines.length > 0) {

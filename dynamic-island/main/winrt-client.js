@@ -69,6 +69,10 @@ function startWinRtBridge() {
                         const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
                             mainWindow.webContents.send('power-update', msg);
                         }
+                    } else if (msg.type === 'volume') {
+                        const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
+                            mainWindow.webContents.send('volume-update', msg);
+                        }
                     }
                 } catch (_) {}
             }
@@ -87,13 +91,20 @@ function startWinRtBridge() {
 
 function sendMediaCommand(cmd) {
     const val = String(cmd || '').trim();
+    if (!val) return;
+    const os = require('os');
+    const tmpFile = path.join(os.tmpdir(), 'ukikura-media.cmd');
+    const localFile = path.join(BRIDGE_DIR, '.media-cmd');
     try {
-        const os = require('os');
-        fs.writeFileSync(path.join(os.tmpdir(), 'ukikura-media.cmd'), val, 'utf8');
-    } catch (_) {}
+        fs.appendFileSync(tmpFile, val + '\n', 'utf8');
+    } catch (_) {
+        try { fs.writeFileSync(tmpFile, val + '\n', 'utf8'); } catch (_) {}
+    }
     try {
-        fs.writeFileSync(path.join(BRIDGE_DIR, '.media-cmd'), val, 'utf8');
-    } catch (_) {}
+        fs.appendFileSync(localFile, val + '\n', 'utf8');
+    } catch (_) {
+        try { fs.writeFileSync(localFile, val + '\n', 'utf8'); } catch (_) {}
+    }
 }
 
 let lastMediaPayload = null;

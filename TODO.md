@@ -6,7 +6,7 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
 
 ## 1. Modul Musik, Audio, & Lirik (`music-lyrics.js` & `lyrics/`)
 
-- [ ] **1. Interactive Seek Bar & Volume Wheel**
+- [x] **1. Interactive Seek Bar & Volume Wheel**
   - Klik atau geser (*drag*) langsung pada garis durasi lagu (`#music-prog-1` / `#music-prog-2`) untuk melompat ke menit tertentu via perintah WinRT `TryChangePlaybackPositionAsync`.
   - *Scroll* roda mouse di atas sampul album untuk mengatur volume aplikasi pemutar musik secara langsung.
 

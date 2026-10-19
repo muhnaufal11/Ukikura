@@ -240,7 +240,7 @@ Ukikura memiliki modul pendeteksi versi baru otomatis di [`dynamic-island/main/u
 Berikut daftar rencana fitur baru yang sedang disiapkan untuk pembaruan **Ukikura** berikutnya, dikelompokkan berdasarkan modul arsitekturnya:
 
 ### 1. Modul Musik, Audio, & Lirik (`music-lyrics.js` & `lyrics/`)
-- [ ] **1. Interactive Seek Bar & Volume Wheel**: Klik atau geser (*drag*) langsung pada garis durasi lagu (`#music-prog-1` / `#music-prog-2`) untuk melompat ke menit tertentu via perintah WinRT `TryChangePlaybackPositionAsync`, serta *scroll* roda mouse di atas sampul album untuk mengatur volume aplikasi pemutar musik secara langsung.
+- [x] **1. Interactive Seek Bar & Volume Wheel**: Klik atau geser (*drag*) langsung pada garis durasi lagu (`#music-prog-1` / `#music-prog-2`) untuk melompat ke menit tertentu via perintah WinRT `TryChangePlaybackPositionAsync`, serta *scroll* roda mouse di atas sampul album untuk mengatur volume aplikasi pemutar musik secara langsung.
 - [ ] **2. Real-Time Audio Spectrum Visualizer (WASAPI Loopback)**: Lima bar gelombang suara di kapsul tertutup (`.eq`) dan latar belakang halaman lirik bergerak mengikuti frekuensi bass dan vokal asli dari output audio Windows secara *real-time*, bukan sekadar animasi CSS berulang.
 - [ ] **3. Dual-Sub Lirik (Romaji + Kanji + Terjemahan Indonesia)**: Menambahkan opsi baris ke-3 opsional berisi arti Bahasa Indonesia (dari `tlyric` NetEase atau terjemahan subtitle YouTube `&tlang=id`) tepat di bawah baris Kanji.
 - [ ] **4. Mini Floating Karaoke Overlay (Mode Pin Transparan)**: Mode khusus yang hanya menampilkan 2 baris lirik aktif dengan latar belakang transparan penuh di atas layar sehingga bisa tetap membaca lirik sambil mengerjakan tugas atau bermain game tanpa tertutup kotak hitam kapsul.
