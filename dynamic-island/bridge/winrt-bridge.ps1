@@ -196,17 +196,23 @@ internal interface IAudioEndpointVolume {
 public class AudioMaster {
     private static IAudioEndpointVolume GetVolumeControl() {
         var enumerator = (IMMDeviceEnumerator)(new MMDeviceEnumeratorComObject());
-        IMMDevice dev;
-        enumerator.GetDefaultAudioEndpoint(0, 1, out dev);
+        IMMDevice dev = null;
+        int hr = enumerator.GetDefaultAudioEndpoint(0, 0, out dev);
+        if (hr != 0 || dev == null) {
+            hr = enumerator.GetDefaultAudioEndpoint(0, 1, out dev);
+        }
+        if (hr != 0 || dev == null) return null;
         Guid iid = typeof(IAudioEndpointVolume).GUID;
         object o;
-        dev.Activate(ref iid, 1, IntPtr.Zero, out o);
+        hr = dev.Activate(ref iid, 1, IntPtr.Zero, out o);
+        if (hr != 0 || o == null) return null;
         return (IAudioEndpointVolume)o;
     }
 
     public static float GetVolume() {
         try {
             var vol = GetVolumeControl();
+            if (vol == null) return -1f;
             float level;
             vol.GetMasterVolumeLevelScalar(out level);
             return level;
@@ -215,36 +221,67 @@ public class AudioMaster {
         }
     }
 
+    public static bool GetMute() {
+        try {
+            var vol = GetVolumeControl();
+            if (vol == null) return false;
+            bool muted;
+            vol.GetMute(out muted);
+            return muted;
+        } catch {
+            return false;
+        }
+    }
+
+    public static bool ToggleMute() {
+        try {
+            var vol = GetVolumeControl();
+            if (vol != null) {
+                bool muted;
+                vol.GetMute(out muted);
+                Guid ctx = Guid.Empty;
+                vol.SetMute(!muted, ref ctx);
+                return !muted;
+            }
+        } catch {}
+        BtBatteryReader.SendMediaKey(0xAD);
+        return false;
+    }
+
     public static float SetVolume(float level) {
         try {
             var vol = GetVolumeControl();
-            float target = level;
-            if (target < 0f) target = 0f;
-            if (target > 1f) target = 1f;
-            Guid ctx = Guid.Empty;
-            vol.SetMasterVolumeLevelScalar(target, ref ctx);
-            return target;
-        } catch {
-            return -1f;
-        }
+            if (vol != null) {
+                float target = level;
+                if (target < 0f) target = 0f;
+                if (target > 1f) target = 1f;
+                Guid ctx = Guid.Empty;
+                vol.SetMute(false, ref ctx);
+                vol.SetMasterVolumeLevelScalar(target, ref ctx);
+                return target;
+            }
+        } catch {}
+        return -1f;
     }
 
     public static float ChangeVolume(float delta) {
         try {
             var vol = GetVolumeControl();
-            float level;
-            vol.GetMasterVolumeLevelScalar(out level);
-            float target = level + delta;
-            if (target < 0f) target = 0f;
-            if (target > 1f) target = 1f;
-            Guid ctx = Guid.Empty;
-            vol.SetMasterVolumeLevelScalar(target, ref ctx);
-            return target;
-        } catch {
-            if (delta > 0) BtBatteryReader.SendMediaKey(0xAF);
-            else if (delta < 0) BtBatteryReader.SendMediaKey(0xAE);
-            return -1f;
-        }
+            if (vol != null) {
+                float level;
+                vol.GetMasterVolumeLevelScalar(out level);
+                float target = level + delta;
+                if (target < 0f) target = 0f;
+                if (target > 1f) target = 1f;
+                Guid ctx = Guid.Empty;
+                vol.SetMute(false, ref ctx);
+                vol.SetMasterVolumeLevelScalar(target, ref ctx);
+                return target;
+            }
+        } catch {}
+        if (delta > 0) BtBatteryReader.SendMediaKey(0xAF);
+        else if (delta < 0) BtBatteryReader.SendMediaKey(0xAE);
+        return -1f;
     }
 }
 "@
@@ -295,6 +332,23 @@ $cmdFile = Join-Path $PSScriptRoot ".media-cmd"
 $tempCmdFile = Join-Path $env:TEMP "ukikura-media.cmd"
 $ytFrameFile = Join-Path $PSScriptRoot ".yt-frame.png"
 $lastOcrText = ""
+$script:lastReportedVol = -1
+$script:lastReportedMute = $false
+
+try {
+    $initV = [AudioMaster]::GetVolume()
+    $initM = [AudioMaster]::GetMute()
+    if ($initV -ge 0) {
+        $script:lastReportedVol = [math]::Round($initV * 100)
+        $script:lastReportedMute = [bool]$initM
+        $volPayload = @{
+            type = "volume"
+            level = $script:lastReportedVol
+            muted = $script:lastReportedMute
+        } | ConvertTo-Json -Compress
+        [Console]::WriteLine($volPayload)
+    }
+} catch {}
 
 function Process-MediaCmd {
     try {
@@ -353,10 +407,16 @@ function Process-MediaCmd {
                 if ($cmd -match '^VOL:([+-]?[\d\.]+)' -or $cmd -eq 'VOLUP' -or $cmd -eq 'VOLDOWN') {
                     $delta = if ($cmd -eq 'VOLUP') { 0.02 } elseif ($cmd -eq 'VOLDOWN') { -0.02 } else { [double]$Matches[1] }
                     $newVol = [AudioMaster]::ChangeVolume([float]$delta)
-                    if ($newVol -ge 0) {
+                    $curVol = if ($newVol -ge 0) { $newVol } else { [AudioMaster]::GetVolume() }
+                    if ($curVol -ge 0) {
+                        $lvl = [math]::Round($curVol * 100)
+                        $mut = [AudioMaster]::GetMute()
+                        $script:lastReportedVol = $lvl
+                        $script:lastReportedMute = $mut
                         $volPayload = @{
                             type = "volume"
-                            level = [math]::Round($newVol * 100)
+                            level = $lvl
+                            muted = [bool]$mut
                         } | ConvertTo-Json -Compress
                         [Console]::WriteLine($volPayload)
                     }
@@ -364,20 +424,44 @@ function Process-MediaCmd {
                 } elseif ($cmd -match '^VOLSET:([\d\.]+)') {
                     $target = [float]([double]$Matches[1] / 100.0)
                     $newVol = [AudioMaster]::SetVolume($target)
-                    if ($newVol -ge 0) {
+                    $curVol = if ($newVol -ge 0) { $newVol } else { [AudioMaster]::GetVolume() }
+                    if ($curVol -ge 0) {
+                        $lvl = [math]::Round($curVol * 100)
+                        $mut = [AudioMaster]::GetMute()
+                        $script:lastReportedVol = $lvl
+                        $script:lastReportedMute = $mut
                         $volPayload = @{
                             type = "volume"
-                            level = [math]::Round($newVol * 100)
+                            level = $lvl
+                            muted = [bool]$mut
                         } | ConvertTo-Json -Compress
                         [Console]::WriteLine($volPayload)
                     }
                     $handled = $true
+                } elseif ($cmd -eq 'VOLMUTE' -or $cmd -eq 'MUTE') {
+                    $isMuted = [AudioMaster]::ToggleMute()
+                    $curVol = [AudioMaster]::GetVolume()
+                    $lvl = if ($curVol -ge 0) { [math]::Round($curVol * 100) } else { 0 }
+                    $script:lastReportedVol = $lvl
+                    $script:lastReportedMute = [bool]$isMuted
+                    $volPayload = @{
+                        type = "volume"
+                        level = $lvl
+                        muted = [bool]$isMuted
+                    } | ConvertTo-Json -Compress
+                    [Console]::WriteLine($volPayload)
+                    $handled = $true
                 } elseif ($cmd -eq 'VOLGET') {
                     $curVol = [AudioMaster]::GetVolume()
                     if ($curVol -ge 0) {
+                        $lvl = [math]::Round($curVol * 100)
+                        $mut = [AudioMaster]::GetMute()
+                        $script:lastReportedVol = $lvl
+                        $script:lastReportedMute = $mut
                         $volPayload = @{
                             type = "volume"
-                            level = [math]::Round($curVol * 100)
+                            level = $lvl
+                            muted = [bool]$mut
                         } | ConvertTo-Json -Compress
                         [Console]::WriteLine($volPayload)
                     }
@@ -816,6 +900,25 @@ while ($true) {
         Process-MediaCmd
         if ($w -eq 4 -or $w -eq 8 -or $w -eq 12 -or $w -eq 16) {
             Poll-MediaSession $true
+        }
+        if ($w -eq 0 -or $w -eq 9) {
+            try {
+                $curV = [AudioMaster]::GetVolume()
+                $curM = [AudioMaster]::GetMute()
+                if ($curV -ge 0) {
+                    $lvl = [math]::Round($curV * 100)
+                    if ($lvl -ne $script:lastReportedVol -or [bool]$curM -ne [bool]$script:lastReportedMute) {
+                        $script:lastReportedVol = $lvl
+                        $script:lastReportedMute = [bool]$curM
+                        $volPayload = @{
+                            type = "volume"
+                            level = $lvl
+                            muted = [bool]$curM
+                        } | ConvertTo-Json -Compress
+                        [Console]::WriteLine($volPayload)
+                    }
+                }
+            } catch {}
         }
     }
 }

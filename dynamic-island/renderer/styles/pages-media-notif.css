@@ -184,6 +184,112 @@
         transition: width 0.08s ease-out;
     }
 
+    /* Volume Controls (Speaker Button & Interactive Slider) */
+    .vol-group {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        height: 26px;
+        padding: 0 6px 0 3px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(6px);
+        transition: background 0.18s ease, box-shadow 0.18s ease;
+        z-index: 10;
+        user-select: none;
+    }
+
+    .vol-group:hover {
+        background: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+    }
+
+    .vol-btn {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        color: rgba(255, 255, 255, 0.85);
+        transition: color 0.15s ease, transform 0.15s ease;
+        flex-shrink: 0;
+        transform: none !important;
+    }
+
+    .vol-btn:hover {
+        color: #5ec2ff;
+        transform: scale(1.15) !important;
+    }
+
+    .vol-btn.muted {
+        color: #ff5a6e;
+    }
+
+    .vol-icon {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+    }
+
+    .vol-track {
+        width: 52px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.22);
+        border-radius: 999px;
+        position: relative;
+        cursor: pointer;
+        transition: height 0.15s ease;
+    }
+
+    .vol-group.mini .vol-track {
+        width: 32px;
+    }
+
+    .vol-group:hover .vol-track,
+    .vol-track.seeking {
+        height: 6px;
+    }
+
+    .vol-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #38bdf8, #5ec2ff);
+        border-radius: 999px;
+        width: 50%;
+        position: relative;
+        pointer-events: none;
+        transition: width 0.06s ease-out;
+    }
+
+    .vol-group.muted .vol-fill {
+        background: #8892b0;
+        opacity: 0.5;
+    }
+
+    .vol-thumb {
+        position: absolute;
+        top: 50%;
+        right: 0;
+        transform: translate(50%, -50%) scale(1);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+        transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .vol-group:hover .vol-thumb,
+    .vol-track.seeking .vol-thumb {
+        transform: translate(50%, -50%) scale(1);
+    }
+
     .ctl-btn {
         width: 30px;
         height: 30px;

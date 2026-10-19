@@ -27,7 +27,12 @@ function startWinRtBridge() {
         ], {
             cwd: BRIDGE_DIR,
             windowsHide: true,
-            stdio: ['ignore', 'pipe', 'ignore']
+            stdio: ['ignore', 'pipe', 'pipe']
+        });
+
+        winrtProc.stderr.on('data', (errChunk) => {
+            const errStr = errChunk.toString('utf8').trim();
+            if (errStr) console.warn('[WinRT Bridge Warning/Error]', errStr);
         });
 
         let buffer = '';

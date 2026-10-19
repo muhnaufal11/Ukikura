@@ -5,7 +5,9 @@
   "main": "dynamic-island/main.js",
   "scripts": {
     "start": "electron dynamic-island/main.js",
-    "island": "electron dynamic-island/main.js"
+    "island": "electron dynamic-island/main.js",
+    "debug": "electron dynamic-island/main.js --ukikura-debug",
+    "dev": "electron dynamic-island/main.js --ukikura-debug"
   },
   "dependencies": {
     "node-forge": "^1.3.1"

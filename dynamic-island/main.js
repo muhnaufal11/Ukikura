@@ -33,8 +33,23 @@ let isTucked = false;
 let isPinnedOpen = false;
 let leaveCloseTimer = null;
 let winrtProc = null;
-let waWindow = null;
 let lastLyricsTrackKey = '';
+
+const IS_DEBUG = process.argv.includes('--ukikura-debug') || process.argv.includes('--dev') || process.env.UKIKURA_DEBUG === '1';
+const LOG_DIR = path.join(app.getPath('userData'), 'logs');
+const LOG_FILE = path.join(LOG_DIR, 'ukikura-debug.log');
+
+function logDebug(...args) {
+    const ts = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const line = `[${ts}] ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}`;
+    if (IS_DEBUG) {
+        console.log(line);
+    }
+    try {
+        if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+        fs.appendFileSync(LOG_FILE, line + '\n', 'utf8');
+    } catch (_) {}
+}
 
 function checkServerAlive() {
     return new Promise((resolve) => {
@@ -111,6 +126,25 @@ function createIslandWindow() {
             mainWindow.setBounds({ x: b.x, y: 0, width: WINDOW_WIDTH, height: WINDOW_HEIGHT }, false);
         }
     });
+
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+        if (input.type === 'keyDown') {
+            if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
+                event.preventDefault();
+                mainWindow.webContents.toggleDevTools({ mode: 'detach' });
+            } else if (input.key === 'F5' || (input.control && input.key.toLowerCase() === 'r')) {
+                event.preventDefault();
+                mainWindow.webContents.reloadIgnoringCache();
+            }
+        }
+    });
+
+    if (IS_DEBUG) {
+        logDebug('Ukikura running in DEBUG mode (IS_DEBUG=true)');
+        mainWindow.webContents.on('did-finish-load', () => {
+            mainWindow.webContents.openDevTools({ mode: 'detach' });
+        });
+    }
 
     mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
@@ -338,6 +372,33 @@ function buildIslandMenu() {
         },
         { type: 'separator' },
         {
+            label: 'Mode Pengembang & Debug',
+            submenu: [
+                {
+                    label: 'Buka / Tutup Developer Tools (F12)',
+                    click: () => {
+                        if (!mainWindow || mainWindow.isDestroyed()) return;
+                        mainWindow.webContents.toggleDevTools({ mode: 'detach' });
+                    }
+                },
+                {
+                    label: 'Muat Ulang UI (F5 / Reload)',
+                    click: () => {
+                        if (!mainWindow || mainWindow.isDestroyed()) return;
+                        mainWindow.webContents.reloadIgnoringCache();
+                    }
+                },
+                {
+                    label: 'Buka Folder File Log Debug (%LOCALAPPDATA%\\Ukikura\\logs)',
+                    click: () => {
+                        fs.mkdirSync(LOG_DIR, { recursive: true });
+                        shell.openPath(LOG_DIR);
+                    }
+                }
+            ]
+        },
+        { type: 'separator' },
+        {
             label: 'Keluar dari Ukikura',
             click: () => {
                 app.isQuitting = true;
@@ -438,6 +499,14 @@ ipcMain.on('volume-change', (event, data) => {
 ipcMain.on('volume-set', (event, pct) => {
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
     sendMediaCommand(`VOLSET:${p.toFixed(0)}`);
+});
+
+ipcMain.on('volume-mute', () => {
+    sendMediaCommand('VOLMUTE');
+});
+
+ipcMain.on('volume-get', () => {
+    sendMediaCommand('VOLGET');
 });
 
 ipcMain.on('island-request-lyrics', (event, data) => {

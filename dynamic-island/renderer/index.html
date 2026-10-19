@@ -171,18 +171,26 @@
             <span class="a prog vc" style="left:88px;right:88px;top:124px"><i id="music-prog-1"></i></span>
             <span class="a vc" id="music-rem-1" style="right:46px;top:124px;font-family:var(--mono);font-size:10.5px;color:rgba(255,255,255,.72)">-00:00</span>
 
-            <button class="a bub-btn c" id="btn-open-lyrics" style="left:74px;top:152px" title="Tampilkan Lirik tersinkronisasi (Synced Lyrics)">
+            <button class="a bub-btn c" id="btn-open-lyrics" style="left:52px;top:152px" title="Tampilkan Lirik tersinkronisasi (Synced Lyrics)">
                 <svg class="bub" viewBox="0 0 18 16"><path d="M4 .8h10a3.2 3.2 0 0 1 3.2 3.2v4.6a3.2 3.2 0 0 1-3.2 3.2H8.4L4.6 15l.5-3.2H4A3.2 3.2 0 0 1 .8 8.6V4A3.2 3.2 0 0 1 4 .8z" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.4"/><circle cx="6.3" cy="5.4" r="1.3" fill="rgba(255,255,255,.85)"/><circle cx="11.3" cy="5.4" r="1.3" fill="rgba(255,255,255,.85)"/></svg>
             </button>
-            <button class="a ctl-btn c" data-mcmd="PREV" style="left:192px;top:152px" title="Lagu Sebelumnya">
+            <button class="a ctl-btn c" data-mcmd="PREV" style="left:196px;top:152px" title="Lagu Sebelumnya">
                 <svg class="ctl" viewBox="0 0 24 24"><path d="M11 6 3 12l8 6zM21 6l-8 6 8 6z"/></svg>
             </button>
             <button class="a ctl-btn play-main c" data-mcmd="PLAYPAUSE" style="left:240px;top:152px" title="Putar / Jeda">
                 <svg class="ctl" id="play-icon-1" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
-            <button class="a ctl-btn c" data-mcmd="NEXT" style="left:288px;top:152px" title="Lagu Berikutnya">
+            <button class="a ctl-btn c" data-mcmd="NEXT" style="left:284px;top:152px" title="Lagu Berikutnya">
                 <svg class="ctl" viewBox="0 0 24 24"><path d="m13 6 8 6-8 6zM3 6l8 6-8 6z"/></svg>
             </button>
+            <div class="a vol-group vc" id="vol-group-1" style="right:48px;top:152px">
+                <button class="vol-btn" id="btn-vol-1" title="Klik untuk Mute / Unmute, scroll untuk atur volume">
+                    <svg viewBox="0 0 24 24" id="vol-svg-1" class="vol-icon"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                </button>
+                <div class="vol-track" id="vol-track-1" title="Klik / drag atur volume">
+                    <div class="vol-fill" id="vol-fill-1" style="width:50%"><div class="vol-thumb"></div></div>
+                </div>
+            </div>
         </div>
 
         <!-- ================= HALAMAN 1B: MODE LIRIK MELEBAR (520px) KHAS NUSA ================= -->
@@ -198,18 +206,26 @@
             <span class="a prog vc" style="left:78px;width:124px;top:118px"><i id="music-prog-2"></i></span>
             <span class="a vc" id="music-rem-2" style="left:208px;top:118px;font-family:var(--mono);font-size:9.8px">-00:00</span>
 
-            <button class="a bub-btn c" id="btn-close-lyrics" style="left:60px;top:148px" title="Kembali ke Pemutar Standar">
+            <button class="a bub-btn c" id="btn-close-lyrics" style="left:40px;top:148px" title="Kembali ke Pemutar Standar">
                 <svg class="bub" viewBox="0 0 18 16"><path d="M4 .8h10a3.2 3.2 0 0 1 3.2 3.2v4.6a3.2 3.2 0 0 1-3.2 3.2H8.4L4.6 15l.5-3.2H4A3.2 3.2 0 0 1 .8 8.6V4A3.2 3.2 0 0 1 4 .8z" fill="#fff"/><circle cx="6.3" cy="5.4" r="1.3" fill="#000"/><circle cx="11.3" cy="5.4" r="1.3" fill="#000"/></svg>
             </button>
-            <button class="a ctl-btn c" data-mcmd="PREV" style="left:112px;top:148px" title="Sebelumnya">
+            <button class="a ctl-btn c" data-mcmd="PREV" style="left:82px;top:148px" title="Sebelumnya">
                 <svg class="ctl" viewBox="0 0 24 24"><path d="M11 6 3 12l8 6zM21 6l-8 6 8 6z"/></svg>
             </button>
-            <button class="a ctl-btn play-main c" data-mcmd="PLAYPAUSE" style="left:154px;top:148px" title="Putar / Jeda">
+            <button class="a ctl-btn play-main c" data-mcmd="PLAYPAUSE" style="left:122px;top:148px" title="Putar / Jeda">
                 <svg class="ctl" id="play-icon-2" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
-            <button class="a ctl-btn c" data-mcmd="NEXT" style="left:196px;top:148px" title="Berikutnya">
+            <button class="a ctl-btn c" data-mcmd="NEXT" style="left:162px;top:148px" title="Berikutnya">
                 <svg class="ctl" viewBox="0 0 24 24"><path d="m13 6 8 6-8 6zM3 6l8 6-8 6z"/></svg>
             </button>
+            <div class="a vol-group vc mini" id="vol-group-2" style="left:192px;top:148px">
+                <button class="vol-btn" id="btn-vol-2" title="Klik untuk Mute / Unmute, scroll untuk atur volume">
+                    <svg viewBox="0 0 24 24" id="vol-svg-2" class="vol-icon"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                </button>
+                <div class="vol-track" id="vol-track-2" title="Klik / drag atur volume">
+                    <div class="vol-fill" id="vol-fill-2" style="width:50%"><div class="vol-thumb"></div></div>
+                </div>
+            </div>
 
             <span class="a" style="left:252px;top:40px;width:1px;height:118px;background:rgba(255,255,255,.14)"></span>
             <div class="a lyr">

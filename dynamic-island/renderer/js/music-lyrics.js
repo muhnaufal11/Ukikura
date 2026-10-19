@@ -405,7 +405,21 @@ function initInteractiveProgressBar(fillId, posId, remId) {
 }
 
 let currentVolume = 50;
+let isMuted = false;
 let volHudTimer = null;
+
+function getVolumeIconSvg(vol, muted) {
+    if (muted || vol === 0) {
+        return '<path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2"/><line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2"/>';
+    }
+    if (vol < 35) {
+        return '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+    }
+    if (vol < 70) {
+        return '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+    }
+    return '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>';
+}
 
 function ensureVolumeHud(artEl) {
     if (!artEl) return null;
@@ -423,15 +437,42 @@ function ensureVolumeHud(artEl) {
     return hud;
 }
 
-function showVolumeHUD(vol, resetTimer = true) {
-    const artIds = ['music-art-1', 'music-art-2', 'idle-art'];
+function applyVolumeUI(vol, muted = false, showHUD = false) {
     const safeVol = Math.max(0, Math.min(100, Math.round(vol)));
+    const iconSvg = getVolumeIconSvg(safeVol, muted);
 
-    const iconSvg = safeVol === 0
-        ? '<path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2"/><line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2"/>'
-        : safeVol < 35
-        ? '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>'
-        : '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>';
+    ['vol-fill-1', 'vol-fill-2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.width = muted ? '0%' : `${safeVol}%`;
+    });
+
+    ['vol-svg-1', 'vol-svg-2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = iconSvg;
+    });
+
+    ['vol-group-1', 'vol-group-2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.toggle('muted', Boolean(muted));
+            el.title = `Volume: ${safeVol}% ${muted ? '(Muted)' : ''} - Klik untuk mute, drag/scroll untuk ubah`;
+        }
+    });
+
+    ['btn-vol-1', 'btn-vol-2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('muted', Boolean(muted));
+    });
+
+    if (showHUD) {
+        showVolumeHUD(safeVol, muted, true);
+    }
+}
+
+function showVolumeHUD(vol, muted = false, resetTimer = true) {
+    const artIds = ['music-art-1', 'music-art-2'];
+    const safeVol = Math.max(0, Math.min(100, Math.round(vol)));
+    const iconSvg = getVolumeIconSvg(safeVol, muted);
 
     artIds.forEach(id => {
         const el = document.getElementById(id);
@@ -441,9 +482,9 @@ function showVolumeHUD(vol, resetTimer = true) {
         const svg = hud.querySelector('svg');
         if (svg) svg.innerHTML = iconSvg;
         const txt = hud.querySelector('.art-vol-text');
-        if (txt) txt.textContent = `${safeVol}%`;
+        if (txt) txt.textContent = muted ? 'MUTE' : `${safeVol}%`;
         const fill = hud.querySelector('.art-vol-fill');
-        if (fill) fill.style.width = `${safeVol}%`;
+        if (fill) fill.style.width = muted ? '0%' : `${safeVol}%`;
         hud.classList.add('active');
     });
 
@@ -456,20 +497,87 @@ function showVolumeHUD(vol, resetTimer = true) {
     }
 }
 
-function setupAlbumArtVolumeWheel(artId) {
-    const el = document.getElementById(artId);
-    if (!el) return;
-    el.title = "Scroll roda mouse untuk mengatur volume pemutar musik";
-    ensureVolumeHud(el);
+function initVolumeSlider(trackId, fillId) {
+    const trackEl = document.getElementById(trackId);
+    if (!trackEl) return;
 
-    el.addEventListener('wheel', (e) => {
+    function calcRatio(e) {
+        const rect = trackEl.getBoundingClientRect();
+        if (rect.width <= 0) return 0;
+        const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+        return Math.max(0, Math.min(1, x / rect.width));
+    }
+
+    function setFromRatio(ratio) {
+        const pct = Math.round(ratio * 100);
+        currentVolume = pct;
+        isMuted = false;
+        applyVolumeUI(currentVolume, isMuted, true);
+        ipcRenderer.send('volume-set', pct);
+    }
+
+    trackEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setFromRatio(calcRatio(e));
+    });
+
+    trackEl.addEventListener('wheel', (e) => {
         e.preventDefault();
         e.stopPropagation();
+        const step = e.shiftKey ? 1 : 3;
+        const delta = e.deltaY < 0 ? step : -step;
+        currentVolume = Math.max(0, Math.min(100, currentVolume + delta));
+        isMuted = false;
+        applyVolumeUI(currentVolume, isMuted, true);
+        ipcRenderer.send('volume-set', currentVolume);
+    }, { passive: false });
 
+    trackEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        trackEl.classList.add('seeking');
+        setFromRatio(calcRatio(e));
+
+        function onMouseMove(ev) {
+            ev.preventDefault();
+            setFromRatio(calcRatio(ev));
+        }
+
+        function onMouseUp(ev) {
+            trackEl.classList.remove('seeking');
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    });
+}
+
+function setupVolumeButton(btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isMuted = !isMuted;
+        applyVolumeUI(currentVolume, isMuted, true);
+        ipcRenderer.send('volume-mute');
+    });
+}
+
+function setupAreaVolumeWheel(targetEl, ignoreSelector = null) {
+    if (!targetEl) return;
+    targetEl.addEventListener('wheel', (e) => {
+        if (ignoreSelector && e.target.closest(ignoreSelector)) {
+            return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
         const step = e.shiftKey ? 0.01 : 0.03;
         const delta = e.deltaY < 0 ? step : -step;
         currentVolume = Math.max(0, Math.min(100, Math.round(currentVolume + (delta * 100))));
-        showVolumeHUD(currentVolume, true);
+        isMuted = false;
+        applyVolumeUI(currentVolume, isMuted, true);
         ipcRenderer.send('volume-change', { delta });
     }, { passive: false });
 }
@@ -477,16 +585,27 @@ function setupAlbumArtVolumeWheel(artId) {
 ipcRenderer.on('volume-update', (event, data) => {
     if (data && typeof data.level === 'number') {
         currentVolume = data.level;
-        if (volHudTimer) {
-            showVolumeHUD(currentVolume, true);
+        if (typeof data.muted === 'boolean') {
+            isMuted = data.muted;
         }
+        applyVolumeUI(currentVolume, isMuted, Boolean(volHudTimer));
     }
 });
 
-// Inisialisasi Seek Bar & Volume Wheel
+// Inisialisasi Seek Bar & Volume Controls
 initInteractiveProgressBar('music-prog-1', 'music-pos-1', 'music-rem-1');
 initInteractiveProgressBar('music-prog-2', 'music-pos-2', 'music-rem-2');
-setupAlbumArtVolumeWheel('music-art-1');
-setupAlbumArtVolumeWheel('music-art-2');
-setupAlbumArtVolumeWheel('idle-art');
+
+initVolumeSlider('vol-track-1', 'vol-fill-1');
+initVolumeSlider('vol-track-2', 'vol-fill-2');
+setupVolumeButton('btn-vol-1');
+setupVolumeButton('btn-vol-2');
+
+setupAreaVolumeWheel(document.querySelector('.l-music'));
+setupAreaVolumeWheel(document.querySelector('.l-lyrics'), '#lyr-list, .lyr');
+setupAreaVolumeWheel(document.getElementById('music-art-1'));
+setupAreaVolumeWheel(document.getElementById('music-art-2'));
+
+// Minta volume awal Windows
+ipcRenderer.send('volume-get');
 
