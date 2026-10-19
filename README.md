@@ -10,7 +10,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
 [![Version](https://img.shields.io/badge/Version-1.0.0-10b981.svg?style=flat-square)](./version.json)
-[![Installer](https://img.shields.io/badge/Installer-Ukikura--Setup--v1.0.0.exe-2563eb.svg?style=flat-square)](./installer/Ukikura-Setup-v1.0.0.exe)
+[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.0.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.0/Ukikura-Setup-v1.0.0.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
 [Instalasi Langsung (Tanpa Compile)](#instalasi-langsung-tanpa-compile) · [Pratinjau Antarmuka](#pratinjau-antarmuka-100-identik) · [Integrasi AI LMS Assistant](#integrasi-dengan-telu-lms-quiz-assistant-ai--seb-proxy) · [Mesin Lirik & Forced Alignment](#mesin-lirik-multi-sumber--forced-alignment) · [Arsitektur Modular](#arsitektur-modular) · [Auto-Updater GitHub](#sistem-deteksi-pembaruan-github-auto-updater)
@@ -21,12 +21,12 @@
 
 ## Instalasi Langsung (Tanpa Compile)
 
-File installer Windows hasil kompilasi **Inno Setup 6** telah disediakan langsung di dalam repositori ini sehingga pengguna dapat langsung menginstal aplikasi tanpa perlu melakukan kompilasi atau memasang Node.js terlebih dahulu:
+File installer penuh (**Full Self-Contained Offline Installer** hasil kompilasi **Inno Setup 6**, sudah termasuk runtime Electron lengkap di dalamnya) tersedia langsung untuk diunduh dan diinstal tanpa perlu melakukan kompilasi atau memasang Node.js terlebih dahulu:
 
-- **File Installer Siap Pakai**: [`installer/Ukikura-Setup-v1.0.0.exe`](./installer/Ukikura-Setup-v1.0.0.exe)
+- **Unduh Langsung Installer Siap Pakai (`91.2 MB`)**: **[Ukikura-Setup-v1.0.0.exe (GitHub Release Resmi)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.0/Ukikura-Setup-v1.0.0.exe)**
 
 ### Langkah Instalasi Pengguna Akhir
-1. Unduh dan jalankan file **[`installer/Ukikura-Setup-v1.0.0.exe`](./installer/Ukikura-Setup-v1.0.0.exe)** (atau melalui halaman **GitHub Releases**).
+1. Unduh dan jalankan file **[`Ukikura-Setup-v1.0.0.exe`](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.0/Ukikura-Setup-v1.0.0.exe)**.
 2. Setujui lisensi **GNU GPLv3** pada jendela instalasi.
 3. Centang opsi **"Jalankan Ukikura otomatis saat Windows menyala (Direkomendasikan)"** agar kapsul Dynamic Island selalu aktif setiap kali laptop dinyalakan.
 4. Klik **Install** lalu **Finish** — Ukikura langsung tampil menyatu dengan bezel tengah atas layar Windows.

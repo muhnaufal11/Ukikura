@@ -9,3 +9,5 @@ dynamic-island/GEMINI.md
 .agents/
 .claude/
 *.log
+
+installer/*.exe
