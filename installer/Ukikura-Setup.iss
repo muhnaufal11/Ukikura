@@ -1,6 +1,9 @@
 ; ==============================================================================
 ; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT
 ; Uki (Terapung / Floating Island) + Kura (Gudang Penyimpanan Data & Tugas)
+; Mendukung 2 Edisi / Kode Versi:
+; - Versi Publik (1.0.0-public): Rilis stabil untuk penggunaan sehari-hari
+; - Versi Debug  (1.0.0-debug):  Rilis pengembang untuk pelacakan log & debug
 ; License: GNU General Public License v3.0 (GPLv3)
 ; ==============================================================================
 
@@ -48,6 +51,8 @@ UninstallDisplayName={#MyAppFullTitle}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
+Name: "channel_public"; Description: "Versi Publik (Rilis Stabil — Penggunaan Sehari-hari)"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: exclusive
+Name: "channel_debug"; Description: "Versi Debug (Rilis Pengembang — Fitur Baru & Pelacakan Log)"; GroupDescription: "Pilih Edisi / Kode Versi Ukikura:"; Flags: exclusive unchecked
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "autostart"; Description: "Jalankan Ukikura otomatis saat Windows menyala (Direkomendasikan)"; GroupDescription: "Opsi Startup:"
 
@@ -58,7 +63,11 @@ Name: "{app}\runtime"
 ; Modul Utama Ukikura (100% terpisah dari Asisten LMS & tanpa data pribadi pengguna)
 Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*,*.md"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\Ukikura-Debug.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\version.json"; DestDir: "{app}"; Flags: ignoreversion
+; Salin metadata versi sesuai kode versi / kanal yang dipilih pengguna
+Source: "..\version-public.json"; DestDir: "{app}"; DestName: "version.json"; Check: not IsDebugTaskSelected; Flags: ignoreversion
+Source: "..\version-debug.json"; DestDir: "{app}"; DestName: "version.json"; Check: IsDebugTaskSelected; Flags: ignoreversion
+Source: "..\version-public.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\version-debug.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\package.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
@@ -88,6 +97,11 @@ Type: filesandordirs; Name: "{app}\runtime"
 var
   DownloadPage: TDownloadWizardPage;
 
+function IsDebugTaskSelected: Boolean;
+begin
+  Result := WizardIsTaskSelected('channel_debug');
+end;
+
 function OnDownloadProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
 begin
   if Progress = ProgressMax then
@@ -96,8 +110,23 @@ begin
 end;
 
 procedure InitializeWizard;
+var
+  ExistingVerFile: String;
+  VerContent: AnsiString;
 begin
   DownloadPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), SetupMessage(msgPreparingDesc), @OnDownloadProgress);
+
+  // Jika melakukan in-place update, periksa apakah pengguna sebelumnya memasang Versi Debug atau Versi Publik
+  ExistingVerFile := ExpandConstant('{app}\version.json');
+  if FileExists(ExistingVerFile) then begin
+    if LoadStringFromFile(ExistingVerFile, VerContent) then begin
+      if Pos('"channel": "debug"', VerContent) > 0 then begin
+        WizardSelectTasks('!channel_public,channel_debug');
+      end else if Pos('"channel": "public"', VerContent) > 0 then begin
+        WizardSelectTasks('channel_public,!channel_debug');
+      end;
+    end;
+  end;
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;

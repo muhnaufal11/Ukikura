@@ -8,7 +8,7 @@ const { initWinRtClient, startWinRtBridge, sendMediaCommand, fetchSyncedLyrics, 
 const { initWhatsAppCompanion, ensureWhatsAppWindow, pollWhatsAppUnread, resetWaState } = require("./main/whatsapp-companion");
 const { initAutoStart, isWindowsAutoStartEnabled, setWindowsAutoStart } = require("./main/autostart");
 const { startKuraServer } = require("./main/kura-server");
-const { initAutoUpdater, checkGitHubForUpdates, getLastUpdateStatus, openUpdateDownloadPage } = require("./main/updater");
+const { initAutoUpdater, checkGitHubForUpdates, getLastUpdateStatus, openUpdateDownloadPage, getLocalVersionInfo, setUpdateChannel } = require("./main/updater");
 
 let mainWindow = null;
 let loginWindow = null;
@@ -341,7 +341,36 @@ function buildIslandMenu() {
             }
         },
         {
-            label: 'Cek Pembaruan Ukikura di GitHub...',
+            label: `Kanal Versi: ${getLocalVersionInfo().channel === 'debug' ? 'Debug (Pengembang)' : 'Publik (Stabil)'}`,
+            submenu: [
+                {
+                    label: 'Versi Publik (Rilis Stabil)',
+                    type: 'radio',
+                    checked: getLocalVersionInfo().channel === 'public',
+                    click: async () => {
+                        setUpdateChannel('public');
+                        if (mainWindow && !mainWindow.isDestroyed()) {
+                            mainWindow.webContents.send('version-info', getLocalVersionInfo());
+                        }
+                        await checkGitHubForUpdates(true);
+                    }
+                },
+                {
+                    label: 'Versi Debug (Kanal Pengembang & Pelacakan)',
+                    type: 'radio',
+                    checked: getLocalVersionInfo().channel === 'debug',
+                    click: async () => {
+                        setUpdateChannel('debug');
+                        if (mainWindow && !mainWindow.isDestroyed()) {
+                            mainWindow.webContents.send('version-info', getLocalVersionInfo());
+                        }
+                        await checkGitHubForUpdates(true);
+                    }
+                }
+            ]
+        },
+        {
+            label: 'Cek Pembaruan di GitHub...',
             click: async () => {
                 const res = await checkGitHubForUpdates(true);
                 if (res && res.hasUpdate) {
@@ -447,6 +476,17 @@ ipcMain.on('island-toggle-autostart', (event) => {
 
 ipcMain.on('island-check-update', async (event, manual = true) => {
     const status = await checkGitHubForUpdates(Boolean(manual));
+    event.reply('update-status', status);
+});
+
+ipcMain.on('island-get-version', (event) => {
+    event.reply('version-info', getLocalVersionInfo());
+});
+
+ipcMain.on('island-set-channel', async (event, targetChannel) => {
+    const updatedInfo = setUpdateChannel(targetChannel);
+    event.reply('version-info', updatedInfo);
+    const status = await checkGitHubForUpdates(true);
     event.reply('update-status', status);
 });
 
