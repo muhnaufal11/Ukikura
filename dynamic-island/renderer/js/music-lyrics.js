@@ -37,20 +37,21 @@ function renderMediaUI() {
     const art1 = document.getElementById('music-art-1');
     const art2 = document.getElementById('music-art-2');
     const hasRealSmtcThumb = mediaState.thumb && !mediaState.isAppIcon;
+    let bg = '';
     if (hasRealSmtcThumb) {
-        const bg = `url("data:image/jpeg;base64,${mediaState.thumb}")`;
+        bg = `url("data:image/jpeg;base64,${mediaState.thumb}")`;
         art1.style.backgroundImage = bg;
         art2.style.backgroundImage = bg;
         idleArtEl.style.backgroundImage = bg;
         idleArtEl.classList.add('has-art');
     } else if (lyricCoverUrl) {
-        const bg = `url("${lyricCoverUrl}")`;
+        bg = `url("${lyricCoverUrl}")`;
         art1.style.backgroundImage = bg;
         art2.style.backgroundImage = bg;
         idleArtEl.style.backgroundImage = bg;
         idleArtEl.classList.add('has-art');
     } else if (mediaState.thumb) {
-        const bg = `url("data:image/jpeg;base64,${mediaState.thumb}")`;
+        bg = `url("data:image/jpeg;base64,${mediaState.thumb}")`;
         art1.style.backgroundImage = bg;
         art2.style.backgroundImage = bg;
         idleArtEl.style.backgroundImage = bg;
@@ -60,6 +61,19 @@ function renderMediaUI() {
         art2.style.backgroundImage = '';
         idleArtEl.style.backgroundImage = '';
         idleArtEl.classList.remove('has-art');
+    }
+
+    // Set background ambient aura mengikuti sampul video/lagu
+    const ambientEls = document.querySelectorAll('.l-music .ambient, .l-lyrics .ambient');
+    ambientEls.forEach(el => {
+        if (bg) {
+            el.style.backgroundImage = bg;
+        } else {
+            el.style.backgroundImage = '';
+        }
+    });
+    if (bg) {
+        updateCoverDominantColor(bg);
     }
 
     updateMediaProgressUI();
@@ -713,29 +727,73 @@ function updateAmbientVisualizer() {
     visualizerAnimId = requestAnimationFrame(updateAmbientVisualizer);
 }
 
+let currentAmbientColor = '94, 194, 255';
+let lastSampledBg = '';
+
+function updateCoverDominantColor(bgStr) {
+    if (!bgStr || bgStr === lastSampledBg) return;
+    lastSampledBg = bgStr;
+    const match = bgStr.match(/^url\(["']?(.*?)["']?\)$/);
+    const src = match ? match[1] : bgStr;
+    if (!src) return;
+
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 16, 16);
+            const p = ctx.getImageData(0, 0, 16, 16).data;
+            let r = 0, g = 0, b = 0, count = 0;
+            for (let i = 0; i < p.length; i += 4) {
+                const pr = p[i], pg = p[i + 1], pb = p[i + 2];
+                const max = Math.max(pr, pg, pb);
+                const min = Math.min(pr, pg, pb);
+                if (max > 45 && (max - min) > 16) {
+                    r += pr; g += pg; b += pb;
+                    count++;
+                }
+            }
+            if (count > 0) {
+                currentAmbientColor = `${Math.round(r / count)}, ${Math.round(g / count)}, ${Math.round(b / count)}`;
+            } else {
+                currentAmbientColor = '94, 194, 255';
+            }
+        } catch (_) {
+            currentAmbientColor = '94, 194, 255';
+        }
+    };
+    img.src = src;
+}
+
 function applyAmbientToDOM(bass, mid, treb) {
     const ambientEls = document.querySelectorAll('.l-music .ambient, .l-lyrics .ambient');
     if (!ambientEls.length) return;
 
     // Skala denyut & intensitas pendaran mengikuti energi frekuensi bass + vokal
-    const scale = 1 + (bass * 0.08);
-    const opacity = (0.75 + (mid * 0.25) + (bass * 0.12)).toFixed(2);
-    const saturate = (1.1 + mid * 0.4).toFixed(2);
-    const brightness = (0.95 + bass * 0.3).toFixed(2);
+    const scale = (1.04 + (bass * 0.12)).toFixed(3);
+    const opacity = (0.75 + (mid * 0.20) + (bass * 0.15)).toFixed(2);
+    const blur = Math.round(38 + bass * 14);
+    const saturate = (2.2 + mid * 0.8).toFixed(2);
+    const brightness = (0.68 + bass * 0.36).toFixed(2);
 
     ambientEls.forEach(el => {
-        el.style.transform = `scale(${scale.toFixed(3)})`;
+        el.style.transform = `scale(${scale})`;
         el.style.opacity = opacity;
-        el.style.filter = `saturate(${saturate}) brightness(${brightness})`;
+        el.style.filter = `blur(${blur}px) saturate(${saturate}) brightness(${brightness})`;
     });
 
-    // Pendaran dinamis halus pada sampul album
+    // Pendaran dinamis halus pada sampul album mengikuti warna video/lagu
     const art1 = document.getElementById('music-art-1');
     const art2 = document.getElementById('music-art-2');
-    const artGlowSpread = Math.round(12 + bass * 22);
-    const artGlowAlpha = (0.28 + bass * 0.42).toFixed(2);
+    const artGlowSpread = Math.round(14 + bass * 26);
+    const artGlowAlpha = (0.32 + bass * 0.48).toFixed(2);
+    const glowColor = currentAmbientColor || '94, 194, 255';
     const glowStyle = (bass > 0.02)
-        ? `0 6px ${artGlowSpread}px rgba(56, 189, 248, ${artGlowAlpha})`
+        ? `0 6px ${artGlowSpread}px rgba(${glowColor}, ${artGlowAlpha})`
         : '';
     if (art1) art1.style.boxShadow = glowStyle;
     if (art2) art2.style.boxShadow = glowStyle;

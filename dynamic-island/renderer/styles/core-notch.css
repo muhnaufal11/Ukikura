@@ -877,15 +877,20 @@
     .hdr-center {
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 5px;
         font-size: 11px;
         color: rgba(255, 255, 255, 0.72);
         -webkit-app-region: drag;
         cursor: grab;
-        padding: 2px 8px;
+        padding: 2px 4px;
         white-space: nowrap;
         flex-shrink: 1;
         overflow: hidden;
+    }
+
+    /* Saat baterai HP tampil di header, sembunyikan nama hari agar jam (06:35) tidak terpotong */
+    #hdr-phone-bat:not([style*="display: none"]):not([style*="display:none"]) ~ #js-date {
+        display: none;
     }
 
     .hdr-actions {

@@ -356,15 +356,49 @@
         height: 15px;
     }
 
-    /* Ambient Aura Halaman Musik & Lirik */
+    /* Ambient Aura Dinamis Halaman Musik & Lirik (Mengikuti Warna Video / Thumbnail) */
     .l-music .ambient,
     .l-lyrics .ambient {
-        background: linear-gradient(90deg, #2c64b8, #3a7ad0 50%, #2a5aa8);
-        height: 85%;
-        opacity: 0.88;
-        transform-origin: center bottom;
-        transition: transform 0.08s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.1s ease;
+        position: absolute;
+        inset: -28px -28px -28px -28px;
+        height: auto;
+        border-radius: inherit;
+        background-color: #0b111e;
+        background-image: linear-gradient(110deg, #19b8ff 0%, #2d5bff 28%, #33e07a 54%, #7b4bff 80%, #19b8ff 100%);
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        filter: blur(40px) saturate(2.6) brightness(0.68);
+        opacity: 0.82;
+        transform: scale(1.05);
+        transform-origin: center center;
+        mask: none;
+        -webkit-mask: none;
+        animation: none;
+        pointer-events: none;
+        z-index: 0;
+        transition:
+            transform 0.08s cubic-bezier(0.16, 1, 0.3, 1),
+            opacity 0.12s ease,
+            filter 0.1s ease,
+            background-image 0.4s ease;
         will-change: transform, opacity, filter;
+    }
+
+    /* Lapisan Vignette Lembut agar Teks Judul, Artis, & Tombol Tetap Kontras & Tajam */
+    .l-music .ambient::after,
+    .l-lyrics .ambient::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at 50% 60%, rgba(10, 15, 24, 0.28) 0%, rgba(3, 5, 8, 0.76) 88%);
+        pointer-events: none;
+    }
+
+    /* Semua elemen fungsional dipastikan berada di atas lapisan ambient */
+    .l-music > *:not(.ambient),
+    .l-lyrics > *:not(.ambient) {
+        z-index: 2;
     }
 
     .lyr {
