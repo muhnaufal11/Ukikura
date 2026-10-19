@@ -27,7 +27,7 @@
     }
 
     .prog {
-        position: relative;
+        display: block;
         height: 5px;
         border-radius: 3px;
         background: rgba(255, 255, 255, 0.22);
@@ -115,7 +115,7 @@
 
     /* Volume Wheel HUD on Album Art */
     .art {
-        position: relative;
+        display: block;
         cursor: ns-resize;
         user-select: none;
         transition: transform 0.18s ease, box-shadow 0.18s ease;
