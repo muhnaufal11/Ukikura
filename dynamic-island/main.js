@@ -476,8 +476,9 @@ if (!gotLock) {
     app.quit();
 } else {
     app.on('second-instance', () => {
-        if (mainWindow) {
+        if (mainWindow && !mainWindow.isDestroyed()) {
             if (!mainWindow.isVisible()) mainWindow.show();
+            setIslandExpanded(true);
             mainWindow.focus();
         }
     });
@@ -488,6 +489,16 @@ if (!gotLock) {
         createIslandWindow();
         createTray();
         startWinRtBridge();
+
+        // Buka kapsul Dynamic Island sesaat saat pertama kali dijalankan agar pengguna tahu aplikasi sudah aktif
+        setTimeout(() => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                setIslandExpanded(true);
+                setTimeout(() => {
+                    if (!isPinnedOpen) setIslandExpanded(false);
+                }, 3200);
+            }
+        }, 700);
 
         // Hot-reload otomatis saat index.html, winrt-bridge.ps1, atau main.js diperbarui
         try {
