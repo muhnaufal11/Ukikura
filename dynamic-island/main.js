@@ -65,12 +65,26 @@ function getCenteredX(width) {
     return Math.round((screenWidth - width) / 2);
 }
 
+function getAppIconPath() {
+    const candidates = [
+        path.join(__dirname, '..', 'assets', 'ukikura-logo.ico'),
+        path.join(__dirname, '..', 'assets', 'ukikura-logo.png'),
+        path.join(__dirname, 'renderer', 'icon.ico'),
+        path.join(__dirname, 'renderer', 'icon.png')
+    ];
+    for (const p of candidates) {
+        if (fs.existsSync(p)) return p;
+    }
+    return undefined;
+}
+
 function createIslandWindow() {
     mainWindow = new BrowserWindow({
         width: WINDOW_WIDTH,
         height: WINDOW_HEIGHT,
         x: getCenteredX(WINDOW_WIDTH),
         y: 0,
+        icon: getAppIconPath(),
         frame: false,
         transparent: true,
         alwaysOnTop: true,
@@ -340,10 +354,16 @@ function refreshTrayMenu() {
 }
 
 function createTray() {
-    const iconDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABMSURBVDhPY2RgYPgPxFQBjAwMDP8pZRpGgxrAwMDAgM0wXBqwaRgNawBDAwMDNgaG/6SG0bAGMDQ0NGBjYPxPahgNGwYGBgYGAA46E8X6+X5hAAAAAElFTkSuQmCC';
-    const image = nativeImage.createFromDataURL(iconDataUrl);
+    const iconPath = getAppIconPath();
+    let image = iconPath ? nativeImage.createFromPath(iconPath) : null;
+    if (!image || image.isEmpty()) {
+        const iconDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABMSURBVDhPY2RgYPgPxFQBjAwMDP8pZRpGgxrAwMDAgM0wXBqwaRgNawBDAwMDNgaG/6SG0bAGMDQ0NGBjYPxPahgNGwYGBgYGAA46E8X6+X5hAAAAAElFTkSuQmCC';
+        image = nativeImage.createFromDataURL(iconDataUrl);
+    } else {
+        image = image.resize({ width: 16, height: 16 });
+    }
     tray = new Tray(image);
-    tray.setToolTip('Ukikura (浮き蔵) — Dynamic Island, Lirik, WA/HP & Gudang Tugas');
+    tray.setToolTip('Ukikura (浮倉) — Dynamic Island, Lirik, WA/HP & Gudang Tugas');
 
     refreshTrayMenu();
     tray.on('click', () => {

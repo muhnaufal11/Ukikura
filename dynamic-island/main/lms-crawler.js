@@ -18,9 +18,12 @@ async function openLmsLoginWindow() {
         return;
     }
 
+    const fs = require('fs');
+    const iconCandidate = path.join(__dirname, '..', '..', 'assets', 'ukikura-logo.ico');
     loginWindow = new BrowserWindow({
         width: 1020,
         height: 720,
+        icon: fs.existsSync(iconCandidate) ? iconCandidate : undefined,
         title: 'Memuat LMS Telkom University...',
         backgroundColor: '#0f172a',
         autoHideMenuBar: true,
@@ -229,8 +232,8 @@ async function captureCookiesAndScrape(win) {
     try {
         await persistCurrentLmsCookies(win.webContents.session);
 
-        // Jalankan injeksi pemindai tugas/kuis langsung di dalam session Electron yang sudah login
-        await runHiddenLmsCrawler();
+        // Jalankan injeksi pemindai tugas/kuis di background tanpa menahan penutupan jendela login
+        runHiddenLmsCrawler().catch(() => {});
     } catch (e) {
         console.error('[Dynamic Island] Gagal menangkap sesi LMS:', e.message);
     }
