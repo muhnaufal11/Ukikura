@@ -31,5 +31,15 @@ if (-not $iscc) {
 Write-Host "[Ukikura Builder] Mengompilasi installer Ukikura menggunakan: $iscc" -ForegroundColor Cyan
 & $iscc $issFile
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "[Ukikura Builder] Selesai! File installer siap didistribusikan di folder: $distDir" -ForegroundColor Green
+    $exePath = Join-Path $PSScriptRoot "Ukikura-Setup-v1.0.0.exe"
+    if (Test-Path $exePath) {
+        $certSubject = "CN=Nauflix (Ukikura Open Source), O=Nauflix, C=ID"
+        $cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert -ErrorAction SilentlyContinue | Where-Object { $_.Subject -eq $certSubject } | Select-Object -First 1
+        if (-not $cert) {
+            $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject $certSubject -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -CertStoreLocation "Cert:\CurrentUser\My" -NotAfter (Get-Date).AddYears(5)
+        }
+        Set-AuthenticodeSignature -FilePath $exePath -Certificate $cert -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com" | Out-Null
+        Write-Host "[Ukikura Builder] Installer berhasil ditandatangani (Authenticode SHA-256 + DigiCert Timestamp)." -ForegroundColor Green
+    }
+    Write-Host "[Ukikura Builder] Selesai! File installer siap didistribusikan: $exePath" -ForegroundColor Green
 }
