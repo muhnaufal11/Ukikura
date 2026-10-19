@@ -144,22 +144,39 @@
         --e: 22px;
     }
 
-    /* Layer di dalam Notch */
+    /* Layer di dalam Notch dengan transisi halus bebas glitch */
     .ly {
         position: absolute;
         inset: 0;
         overflow: hidden;
         border-radius: inherit;
         opacity: 0;
-        transition: opacity 0.2s ease;
+        visibility: hidden;
         pointer-events: none;
+        transition: opacity 0.1s ease, visibility 0.1s ease;
+        will-change: opacity;
     }
 
+    /* Mode Istirahat (Maskot Mata Berkedip & Status Bar Tipis): Baru muncul setelah notch mengecil sempurna */
     .mn[data-s="pet"] .l-pet,
-    .mn[data-s="idle"] .l-idle,
+    .mn[data-s="idle"] .l-idle {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transition: opacity 0.22s ease 0.24s, visibility 0s 0.24s;
+    }
+
+    /* Mode Peek Pop-up Cepat */
     .mn[data-s="peek"] .l-peek,
     .mn[data-s="charge"] .l-charge,
-    .mn[data-s="bt"] .l-bt,
+    .mn[data-s="bt"] .l-bt {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transition: opacity 0.22s ease 0.12s, visibility 0s 0.12s;
+    }
+
+    /* Halaman-Halaman Terbuka: Muncul mulus saat notch sudah mulai melebar */
     .mn[data-s="music"] .l-music,
     .mn[data-s="lyrics"] .l-lyrics,
     .mn[data-s="notif"] .l-notif,
@@ -169,14 +186,16 @@
     .mn[data-s="shelf"] .l-shelf,
     .mn[data-s="config"] .l-config {
         opacity: 1;
+        visibility: visible;
         pointer-events: auto;
-        transition: opacity 0.32s ease 0.14s;
+        transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1) 0.14s, visibility 0s 0.14s;
     }
 
     .mn:is([data-s="music"], [data-s="lyrics"], [data-s="notif"], [data-s="todo"], [data-s="cal"], [data-s="pomo"], [data-s="shelf"], [data-s="config"]) :is(.l-hdr, .l-dots, .l-nav) {
         opacity: 1;
+        visibility: visible;
         pointer-events: none;
-        transition: opacity 0.32s ease 0.14s;
+        transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1) 0.14s, visibility 0s 0.14s;
     }
 
     .l-hdr, .l-dots, .l-nav {
@@ -186,6 +205,21 @@
 
     .mn:is([data-s="music"], [data-s="lyrics"], [data-s="notif"], [data-s="todo"], [data-s="cal"], [data-s="pomo"], [data-s="shelf"], [data-s="config"]) :is(.hdr-bar, .arw, .dots, .dots button, .hdr-icon-btn) {
         pointer-events: auto;
+    }
+
+    /* Mode Lirik Melebar (520px): Sembunyikan panah navigasi samping & dots agar lirik leluasa tanpa tumpang tindih */
+    .mn[data-s="lyrics"] .l-nav {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transition: opacity 0.15s ease !important;
+    }
+
+    .mn[data-s="lyrics"] .dots {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transition: opacity 0.15s ease !important;
     }
 
     /* Cahaya Ambient Bawah Khas Nusa (Living Aurora Flow) */
@@ -812,6 +846,8 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        white-space: nowrap;
+        overflow: hidden;
     }
 
     .hdr-title {
@@ -822,6 +858,8 @@
         align-items: center;
         gap: 6px;
         cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .hdr-center {
@@ -833,12 +871,17 @@
         -webkit-app-region: drag;
         cursor: grab;
         padding: 2px 8px;
+        white-space: nowrap;
+        flex-shrink: 1;
+        overflow: hidden;
     }
 
     .hdr-actions {
         display: flex;
         align-items: center;
         gap: 5px;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .hdr-icon-btn {
