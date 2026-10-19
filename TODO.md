@@ -1,4 +1,4 @@
-# To-Do List Pengembangan Fitur Baru Ukikura (17 Ide Lengkap)
+# To-Do List Pengembangan Fitur Baru Ukikura (18 Ide Lengkap)
 
 Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Floating Island + *Kura* = Local Vault), dikelompokkan berdasarkan modulnya.
 
@@ -79,3 +79,7 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
 
 - [ ] **17. Reaksi Maskot terhadap Beat Musik & Cuaca/Waktu**
   - Mata maskot di mode `pet` ikut mengangguk mengikuti ketukan musik saat lagu diputar, atau menampilkan animasi mengantuk otomatis saat lewat pukul 00:00 malam.
+
+- [ ] **18. Integrasi Lockscreen & Animasi Penyambutan Saat Unlock (`Welcome Back Peek`)**
+  - Mendeteksi otomatis saat layar Windows dikunci (*Lockscreen*) dan saat baru dibuka kembali (`powerMonitor` `lock-screen` / `unlock-screen` & event WinRT `SessionSwitch`).
+  - Menampilkan animasi sambutan hangat dari maskot (`mood-happy` / `mood-love`) beserta *Peek Popup* ringkasan cepat saat layar baru dibuka (sapaan sesuai waktu Pagi/Siang/Malam, jumlah notifikasi WhatsApp yang masuk selama laptop terkunci, dan jadwal kuliah/deadline terdekat hari itu).
