@@ -247,7 +247,6 @@ public class AudioMaster {
         }
     }
 }
-}
 "@
 Add-Type -TypeDefinition $btCode
 
@@ -473,8 +472,11 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
                     $pos = [math]::Round($basePos, 3)
                 }
 
-                $curVol = [AudioMaster]::GetVolume()
-                $volPct = if ($curVol -ge 0) { [math]::Round($curVol * 100) } else { $null }
+                $volPct = $null
+                try {
+                    $curVol = [AudioMaster]::GetVolume()
+                    if ($curVol -ge 0) { $volPct = [math]::Round($curVol * 100) }
+                } catch {}
 
                 $mediaPayload = @{
                     type = "media"
