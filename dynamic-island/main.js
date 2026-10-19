@@ -1,5 +1,5 @@
 "use strict";
-const { app, BrowserWindow, ipcMain, screen, shell, Tray, Menu, nativeImage, powerMonitor } = require("electron");
+const { app, BrowserWindow, ipcMain, screen, shell, Tray, Menu, nativeImage, powerMonitor, desktopCapturer, session } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
@@ -117,6 +117,15 @@ function createIslandWindow() {
     mainWindow.setAlwaysOnTop(true, 'screen-saver');
     mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     mainWindow.setIgnoreMouseEvents(true, { forward: true });
+
+    // Request handler untuk loopback audio desktop real-time (WASAPI Loopback)
+    session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+        desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+            callback({ video: sources[0], audio: 'loopback' });
+        }).catch(() => {
+            callback({});
+        });
+    });
 
     // Kunci posisi vertikal agar selalu menyatu dengan frame atas (y = 0)
     mainWindow.on('moved', () => {
@@ -467,6 +476,15 @@ ipcMain.on('island-set-channel', async (event, targetChannel) => {
 
 ipcMain.on('island-open-update', () => {
     openUpdateDownloadPage();
+});
+
+ipcMain.handle('get-desktop-audio-source', async () => {
+    try {
+        const sources = await desktopCapturer.getSources({ types: ['screen'] });
+        return sources[0]?.id || null;
+    } catch (_) {
+        return null;
+    }
 });
 
 ipcMain.on('island-context-menu', () => {

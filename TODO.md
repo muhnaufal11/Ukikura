@@ -10,8 +10,8 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
   - Klik atau geser (*drag*) langsung pada garis durasi lagu (`#music-prog-1` / `#music-prog-2`) untuk melompat ke menit tertentu via perintah WinRT `TryChangePlaybackPositionAsync`.
   - *Scroll* roda mouse di atas sampul album untuk mengatur volume aplikasi pemutar musik secara langsung.
 
-- [ ] **2. Real-Time Audio Spectrum Visualizer (WASAPI Loopback)**
-  - Lima bar gelombang suara di kapsul tertutup (`.eq`) dan latar belakang halaman lirik bergerak mengikuti **frekuensi bass dan vokal asli** dari output audio Windows secara *real-time*, bukan sekadar animasi CSS berulang.
+- [x] **2. Real-Time Audio Ambient Visualizer (WASAPI Loopback)**
+  - Latar belakang aura (`.ambient`) dan pendaran sampul album di halaman musik & lirik berdenyut (*pulse & breathe*) mengikuti **frekuensi bass dan vokal asli** dari output audio Windows secara *real-time* via Web Audio API loopback stream (5 bar kapsul dipertahankan orisinal sesuai preferensi).
 
 - [ ] **3. Dual-Sub Lirik (Romaji + Kanji + Terjemahan Indonesia)**
   - Menambahkan opsi baris ke-3 opsional berisi arti Bahasa Indonesia (dari `tlyric` NetEase atau terjemahan subtitle YouTube `&tlang=id`) tepat di bawah baris Kanji.

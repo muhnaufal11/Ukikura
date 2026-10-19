@@ -88,6 +88,9 @@ function setPage(page) {
     if (isExpanded) {
         mnEl.dataset.s = eff;
     }
+    if (typeof startAmbientVisualizerIfNeeded === 'function') {
+        startAmbientVisualizerIfNeeded();
+    }
 }
 
 // Navigasi Panah & Dots khas Nusa

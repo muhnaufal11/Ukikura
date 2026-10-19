@@ -261,6 +261,7 @@ ipcRenderer.on('media-update', (event, msg) => {
 
     renderMediaUI();
     updateLiveMetrics();
+    startAmbientVisualizerIfNeeded();
 });
 
 ipcRenderer.on('lyrics-update', (event, payload) => {
@@ -611,4 +612,164 @@ setupAreaVolumeWheel(document.getElementById('music-art-2'));
 
 // Minta volume awal Windows
 ipcRenderer.send('volume-get');
+
+// ==================== VISUALIZER AURA AMBIENT REAL-TIME (WASAPI LOOPBACK) ====================
+let audioVisualizerCtx = null;
+let audioVisualizerStream = null;
+let audioVisualizerAnalyser = null;
+let audioVisualizerData = null;
+let visualizerAnimId = null;
+let visualizerInitializing = false;
+let smoothBass = 0;
+let smoothMid = 0;
+let smoothTreb = 0;
+
+async function initDesktopAudioVisualizer() {
+    if (audioVisualizerStream && audioVisualizerAnalyser) return true;
+    if (visualizerInitializing) return false;
+    visualizerInitializing = true;
+    try {
+        const sourceId = await ipcRenderer.invoke('get-desktop-audio-source');
+        if (!sourceId) {
+            visualizerInitializing = false;
+            return false;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                mandatory: {
+                    chromeMediaSource: 'desktop'
+                }
+            },
+            video: {
+                mandatory: {
+                    chromeMediaSource: 'desktop',
+                    chromeMediaSourceId: sourceId
+                }
+            }
+        });
+
+        stream.getVideoTracks().forEach(t => t.stop());
+        audioVisualizerStream = stream;
+
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioVisualizerCtx = new AudioContextClass();
+        if (audioVisualizerCtx.state === 'suspended') {
+            await audioVisualizerCtx.resume();
+        }
+        const srcNode = audioVisualizerCtx.createMediaStreamSource(stream);
+        audioVisualizerAnalyser = audioVisualizerCtx.createAnalyser();
+        audioVisualizerAnalyser.fftSize = 64; // 32 frequency bins
+        audioVisualizerAnalyser.smoothingTimeConstant = 0.6;
+        srcNode.connect(audioVisualizerAnalyser); // Jangan connect ke destination agar tidak echo
+
+        audioVisualizerData = new Uint8Array(audioVisualizerAnalyser.frequencyBinCount);
+        visualizerInitializing = false;
+        return true;
+    } catch (_) {
+        visualizerInitializing = false;
+        return false;
+    }
+}
+
+function updateAmbientVisualizer() {
+    const isPlaying = mediaState.active && mediaState.status === 'Playing';
+    const isMusicOrLyrics = (typeof currentPage !== 'undefined') && (currentPage === 'music' || currentPage === 'lyrics');
+
+    if (!isPlaying || !isMusicOrLyrics) {
+        // Peluruhan halus saat musik dijeda atau keluar halaman
+        smoothBass *= 0.82;
+        smoothMid *= 0.82;
+        smoothTreb *= 0.82;
+        applyAmbientToDOM(smoothBass, smoothMid, smoothTreb);
+
+        if (smoothBass < 0.005 && smoothMid < 0.005 && smoothTreb < 0.005) {
+            smoothBass = 0;
+            smoothMid = 0;
+            smoothTreb = 0;
+            applyAmbientToDOM(0, 0, 0);
+            visualizerAnimId = null;
+            return;
+        }
+        visualizerAnimId = requestAnimationFrame(updateAmbientVisualizer);
+        return;
+    }
+
+    if (audioVisualizerAnalyser && audioVisualizerData) {
+        audioVisualizerAnalyser.getByteFrequencyData(audioVisualizerData);
+
+        // Ekstrak 3 pita energi utama dari spektrum audio Windows:
+        // 1. Bass / Kick Drum (Bins 1 - 3: ~30Hz - 200Hz)
+        let bassSum = 0;
+        for (let i = 1; i <= 3; i++) bassSum += audioVisualizerData[i] || 0;
+        const targetBass = Math.min(1, (bassSum / (3 * 255)) * 1.4);
+
+        // 2. Vokal & Melodi (Bins 4 - 10: ~250Hz - 1500Hz)
+        let midSum = 0;
+        for (let i = 4; i <= 10; i++) midSum += audioVisualizerData[i] || 0;
+        const targetMid = Math.min(1, (midSum / (7 * 255)) * 1.25);
+
+        // 3. Treble / Kemilau Simbal (Bins 11 - 22: ~1600Hz - 8000Hz)
+        let trebSum = 0;
+        for (let i = 11; i <= 22; i++) trebSum += audioVisualizerData[i] || 0;
+        const targetTreb = Math.min(1, (trebSum / (12 * 255)) * 1.2);
+
+        // Exponential smoothing: responsif saat beat menghentak, halus saat melemah
+        smoothBass += (targetBass - smoothBass) * (targetBass > smoothBass ? 0.36 : 0.12);
+        smoothMid += (targetMid - smoothMid) * (targetMid > smoothMid ? 0.30 : 0.10);
+        smoothTreb += (targetTreb - smoothTreb) * (targetTreb > smoothTreb ? 0.28 : 0.10);
+    } else {
+        smoothBass *= 0.88;
+        smoothMid *= 0.88;
+        smoothTreb *= 0.88;
+    }
+
+    applyAmbientToDOM(smoothBass, smoothMid, smoothTreb);
+    visualizerAnimId = requestAnimationFrame(updateAmbientVisualizer);
+}
+
+function applyAmbientToDOM(bass, mid, treb) {
+    const ambientEls = document.querySelectorAll('.l-music .ambient, .l-lyrics .ambient');
+    if (!ambientEls.length) return;
+
+    // Skala denyut & intensitas pendaran mengikuti energi frekuensi bass + vokal
+    const scale = 1 + (bass * 0.08);
+    const opacity = (0.75 + (mid * 0.25) + (bass * 0.12)).toFixed(2);
+    const saturate = (1.1 + mid * 0.4).toFixed(2);
+    const brightness = (0.95 + bass * 0.3).toFixed(2);
+
+    ambientEls.forEach(el => {
+        el.style.transform = `scale(${scale.toFixed(3)})`;
+        el.style.opacity = opacity;
+        el.style.filter = `saturate(${saturate}) brightness(${brightness})`;
+    });
+
+    // Pendaran dinamis halus pada sampul album
+    const art1 = document.getElementById('music-art-1');
+    const art2 = document.getElementById('music-art-2');
+    const artGlowSpread = Math.round(12 + bass * 22);
+    const artGlowAlpha = (0.28 + bass * 0.42).toFixed(2);
+    const glowStyle = (bass > 0.02)
+        ? `0 6px ${artGlowSpread}px rgba(56, 189, 248, ${artGlowAlpha})`
+        : '';
+    if (art1) art1.style.boxShadow = glowStyle;
+    if (art2) art2.style.boxShadow = glowStyle;
+}
+
+function startAmbientVisualizerIfNeeded() {
+    const isPlaying = mediaState.active && mediaState.status === 'Playing';
+    const isMusicOrLyrics = (typeof currentPage !== 'undefined') && (currentPage === 'music' || currentPage === 'lyrics');
+    if (isPlaying && isMusicOrLyrics) {
+        if (!audioVisualizerAnalyser && !visualizerInitializing) {
+            initDesktopAudioVisualizer().then(ok => {
+                if (ok && !visualizerAnimId) {
+                    visualizerAnimId = requestAnimationFrame(updateAmbientVisualizer);
+                }
+            });
+        }
+        if (!visualizerAnimId) {
+            visualizerAnimId = requestAnimationFrame(updateAmbientVisualizer);
+        }
+    }
+}
 
