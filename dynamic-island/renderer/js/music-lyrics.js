@@ -124,31 +124,63 @@ function getInterpolatedMediaPos() {
 
 function renderLyricItemHtml(l, i) {
     let mainText = '';
-    let romaText = '';
+    let subText = '';
     let transText = (l && l.transText) || '';
 
-    if (l && l.rawText && l.romaText) {
-        mainText = l.rawText;
-        romaText = l.romaText;
-    } else if (l && l.roma && l.jp) {
-        mainText = l.jp;
-        romaText = l.roma;
-    } else if (l && typeof l.text === 'string' && l.text.includes(' · ')) {
+    const rawVal = String((l && (l.rawText || l.text)) || '').trim();
+    const hasJpVocal = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(rawVal) || Boolean(l && l.roma && l.jp);
+    const hasJpSub = Boolean(l && l.jpText && /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(l.jpText));
+
+    let romaVal = (l && (l.romaText || l.roma)) || '';
+    if (!romaVal && typeof l.text === 'string' && l.text.includes(' · ')) {
         const parts = l.text.split(' · ');
-        romaText = parts[0];
-        mainText = parts.slice(1).join(' · ');
-    } else {
-        mainText = (l && l.text) || '';
-        romaText = (l && l.romaText) || '';
+        romaVal = parts[0].trim();
     }
 
-    if (romaText && romaText.trim().toLowerCase() === mainText.trim().toLowerCase()) {
-        romaText = '';
+    if (hasJpVocal && romaVal) {
+        // ATURAN BAKU: Untuk lagu berbahasa Jepang
+        // 1. Main Lirik: ROMAJI (alfabet latin untuk dibaca/dinyanyikan)
+        // 2. Lirik 2: Aksara Jepang asli (Kanji / Katakana / Hiragana)
+        // 3. Lirik 3: Subtitle Bahasa Indonesia (Sub Indo)
+        let jpScript = (l && l.jp) || (l && l.rawText) || '';
+        if (!jpScript && typeof l.text === 'string' && l.text.includes(' · ')) {
+            jpScript = l.text.split(' · ').slice(1).join(' · ').trim();
+        }
+        if (!jpScript) jpScript = rawVal;
+
+        mainText = romaVal;
+        subText = jpScript;
+    } else if (hasJpSub) {
+        // Lagu multilingual (seperti ALiCE&u): Vokal utama di baris 1, Romaji & Kanji di baris 2
+        mainText = rawVal;
+        const jp = l.jpText || '';
+        if (romaVal && jp && romaVal.toLowerCase() !== jp.toLowerCase()) {
+            subText = `${romaVal} · ${jp}`;
+        } else {
+            subText = romaVal || jp;
+        }
+    } else {
+        // Lagu umum (Indonesia, Inggris, dll.)
+        if (l && l.rawText && l.romaText) {
+            mainText = l.rawText;
+            subText = l.romaText;
+        } else if (l && typeof l.text === 'string' && l.text.includes(' · ')) {
+            const parts = l.text.split(' · ');
+            mainText = parts[0].trim();
+            subText = parts.slice(1).join(' · ').trim();
+        } else {
+            mainText = rawVal || (l && l.text) || '';
+            subText = (l && l.romaText) || '';
+        }
+    }
+
+    if (subText && subText.trim().toLowerCase() === mainText.trim().toLowerCase()) {
+        subText = '';
     }
     if (transText && transText.trim().toLowerCase() === mainText.trim().toLowerCase()) {
         transText = '';
     }
-    if (transText && romaText && transText.trim().toLowerCase() === romaText.trim().toLowerCase()) {
+    if (transText && subText && transText.trim().toLowerCase() === subText.trim().toLowerCase()) {
         transText = '';
     }
 
@@ -162,8 +194,8 @@ function renderLyricItemHtml(l, i) {
 
     let html = `<li data-lidx="${i}" style="cursor:pointer">`;
     html += `<div class="lyr-main">${escapeHtml(mainText)}</div>`;
-    if (romaText) {
-        html += `<div class="lyr-sub">${escapeHtml(romaText)}</div>`;
+    if (subText) {
+        html += `<div class="lyr-sub">${escapeHtml(subText)}</div>`;
     }
     if (transText) {
         html += `<div class="lyr-trans">${escapeHtml(transText)}</div>`;
@@ -314,15 +346,33 @@ function updateKaraokeOverlay() {
     let curMain = '';
     let curSub = '';
     if (curLine) {
-        if (curLine.rawText && curLine.romaText) {
+        const rawLine = curLine.rawText || curLine.text || '';
+        const hasJpVocal = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(rawLine) || Boolean(curLine.roma && curLine.jp);
+        const hasJpSub = Boolean(curLine.jpText && /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(curLine.jpText));
+
+        if (hasJpVocal && curLine.romaText) {
+            // Lagu vokal Jepang: Romaji di baris utama!
+            curMain = curLine.romaText;
+            const jp = curLine.jp || curLine.rawText || '';
+            const t = curLine.transText || '';
+            curSub = (jp && t) ? `${jp} · ${t}` : (jp || t || '');
+        } else if (hasJpSub) {
+            // Lagu multilingual (seperti ALiCE&u): Vokal di baris utama, Romaji/Kanji + Sub Indo di baris kedua
+            curMain = rawLine;
+            const r = curLine.romaText || '';
+            const jp = curLine.jpText || '';
+            const t = curLine.transText || '';
+            const combinedSub = (r && jp) ? `${r} (${jp})` : (r || jp);
+            curSub = (combinedSub && t) ? `${combinedSub} · ${t}` : (combinedSub || t || '');
+        } else if (curLine.rawText && curLine.romaText) {
             curMain = curLine.rawText;
             const r = curLine.romaText;
             const t = curLine.transText;
             curSub = (r && t) ? `${r} · ${t}` : (r || t || '');
         } else if (curLine.text && curLine.text.includes(' · ')) {
             const parts = curLine.text.split(' · ');
-            curMain = parts.slice(1).join(' · ');
-            const r = parts[0];
+            curMain = parts[0].trim();
+            const r = parts.slice(1).join(' · ').trim();
             const t = curLine.transText;
             curSub = (r && t) ? `${r} · ${t}` : (r || t || '');
         } else {

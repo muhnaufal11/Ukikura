@@ -118,7 +118,7 @@ function normalizePhoneticLatin(str) {
 
 // ==================== PARSER METADATA LAGU & COVER YOUTUBE ====================
 
-const NOISE_BRACKET_RE = /^(?:official.*|mv|music\s*video|lyric.*|lirik.*|audio.*|video.*|visualizer.*|cover.*|歌ってみた.*|うたってみた.*|utattemita.*|karaoke.*|instrumental.*|off\s*vocal.*|romaji.*|kanji.*|sub\s*indo.*|indo\s*sub.*|terjemahan.*|hd|4k|hq|live.*|pv|オリジナル.*|original.*|full.*|tv\s*size.*|short\s*ver.*|english\s*ver.*|eng\s*ver.*|japanese\s*ver.*|jp\s*ver.*|indonesian\s*ver.*|indo\s*ver.*)$/i;
+const NOISE_BRACKET_RE = /^(?:official.*|mv|music\s*video|lyric.*|lirik.*|audio.*|video.*|visualizer.*|cover.*|歌ってみた.*|うたってみた.*|utattemita.*|karaoke.*|instrumental.*|off\s*vocal.*|romaji.*|kanji.*|sub\s*indo.*|indo\s*sub.*|terjemahan.*|hd|4k|hq|live.*|pv|オリジナル.*|original.*|full.*|tv\s*size.*|short\s*ver.*|english\s*ver.*|eng\s*ver.*|japanese\s*ver.*|jp\s*ver.*|indonesian\s*ver.*|indo\s*ver.*|koplo.*|remix.*|dj.*|sped\s*up.*|speed\s*up.*|slowed.*|bootleg.*|mashup.*)$/i;
 
 function stripParensNoise(str) {
     return String(str || '')
@@ -195,7 +195,7 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         .replace(/（([^）]+)）/g, ' ')
         .replace(/\(([^)]+)\)/g, (_, p1) => NOISE_BRACKET_RE.test(p1.trim()) ? ' ' : ` ${p1} `)
         .replace(/(?:covered\s+by|cover\s+by|vocal\s*[:：]?|vo\s*[.．:：]|cv\s*[.．:：]|feat\.?|ft\.?)\s+[^-|/•·【「『(\[]+/gi, ' ')
-        .replace(/\b(?:official\s+music\s+video|official\s+lyric\s+video|official\s+video|official\s+audio|lyric\s+video|lyrics\s+video|lirik\s+lagu|full\s+lirik|lirik\s+dan\s+terjemahan|romaji\s+lyrics|sub\s+indonesia|sub\s+indo|nyanyi\s+bareng|nyangi\s+bareng|sing\s+along|歌ってみた|うたってみた)\b/gi, ' ')
+        .replace(/\b(?:official\s+music\s+video|official\s+lyric\s+video|official\s+video|official\s+audio|lyric\s+video|lyrics\s+video|lirik\s+lagu|full\s+lirik|lirik\s+dan\s+terjemahan|romaji\s+lyrics|sub\s+indonesia|sub\s+indo|nyanyi\s+bareng|nyangi\s+bareng|sing\s+along|歌ってみた|うたってみた|cover|covered|koplo|remix|koplo\s*remix|dj\s*remix|sped\s*up|speed\s*up|slowed|nightcore|bootleg|mashup)\s*(?:ver(?:sion)?)?\b/gi, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 

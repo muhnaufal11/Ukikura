@@ -72,9 +72,14 @@ function parseSrv3Stream(xml) {
             const dSec = Math.round(pDurMs) / 1000;
 
             // Deduplikasi & perpanjang durasi jika baris teks berulang berturut-turut (efek karaoke YouTube)
-            const last = lines[lines.length - 1];
-            if (last && last.text.toLowerCase() === cleanText.toLowerCase() && (tSec - last.time) < 8.0) {
-                last.endTime = Math.max(last.endTime, Math.round((tSec + dSec) * 1000) / 1000);
+            const last1 = lines[lines.length - 1];
+            const last2 = lines[lines.length - 2];
+            if (last1 && last1.text.toLowerCase() === cleanText.toLowerCase() && (tSec - last1.time) < 8.0) {
+                last1.endTime = Math.max(last1.endTime, Math.round((tSec + dSec) * 1000) / 1000);
+                continue;
+            }
+            if (last2 && last2.text.toLowerCase() === cleanText.toLowerCase() && (tSec - last2.time) < 8.0) {
+                last2.endTime = Math.max(last2.endTime, Math.round((tSec + dSec) * 1000) / 1000);
                 continue;
             }
 
@@ -149,8 +154,10 @@ function parseDurationTextToSec(durText) {
 }
 
 async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
-    const searchQuery = [rawTitle, rawArtist].filter(Boolean).join(' ').trim();
-    if (!searchQuery) return null;
+    const primaryQuery = (meta && Array.isArray(meta.queries) && meta.queries[0])
+        ? meta.queries[0]
+        : [rawTitle, rawArtist].filter(Boolean).join(' ').trim();
+    if (!primaryQuery) return null;
 
     const searchBody = JSON.stringify({
         context: {
@@ -161,7 +168,7 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
                 gl: 'ID'
             }
         },
-        query: searchQuery
+        query: primaryQuery
     });
 
     const searchRes = await httpRequestRaw('https://www.youtube.com/youtubei/v1/search?prettyPrint=false', {
@@ -173,7 +180,10 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
 
     if (!searchRes.body) return null;
 
-    // Ekstrak kandidat videoId beserta durasi dari hasil pencarian YouTube
+    // Ekstrak kandidat videoId beserta durasi & kecocokan judul dari hasil pencarian YouTube
+    const coreTitle = (meta && meta.cleanedTitle) ? meta.cleanedTitle.toLowerCase() : rawTitle.toLowerCase();
+    const coreWords = coreTitle.replace(/[^a-z0-9\u3040-\u30ff\u4e00-\u9fff]/g, ' ').split(/\s+/).filter(w => w.length >= 3);
+
     const videoIds = [];
     const rendererBlocks = searchRes.body.split('"videoRenderer":').slice(1, 7);
     for (let idx = 0; idx < rendererBlocks.length; idx++) {
@@ -183,6 +193,8 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         const vid = vidMatch[1];
         const lenMatch = blk.match(/"lengthText":\{[\s\S]{1,350}?"simpleText":"([\d:]+)"/);
         const vDur = lenMatch ? parseDurationTextToSec(lenMatch[1]) : 0;
+        const titleMatch = blk.match(/"title":\{"runs":\[\{"text":"([^"]+)"/);
+        const vTitle = titleMatch ? titleMatch[1].toLowerCase() : '';
 
         let score = 60 - idx * 8;
         if (mediaDur > 20 && vDur > 20) {
@@ -191,6 +203,13 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
             else if (diff <= 8) score += 35;
             else if (diff > 45) score -= 50;
         }
+
+        if (coreWords.length > 0) {
+            const hits = coreWords.filter(w => vTitle.includes(w)).length;
+            if (hits > 0) score += 55;
+            else score -= 45;
+        }
+
         if (!videoIds.some(v => v.id === vid)) {
             videoIds.push({ id: vid, dur: vDur, score });
         }
@@ -209,7 +228,7 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     let captionTracks = [];
     let usedClient = ANDROID_CLIENT;
 
-    for (const client of [ANDROID_CLIENT, IOS_CLIENT]) {
+    for (const client of [IOS_CLIENT, ANDROID_CLIENT]) {
         const pBody = JSON.stringify({
             context: {
                 client: {
@@ -236,9 +255,12 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
             ? pJson.captions.playerCaptionsTracklistRenderer.captionTracks
             : [];
         if (tracks.length > 0) {
-            captionTracks = tracks;
-            usedClient = client;
-            break;
+            const hasManual = tracks.some(t => t && t.kind !== 'asr');
+            if (hasManual || captionTracks.length === 0) {
+                captionTracks = tracks;
+                usedClient = client;
+                if (hasManual) break;
+            }
         }
     }
 
@@ -257,30 +279,29 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         let s = 0;
         if (t.kind !== 'asr') {
             // Manual CC resmi yang diunggah kreator video cover/lagu (Prioritas Utama!)
-            if (isIdSong && lang.startsWith('id')) s += 140;
-            else if (isEngSong && lang.startsWith('en')) s += 140;
-            else if (isJpSong && lang.startsWith('ja')) s += 140;
-            else if (lang.startsWith('en')) s += 90;
-            else if (lang.startsWith('ja')) s += 80;
-            else if (lang.startsWith('id')) s += 70;
-            else s += 50;
+            if (isIdSong && lang.startsWith('id')) s += 200;
+            else if (isEngSong && lang.startsWith('en')) s += 200;
+            else if (isJpSong && lang.startsWith('ja')) s += 200;
+            else if (lang.startsWith('en')) s += 160;
+            else if (lang.startsWith('ja')) s += 150;
+            else if (lang.startsWith('id')) s += 140;
+            else s += 120;
         } else {
-            // Jalur Auto-ASR
+            // Jalur Auto-ASR (Maksimal 75-80, tidak boleh mengalahkan Manual CC)
             if (isEngSong) {
-                if (lang.startsWith('en')) s += 100;
-                else if (lang.startsWith('id')) s += 60;
-                else s = -999; // Tolak ASR bahasa yang salah (misal ASR Vietnam / Rusia pada lagu Inggris)
+                if (lang.startsWith('en')) s += 80;
+                else if (lang.startsWith('id')) s += 50;
+                else s = -999; // Tolak ASR bahasa yang salah
             } else if (isIdSong) {
-                if (lang.startsWith('id')) s += 100;
+                if (lang.startsWith('id')) s += 80;
                 else s = -999;
             } else if (isJpSong) {
-                if (lang.startsWith('ja')) s += 100;
-                else if (lang.startsWith('en')) s += 45;
-                else if (lang.startsWith('id')) s += 30;
+                if (lang.startsWith('ja')) s += 80;
+                else if (lang.startsWith('en')) s += 40;
                 else s = -999; // Tolak ASR bahasa selain Jepang untuk lagu Jepang
             } else {
-                if (lang.startsWith('id')) s += 100;
-                else if (lang.startsWith('en')) s += 60;
+                if (lang.startsWith('id')) s += 80;
+                else if (lang.startsWith('en')) s += 50;
                 else if (lang.startsWith('ja')) s += 30;
             }
         }
@@ -302,12 +323,15 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     const bestAsr = asrCandidates[0] || null;
     const bestManual = manualCandidates[0] || null;
 
-    const idTrack = captionTracks.find(t => t && t.baseUrl && String(t.languageCode || '').toLowerCase().startsWith('id'));
+    const idTrack = captionTracks.find(t => t && t.baseUrl && String(t.languageCode || '').toLowerCase().startsWith('id') && t.kind !== 'asr') ||
+                    captionTracks.find(t => t && t.baseUrl && String(t.languageCode || '').toLowerCase().startsWith('id'));
+    const jaTrack = captionTracks.find(t => t && t.baseUrl && String(t.languageCode || '').toLowerCase().startsWith('ja') && t.kind !== 'asr');
 
-    const [asrXmlRes, manualXmlRes, idXmlRes] = await Promise.all([
+    const [asrXmlRes, manualXmlRes, idXmlRes, jaXmlRes] = await Promise.all([
         bestAsr ? httpRequestRaw(`${bestAsr.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 6500 }) : Promise.resolve({ body: '' }),
         bestManual ? httpRequestRaw(`${bestManual.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 6500 }) : Promise.resolve({ body: '' }),
-        idTrack ? httpRequestRaw(`${idTrack.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 6500 }).catch(() => ({ body: '' })) : Promise.resolve({ body: '' })
+        (idTrack && (!bestManual || idTrack !== bestManual.track)) ? httpRequestRaw(`${idTrack.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 6500 }).catch(() => ({ body: '' })) : Promise.resolve({ body: '' }),
+        (jaTrack && (!bestManual || jaTrack !== bestManual.track)) ? httpRequestRaw(`${jaTrack.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 6500 }).catch(() => ({ body: '' })) : Promise.resolve({ body: '' })
     ]);
 
     const parsedAsr = (asrXmlRes && asrXmlRes.body && asrXmlRes.body.length > 50)
@@ -318,6 +342,9 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         : { tokens: [], lines: [] };
     const parsedId = (idXmlRes && idXmlRes.body && idXmlRes.body.length > 50)
         ? parseSrv3Stream(idXmlRes.body)
+        : { tokens: [], lines: [] };
+    const parsedJa = (jaXmlRes && jaXmlRes.body && jaXmlRes.body.length > 50)
+        ? parseSrv3Stream(jaXmlRes.body)
         : { tokens: [], lines: [] };
 
 function mergeFragmentedAsrLines(rawLines) {
@@ -340,8 +367,9 @@ function mergeFragmentedAsrLines(rawLines) {
         const gap = item.time - (cur.endTime || cur.time);
         const endsWithPunct = /[.!?]$/.test(curText);
         const curDur = (cur.endTime || (item.time + 1.5)) - cur.time;
+        const endsWithDangling = /\b(dan|dan\s+juga|atau|yang|untuk|dengan|saat|walau|karena|tapi|agar|bila|jika|ku|kau|and|to|with|of|the|in|on|at|for|that|which|as|so|but|or),?$/i.test(curText) || /[,，、…—–]$/.test(curText);
 
-        const shouldMerge = !endsWithPunct && (wordCount < 4 || curDur < 2.4) && gap < 1.6 && (wordCount + text.split(/\s+/).length <= 9);
+        const shouldMerge = endsWithDangling || (!endsWithPunct && (wordCount < 4 || curDur < 2.4) && gap < 1.6 && (wordCount + text.split(/\s+/).length <= 11));
 
         if (shouldMerge) {
             const separator = hasJapaneseChars(curText + text) ? '' : ' ';
@@ -364,27 +392,41 @@ function sanitizeBilingualManualLines(rawLines) {
         const cur = rawLines[i];
         const next = rawLines[i + 1];
 
-        // 1. Cek pasangan bilingual pada timestamp berdekatan (<= 0.65s)
-        if (next && Math.abs(next.time - cur.time) <= 0.65) {
+        // 1. Cek pasangan bilingual pada timestamp berdekatan (<= 0.75s)
+        if (next && Math.abs(next.time - cur.time) <= 0.75) {
             const curIsJp = hasJapaneseChars(cur.text);
             const nextIsJp = hasJapaneseChars(next.text);
-            if (curIsJp !== nextIsJp) {
-                const jpLine = curIsJp ? cur : next;
-                const nonJpLine = curIsJp ? next : cur;
+            const curIsEn = /^[a-zA-Z0-9\s,.'!?~—–-]+$/.test(cur.text);
+            const nextIsEn = /^[a-zA-Z0-9\s,.'!?~—–-]+$/.test(next.text);
+            const isDifferentLang = (curIsJp !== nextIsJp) || (curIsEn !== nextIsEn) || (cur.text.trim().toLowerCase() !== next.text.trim().toLowerCase());
+
+            if (isDifferentLang) {
+                let primaryLine = cur;
+                let secondaryLine = next;
+                if (curIsJp && !nextIsJp) {
+                    primaryLine = cur;
+                    secondaryLine = next;
+                } else if (!curIsJp && nextIsJp) {
+                    primaryLine = next;
+                    secondaryLine = cur;
+                }
+
                 cleaned.push({
-                    time: jpLine.time,
-                    endTime: Math.max(jpLine.endTime || 0, nonJpLine.endTime || 0),
-                    text: jpLine.text,
-                    rawText: jpLine.text,
-                    transText: nonJpLine.text
+                    time: primaryLine.time,
+                    endTime: Math.max(primaryLine.endTime || 0, secondaryLine.endTime || 0),
+                    text: primaryLine.text,
+                    rawText: primaryLine.text,
+                    transText: secondaryLine.text
                 });
                 i++; // lewati next karena sudah dipasangkan
 
-                // Cek jika ada baris pengulangan nonJpLine segera setelahnya (<= 1.2s)
+                // Cek jika ada baris pengulangan segera setelahnya (<= 1.2s)
                 const next2 = rawLines[i + 1];
-                if (next2 && Math.abs(next2.time - jpLine.time) <= 1.2 &&
-                    next2.text.trim().toLowerCase() === nonJpLine.text.trim().toLowerCase()) {
-                    i++;
+                if (next2 && Math.abs(next2.time - primaryLine.time) <= 1.2) {
+                    const n2 = next2.text.trim().toLowerCase();
+                    if (n2 === primaryLine.text.trim().toLowerCase() || n2 === secondaryLine.text.trim().toLowerCase()) {
+                        i++;
+                    }
                 }
                 continue;
             }
@@ -406,18 +448,16 @@ function sanitizeBilingualManualLines(rawLines) {
     return cleaned;
 }
 
-    // Untuk Forced Alignment:
-    // - Jika ada Manual CC pada bahasa lagu yang sama (langScore >= 45), gunakan Manual CC karena bebas jeda decoding ASR!
-    // - Jika menggunakan Auto-ASR (kind === 'asr'), tandai isAsrTokens = true untuk kompensasi jeda vokal ASR (-1.05s)
+    // Prioritaskan Manual CC buatan manusia di atas Auto-ASR
     const isManualCC = Boolean(bestManual && parsedManual.lines.length >= 4);
-    const manualHasSameLang = isManualCC && bestManual.langScore >= 45 && parsedManual.tokens.length >= 10;
-    const useAsrPrimary = !manualHasSameLang && parsedAsr.tokens.length >= 6;
+    const useAsrPrimary = !isManualCC && parsedAsr.tokens.length >= 6;
     const primaryTokens = useAsrPrimary ? parsedAsr.tokens : (parsedManual.tokens.length >= 6 ? parsedManual.tokens : parsedAsr.tokens);
     const asrMergedLines = mergeFragmentedAsrLines(parsedAsr.lines);
     const sanitizedManual = isManualCC ? sanitizeBilingualManualLines(parsedManual.lines) : [];
     const primaryLines = isManualCC ? sanitizedManual : asrMergedLines;
     const languageCode = (bestManual && bestManual.lang) || (bestAsr && bestAsr.lang) || '';
     const cleanIdLines = parsedId.lines.length > 0 ? sanitizeBilingualManualLines(parsedId.lines) : [];
+    const cleanJaLines = parsedJa.lines.length > 0 ? sanitizeBilingualManualLines(parsedJa.lines) : [];
 
     if (primaryTokens.length === 0 && primaryLines.length === 0) return null;
 
@@ -429,6 +469,7 @@ function sanitizeBilingualManualLines(rawLines) {
         languageCode,
         tokens: primaryTokens,
         lines: primaryLines,
+        japaneseLines: cleanJaLines,
         indonesianLines: cleanIdLines
     };
 }

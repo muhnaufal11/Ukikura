@@ -120,6 +120,76 @@ async function httpRequestJson(url, opts = {}) {
 
 
 const translationCache = new Map();
+const romajiCache = new Map();
+
+async function fetchGoogleTranslate(text, sl = 'auto', tl = 'id', withRomaji = false) {
+    if (!text || typeof text !== 'string') return { text: '', romaji: '' };
+    const clean = text.trim();
+    if (!clean) return { text: '', romaji: '' };
+
+    try {
+        const dtParam = withRomaji ? '&dt=t&dt=rm' : '&dt=t';
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}${dtParam}&q=${encodeURIComponent(clean)}`;
+        const res = await httpRequestJson(url, { timeout: 3500 });
+        let trans = '';
+        let roma = '';
+        if (Array.isArray(res?.[0])) {
+            for (const item of res[0]) {
+                if (typeof item?.[0] === 'string') trans += item[0];
+                if (typeof item?.[3] === 'string') roma += item[3];
+            }
+        }
+        return { text: trans.trim(), romaji: roma.trim() };
+    } catch (_) {
+        return { text: '', romaji: '' };
+    }
+}
+
+async function fetchBatchJapaneseRomajiAndIndonesian(texts) {
+    if (!Array.isArray(texts) || texts.length === 0) return [];
+    const results = new Array(texts.length).fill(null).map(() => ({ romaji: '', indo: '' }));
+    const toFetch = [];
+
+    for (let i = 0; i < texts.length; i++) {
+        const clean = String(texts[i] || '').trim();
+        if (!clean) continue;
+        if (romajiCache.has(clean)) {
+            results[i] = romajiCache.get(clean);
+        } else {
+            toFetch.push({ text: clean, index: i });
+        }
+    }
+
+    if (toFetch.length === 0) return results;
+
+    const chunkSize = 5;
+    const promises = [];
+    for (let i = 0; i < toFetch.length; i += chunkSize) {
+        const slice = toFetch.slice(i, i + chunkSize);
+        const joined = slice.map(item => item.text).join('\n');
+        promises.push(
+            fetchGoogleTranslate(joined, 'ja', 'id', true).then(res => {
+                const transSplit = (res.text || '').split(/\r?\n/).map(s => s.trim());
+                const romaSplit = (res.romaji || '').split(/\r?\n/).map(s => s.trim());
+                slice.forEach((item, sIdx) => {
+                    const r = romaSplit[sIdx] || '';
+                    const ind = transSplit[sIdx] || '';
+                    const obj = { romaji: r, indo: ind };
+                    results[item.index] = obj;
+                    romajiCache.set(item.text, obj);
+                });
+            }).catch(() => {})
+        );
+    }
+
+    await Promise.all(promises);
+    return results;
+}
+
+async function fetchJapaneseRomajiAndIndonesian(text) {
+    const res = await fetchBatchJapaneseRomajiAndIndonesian([text]);
+    return res[0] || { romaji: '', indo: '' };
+}
 
 async function translateBatchToIndonesian(lines, sourceLang = 'auto') {
     if (!Array.isArray(lines) || lines.length === 0) return [];
@@ -138,51 +208,30 @@ async function translateBatchToIndonesian(lines, sourceLang = 'auto') {
 
     if (toFetch.length === 0) return results;
 
-    const pair = (sourceLang === 'ja' || sourceLang === 'japanese') ? 'ja|id' : 'en|id';
-    const chunkSize = 4;
+    const sl = (sourceLang === 'ja' || sourceLang === 'japanese') ? 'ja' : ((sourceLang === 'ko' || sourceLang === 'korean') ? 'ko' : 'auto');
+    const chunkSize = 6;
+    const promises = [];
 
     for (let i = 0; i < toFetch.length; i += chunkSize) {
         const slice = toFetch.slice(i, i + chunkSize);
         const joined = slice.map(item => item.text).join('\n');
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(joined)}&langpair=${pair}`;
-
-        try {
-            const transBody = await new Promise((resolve) => {
-                const req = https.get(url, {
-                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                    timeout: 4500
-                }, (res) => {
-                    let data = '';
-                    res.on('data', d => data += d);
-                    res.on('end', () => {
-                        try {
-                            const parsed = JSON.parse(data);
-                            const t = parsed && parsed.responseData && parsed.responseData.translatedText ? parsed.responseData.translatedText.trim() : '';
-                            if (t && !t.toLowerCase().startsWith('mymemory warning')) {
-                                resolve(t);
-                                return;
-                            }
-                        } catch (_) {}
-                        resolve('');
+        promises.push(
+            fetchGoogleTranslate(joined, sl, 'id', false).then(({ text: transBody }) => {
+                if (transBody) {
+                    const split = transBody.split(/\r?\n/).map(s => s.trim());
+                    slice.forEach((item, sIdx) => {
+                        const transLine = split[sIdx] || '';
+                        if (transLine && transLine.toLowerCase() !== item.text.toLowerCase()) {
+                            results[item.index] = transLine;
+                            translationCache.set(item.text, transLine);
+                        }
                     });
-                });
-                req.on('error', () => resolve(''));
-                req.on('timeout', () => { req.destroy(); resolve(''); });
-            });
-
-            if (transBody) {
-                const split = transBody.split(/\r?\n/).map(s => s.trim());
-                slice.forEach((item, sIdx) => {
-                    const transLine = split[sIdx] || '';
-                    if (transLine && transLine.toLowerCase() !== item.text.toLowerCase()) {
-                        results[item.index] = transLine;
-                        translationCache.set(item.text, transLine);
-                    }
-                });
-            }
-        } catch (_) {}
+                }
+            }).catch(() => {})
+        );
     }
 
+    await Promise.all(promises);
     return results;
 }
 
@@ -202,6 +251,9 @@ module.exports = {
     lyricsCache,
     httpRequestRaw,
     httpRequestJson,
+    fetchGoogleTranslate,
+    fetchJapaneseRomajiAndIndonesian,
+    fetchBatchJapaneseRomajiAndIndonesian,
     translateToIndonesian,
     translateBatchToIndonesian
 };

@@ -1,5 +1,5 @@
 "use strict";
-const { lyricsCache, httpRequestJson, translateToIndonesian, translateBatchToIndonesian } = require("./http-client");
+const { lyricsCache, httpRequestJson, translateToIndonesian, translateBatchToIndonesian, fetchJapaneseRomajiAndIndonesian, fetchBatchJapaneseRomajiAndIndonesian } = require("./http-client");
 const {
     hasJapaneseChars,
     hasKanji,
@@ -18,10 +18,10 @@ const { forceAlignLyricsToAudioStream } = require("./forced-alignment");
 
 async function enrichWithRomaji(lines, meta, bestDb) {
     if (!Array.isArray(lines) || lines.length === 0) return lines;
-    const hasJp = lines.some(l => hasJapaneseChars(l.rawText || l.text));
+    const hasJp = lines.some(l => hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText));
     if (!hasJp) return lines;
 
-    const unRomaCount = lines.filter(l => !l.romaText && hasJapaneseChars(l.rawText || l.text)).length;
+    const unRomaCount = lines.filter(l => !l.romaText && (hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText))).length;
     if (unRomaCount === 0) return lines;
 
     const searchQueries = [
@@ -65,14 +65,36 @@ async function enrichWithRomaji(lines, meta, bestDb) {
         } catch (_) {}
     }
 
-    return lines.map(l => {
+    // Gunakan Google Translate dt=rm paralel untuk melengkapi Romaji & Sub Indo secara presisi & instan
+    const needRomajiItems = [];
+    lines.forEach(l => {
         if (!l.romaText) {
-            const txt = l.rawText || l.text || '';
-            const pureKana = (!hasKanji(txt) && hasHiraganaOrKatakana(txt)) ? kanaToRomaji(txt) : '';
-            return { ...l, romaText: pureKana };
+            const targetJp = (l.jpText && hasJapaneseChars(l.jpText))
+                ? l.jpText
+                : ((hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text)) ? (l.rawText || l.text) : '');
+            if (targetJp) {
+                const isPureKana = !hasKanji(targetJp) && hasHiraganaOrKatakana(targetJp);
+                if (isPureKana) {
+                    l.romaText = kanaToRomaji(targetJp);
+                } else {
+                    needRomajiItems.push({ line: l, text: targetJp });
+                }
+            }
         }
-        return l;
     });
+
+    if (needRomajiItems.length > 0) {
+        await Promise.all(
+            needRomajiItems.map(item =>
+                fetchJapaneseRomajiAndIndonesian(item.text).then(r => {
+                    if (r && r.romaji) item.line.romaText = r.romaji;
+                    if (!item.line.transText && r && r.indo) item.line.transText = r.indo;
+                }).catch(() => {})
+            )
+        );
+    }
+
+    return lines;
 }
 
 // ==================== PIPELINE UTAMA PENYEDIA LIRIK SINKRON 100% ====================
@@ -181,14 +203,58 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     // KASUS 1: Video YouTube memiliki Subtitle Resmi / Manual CC dari kreator video itu sendiri!
     const hasManualCC = Boolean(ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4);
     if (hasManualCC) {
+        // Cek apakah ada Japanese Lines dari manual CC (seperti ALiCE&u yang memiliki track JA terpisah):
+        const hasSeparateJa = Array.isArray(ytCaptions.japaneseLines) && ytCaptions.japaneseLines.length >= 4 && !ytCaptions.lines.some(l => hasJapaneseChars(l.rawText || l.text));
+        if (hasSeparateJa) {
+            ytCaptions.lines.forEach(l => {
+                let bestJp = null;
+                let minDiff = 999;
+                for (const jl of ytCaptions.japaneseLines) {
+                    const diff = Math.abs(jl.time - l.time);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        bestJp = jl;
+                    }
+                }
+                if (bestJp && minDiff <= 1.2) {
+                    const candJp = bestJp.rawText || bestJp.text || '';
+                    if (hasJapaneseChars(candJp)) {
+                        l.jpText = candJp;
+                    }
+                }
+            });
+        }
+
+        // Pasangkan Indonesian Lines dari manual CC jika belum ada transText
+        if (Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 4) {
+            ytCaptions.lines.forEach(l => {
+                if (!l.transText) {
+                    let bestId = null;
+                    let minDiff = 999;
+                    for (const idl of ytCaptions.indonesianLines) {
+                        const diff = Math.abs(idl.time - l.time);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            bestId = idl;
+                        }
+                    }
+                    if (bestId && minDiff <= 1.2) {
+                        const candId = bestId.transText || bestId.rawText || bestId.text || '';
+                        if (candId.toLowerCase() !== (l.rawText || l.text).toLowerCase()) {
+                            l.transText = candId;
+                        }
+                    }
+                }
+            });
+        }
+
         finalLines = ytCaptions.lines.map(l => {
             const rawNormalized = String(l.rawText || l.text || '').normalize('NFKD').trim();
             // Cek apakah baris memuat kombinasi Romaji + Karakter Jepang (seperti gaya subtitle resmi YOASOBI/Ayase)
-            // Contoh: "Itsumodouri no asa ni いつも通りの朝に"
             const mixedMatch = rawNormalized.match(/^([a-zA-Z0-9\s,.'\"!?~—–-]+?)\s+([\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\u3000-\u303f「『].*)$/) ||
                                rawNormalized.match(/^([\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\u3000-\u303f「『].+?)\s+([a-zA-Z0-9\s,.'\"!?~—–-]{3,})$/);
 
-            let roma = '';
+            let roma = l.romaText || '';
             let mainDisplay = rawNormalized;
             let rawClean = rawNormalized;
 
@@ -200,16 +266,19 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
                 roma = mixedMatch[2].trim();
                 mainDisplay = mixedMatch[1].trim();
                 rawClean = mixedMatch[1].trim();
-            } else {
-                const isPureKana = !hasKanji(rawNormalized) && hasHiraganaOrKatakana(rawNormalized);
-                roma = isPureKana ? kanaToRomaji(rawNormalized) : '';
+            } else if (!roma) {
+                const targetKana = l.jpText || rawNormalized;
+                const isPureKana = !hasKanji(targetKana) && hasHiraganaOrKatakana(targetKana);
+                roma = isPureKana ? kanaToRomaji(targetKana) : '';
             }
 
             return {
                 time: l.time,
                 text: (roma && roma.toLowerCase() !== mainDisplay.toLowerCase()) ? `${roma} · ${mainDisplay}` : mainDisplay,
                 rawText: rawClean,
-                romaText: roma
+                jpText: l.jpText || '',
+                romaText: roma,
+                transText: l.transText || ''
             };
         });
 
@@ -264,8 +333,8 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
         syncMethod = 'YouTube Captions Stream (.srv3)';
     }
 
-    // 1. Lengkapi Romaji untuk SEMUA lagu Jepang yang belum memiliki Romaji (NetEase Canonical Search)
-    if (finalLines.length > 0 && finalLines.some(l => !l.romaText && hasJapaneseChars(l.rawText || l.text))) {
+    // 1. Lengkapi Romaji untuk SEMUA lagu Jepang yang belum memiliki Romaji
+    if (finalLines.length > 0 && finalLines.some(l => !l.romaText && (hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText)))) {
         finalLines = await enrichWithRomaji(finalLines, meta, bestDb);
     }
 
@@ -278,12 +347,11 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     }
 
     // 3. Terjemahkan SEMUA baris lagu ke Bahasa Indonesia secara batch cepat jika belum ada terjemahan
-    // Catatan: DILARANG menerjemahkan lagu yang sudah bahasa Indonesia atau cover versi Inggris
-    if (!isAlreadyIndonesian && !meta.isEnglishVersion && finalLines.length > 0) {
+    if (!isAlreadyIndonesian && finalLines.length > 0) {
         const missingLines = finalLines.filter(l => !l.transText || l.transText.trim().toLowerCase() === (l.rawText || l.text || '').trim().toLowerCase() || (!/[\u4e00-\u9fa5]/.test(meta.origTitle) && /[\u4e00-\u9fa5]/.test(l.transText)));
         if (missingLines.length > 0) {
             const toProcess = missingLines.slice(0, 85);
-            const rawTexts = toProcess.map(l => l.rawText || l.text || '');
+            const rawTexts = toProcess.map(l => l.jpText || l.rawText || l.text || '');
             const isJp = rawTexts.some(t => hasJapaneseChars(t));
             const isKr = rawTexts.some(t => /[\uac00-\ud7af]/.test(t));
             const srcLang = isJp ? 'ja' : (isKr ? 'ko' : 'en');
