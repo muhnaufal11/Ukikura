@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.5",
-  "versionCode": 16,
+  "versionCode": 17,
   "version": "1.0.5",
-  "fixCount": 16,
-  "displayVersion": "1.0.5 (Kode: 16)",
+  "fixCount": 17,
+  "displayVersion": "1.0.5 (Kode: 17)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.5.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.5 (Patch 16): Penataan rapi tombol Halaman Utama LMS Todolist (Courses, Bel Suara kompak, AI Kuis), dan penambahan dukungan Custom Audio (pemilihan file audio lokal .mp3/.wav untuk bel kuliah, notifikasi WA/HP, dan deadline LMS) dengan pengatur volume mandiri serta fallback synthesizer otomatis."
+  "changelog": "Ukikura v1.0.5 (Patch 17): Perbaikan tampilan Kalender Pintar (Smart Calendar) agar saat mengklik tanggal yang tidak memiliki agenda/tugas, panel kanan menampilkan kotak status kosong 'Tidak ada agenda' yang bersih dan tidak lagi menarik tugas dari bulan/hari lain."
 }

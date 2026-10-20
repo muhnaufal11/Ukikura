@@ -237,24 +237,11 @@ function renderCalendarEventsPanel() {
     calEventsListEl.innerHTML = '';
 
     if (events.length === 0) {
-        const upcoming = getUpcomingAllEvents();
-        if (upcoming.length > 0) {
-            const subLbl = document.createElement('div');
-            subLbl.className = 'cal-sub-label';
-            subLbl.textContent = `Kosong di ${selDate.getDate()} ${CAL_MONTHS_ID[selDate.getMonth()].slice(0, 3)} • Agenda & Deadline Terdekat:`;
-            calEventsListEl.appendChild(subLbl);
-
-            for (const ev of upcoming.slice(0, 6)) {
-                calEventsListEl.appendChild(createCalendarEventRow(ev, true));
-            }
-            return;
-        }
-
         const emptyEl = document.createElement('div');
         emptyEl.className = 'cal-empty';
         emptyEl.innerHTML = `
             <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <span>Belum ada deadline di tanggal ini.<br>Ketik catatan di bawah lalu klik <b>Tambah</b>!</span>
+            <span>Tidak ada agenda atau deadline di tanggal ini.<br>Ketik catatan di bawah lalu klik <b>Tambah</b>!</span>
         `;
         calEventsListEl.appendChild(emptyEl);
         return;
