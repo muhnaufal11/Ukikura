@@ -33,7 +33,7 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
   - Ekspansi *Peek Popup* otomatis saat tugas LMS tersisa **H-24 jam**, **H-6 jam**, dan **H-1 jam**, lengkap dengan tombol 1-klik untuk langsung membuka halaman pengumpulan tugas tersebut.
 
 - [x] **8. Jadwal Matkul Mingguan & Bunyi Alarm Kuliah (iGracias Telkom University)**
-  - Input & simpan jadwal perkuliahan mingguan riil dari iGracias Telkom University (NIM: `102062400038 - MUH NAUFAL RABBANI MARUN`):
+  - Input & simpan jadwal perkuliahan mingguan (Hari, Jam Mulai/Selesai, Nama Mata Kuliah, Ruangan/Lab, dan Kelas):
     1. **Senin `13:30 - 16:30`**: `KOMPUTASI AWAN` (`BDK3CAB3`) · `CYCLO LAB.` · `SSISI-07-REG-01`
     2. **Selasa `10:30 - 12:30`**: `PROYEK PERANGKAT LUNAK` (`BDK3DAD3`) · `KTT2.03` · `SSISI-07-REG-04`
     3. **Selasa `13:30 - 16:30`**: `TATA KELOLA DAN MANAJEMEN TI` (`BDK3DA3`) · `B-CLG-105` · `SSISI-07-REG-01`

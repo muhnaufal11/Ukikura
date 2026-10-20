@@ -3,113 +3,8 @@
 
 const SCHEDULE_STORAGE_KEY = 'ukikura_class_schedule_v1';
 
-// Jadwal bawaan perkuliahan riil iGracias Telkom University (NIM: 102062400038)
-const DEFAULT_CLASS_SCHEDULE = [
-    {
-        id: 'cs-senin-1',
-        day: 'Senin',
-        dayIdx: 1,
-        timeStart: '13:30',
-        timeEnd: '16:30',
-        name: 'KOMPUTASI AWAN',
-        code: 'BDK3CAB3',
-        sks: 3,
-        room: 'CYCLO LAB.',
-        group: 'SSISI-07-REG-01',
-        color: '#38bdf8'
-    },
-    {
-        id: 'cs-selasa-1',
-        day: 'Selasa',
-        dayIdx: 2,
-        timeStart: '10:30',
-        timeEnd: '12:30',
-        name: 'PROYEK PERANGKAT LUNAK',
-        code: 'BDK3DAD3',
-        sks: 3,
-        room: 'KTT2.03',
-        group: 'SSISI-07-REG-04',
-        color: '#a78bfa'
-    },
-    {
-        id: 'cs-selasa-2',
-        day: 'Selasa',
-        dayIdx: 2,
-        timeStart: '13:30',
-        timeEnd: '16:30',
-        name: 'TATA KELOLA DAN MANAJEMEN TI',
-        code: 'BDK3DA3',
-        sks: 3,
-        room: 'B-CLG-105',
-        group: 'SSISI-07-REG-01',
-        color: '#f59e0b'
-    },
-    {
-        id: 'cs-rabu-1',
-        day: 'Rabu',
-        dayIdx: 3,
-        timeStart: '10:30',
-        timeEnd: '12:30',
-        name: 'MANAJEMEN DATA ENTERPRISE',
-        code: 'BDK3DAD3',
-        sks: 3,
-        room: 'KTT2.17',
-        group: 'SSISI-07-REG-01',
-        color: '#ec4899'
-    },
-    {
-        id: 'cs-rabu-2',
-        day: 'Rabu',
-        dayIdx: 3,
-        timeStart: '13:30',
-        timeEnd: '16:30',
-        name: 'ARSITEKTUR ENTERPRISE',
-        code: 'BDK3AAD3',
-        sks: 3,
-        room: 'SE LAB.',
-        group: 'SSISI-07-REG-02',
-        color: '#10b981'
-    },
-    {
-        id: 'cs-kamis-1',
-        day: 'Kamis',
-        dayIdx: 4,
-        timeStart: '07:30',
-        timeEnd: '10:30',
-        name: 'SISTEM INFORMASI AKUNTANSI',
-        code: 'BAK2FAB3',
-        sks: 3,
-        room: 'KTT2.04',
-        group: 'SSISI-07-REG-01',
-        color: '#06b6d4'
-    },
-    {
-        id: 'cs-kamis-2',
-        day: 'Kamis',
-        dayIdx: 4,
-        timeStart: '10:30',
-        timeEnd: '13:30',
-        name: 'DATA WAREHOUSE & BUSINESS INTELLIGENCE',
-        code: 'BAK3BA3',
-        sks: 3,
-        room: 'KTT2.27',
-        group: 'SSISI-07-REG-01',
-        color: '#8b5cf6'
-    },
-    {
-        id: 'cs-jumat-1',
-        day: 'Jumat',
-        dayIdx: 5,
-        timeStart: '07:30',
-        timeEnd: '09:30',
-        name: 'BAHASA INGGRIS',
-        code: 'UCK1ADA2',
-        sks: 2,
-        room: 'KTT2.15',
-        group: 'SSISI-07-REG-01',
-        color: '#14b8a6'
-    }
-];
+// Format jadwal perkuliahan mingguan (default kosong untuk instalasi publik)
+const DEFAULT_CLASS_SCHEDULE = [];
 
 const DAY_NAMES_MAP = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -123,15 +18,15 @@ let activeDayFilter = 'all';
 function loadClassSchedules() {
     try {
         const saved = localStorage.getItem(SCHEDULE_STORAGE_KEY);
-        if (saved) {
+        if (saved !== null) {
             const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
+            if (Array.isArray(parsed)) {
                 classScheduleList = parsed;
                 return;
             }
         }
     } catch (_) {}
-    classScheduleList = JSON.parse(JSON.stringify(DEFAULT_CLASS_SCHEDULE));
+    classScheduleList = [];
     saveClassSchedules();
 }
 
@@ -383,7 +278,7 @@ function renderScheduleList() {
         listEl.innerHTML = `
             <div class="sched-empty">
                 <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <span>Tidak ada jadwal kuliah untuk hari ini.<br>Klik tombol <b>+ Tambah Matkul</b> di atas untuk menambahkan.</span>
+                <span>Belum ada jadwal kuliah.<br>Klik tombol <b>+ Tambah</b> di atas untuk menambahkan matkul mingguan.</span>
             </div>
         `;
         return;
@@ -462,12 +357,12 @@ function setupScheduleUI() {
         });
     }
 
-    // Tombol Reset ke Default
+    // Tombol Kosongkan Semua Jadwal
     const resetBtn = document.getElementById('btn-reset-sched-default');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-            if (confirm('Kembalikan jadwal ke data awal iGracias Telkom University (8 Matkul Semester Ganjil 2026/2027)?')) {
-                classScheduleList = JSON.parse(JSON.stringify(DEFAULT_CLASS_SCHEDULE));
+            if (confirm('Kosongkan semua daftar jadwal kuliah?')) {
+                classScheduleList = [];
                 saveClassSchedules();
                 renderScheduleList();
                 if (typeof renderCalendar === 'function') renderCalendar();

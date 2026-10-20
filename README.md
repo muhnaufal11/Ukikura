@@ -253,7 +253,7 @@ Berikut daftar rencana fitur baru yang sedang disiapkan untuk pembaruan **Ukikur
 - [x] **6. Drag-Out dari File Shelf ke Browser / WhatsApp**: Menarik (*drag*) file dari dalam rak File Shelf langsung keluar ke kolom *upload* tugas LMS di browser, chat WhatsApp, atau File Explorer menggunakan Electron native OS drag API (`event.sender.startDrag`). Dilengkapi indikator badge "Tarik keluar" dan petunjuk interaktif.
 - [ ] **7. Notifikasi Suara & Popup Peringatan Bertahap Deadline LMS**: Ekspansi *Peek Popup* otomatis saat tugas LMS tersisa **H-24 jam**, **H-6 jam**, dan **H-1 jam**, lengkap dengan tombol 1-klik untuk langsung membuka halaman pengumpulan tugas tersebut.
 - [x] **8. Jadwal Matkul Mingguan & Bunyi Alarm Kuliah (iGracias Telkom University)**:
-  - Input dan simpan jadwal kuliah mingguan (`Senin` – `Minggu`), Jam Mulai/Selesai, Nama Mata Kuliah, Ruangan/Lab, dan Kelas (dilengkapi data bawaan perkuliahan riil iGracias Telkom University NIM: `102062400038`).
+  - Input dan simpan jadwal kuliah mingguan (`Senin` – `Minggu`), Jam Mulai/Selesai, Nama Mata Kuliah, Ruangan/Lab, dan Kelas secara mandiri dan interaktif.
   - Pengingat otomatis bertahap (`H-30m`, `H-15m`, `H-10m`, `H-5m`, dan `Saat Kelas Mulai`) lengkap dengan **bunyi alarm chime Web Audio API**, *Peek Popup* otomatis di atas layar, serta opsi Matikan Alarm / Snooze 5 Menit.
   - Terintegrasi langsung dengan tombol `Courses` di halaman Todo dan berulang otomatis di **Smart Calendar** (`smart-calendar.js`).
   - Antarmuka modal interaktif: Tambah, Edit, Hapus, Uji Bunyi Alarm, serta Reset ke Jadwal Default iGracias.

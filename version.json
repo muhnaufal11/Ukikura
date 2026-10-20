@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.4.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.4: Integrasi Jadwal Kuliah Mingguan riil iGracias Telkom University (8 sesi perkuliahan aktif Ganjil 2026/2027), filter hari interaktif & CRUD matkul, bel alarm akademik synthesizer Web Audio API bertingkat (H-30m, H-15m, H-10m, H-5m, 0m) dengan Peek Popup di notch, integrasi pengulangan jadwal kuliah & badge dot pada Smart Calendar, serta pembersihan roadmap fitur."
+  "changelog": "Ukikura v1.0.4: Integrasi Jadwal Kuliah Mingguan interaktif, filter hari & CRUD matkul mandiri, bel alarm akademik synthesizer Web Audio API bertingkat (H-30m, H-15m, H-10m, H-5m, 0m) dengan Peek Popup di notch, integrasi pengulangan jadwal kuliah & badge dot pada Smart Calendar, serta stabilitas login LMS SSO Microsoft (bebas loop passkey)."
 }
