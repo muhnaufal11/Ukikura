@@ -70,6 +70,9 @@ function updateLiveMetrics() {
                     body: `${nearest.title} (${nearest.courseName}) — ${formatRealtimeCountdown(nearest.dueTimestamp - now)}`
                 });
             } catch (_) {}
+            if (typeof window.playAudioAlert === 'function') {
+                window.playAudioAlert('deadline');
+            }
         }
     } else {
         mnEl.classList.remove('urgent');

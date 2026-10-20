@@ -27,10 +27,10 @@ function initAutoUpdater(mainWinGetter) {
 function getLocalVersionInfo() {
     let info = {
         name: 'Ukikura',
-        versionName: '1.0.4',
-        versionCode: 14,
-        version: '1.0.4',
-        fixCount: 14,
+        versionName: '1.0.5',
+        versionCode: 15,
+        version: '1.0.5',
+        fixCount: 15,
         githubRepo: 'muhnaufal11/Ukikura',
         fallbackRepos: ['muhnaufal11/Ukikura', 'Nauflix/Ukikura'],
         branch: 'main'

@@ -31,6 +31,11 @@ function triggerPeekPopup(item) {
         }
         setPeekMode('peek', 6000);
     }
+
+    // Bunyikan nada alert notifikasi WA/HP (kecuali jika berasal dari alarm kuliah yang punya bel sendiri)
+    if (!item.isClassAlarm && typeof window.playAudioAlert === 'function') {
+        window.playAudioAlert('notif');
+    }
 }
 
 function renderNotifications() {

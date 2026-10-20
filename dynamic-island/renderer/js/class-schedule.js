@@ -36,43 +36,47 @@ function saveClassSchedules() {
     } catch (_) {}
 }
 
-// ================= SUARA ALARM SYNTHESIZER (WEB AUDIO API) =================
+// ================= SUARA ALARM SYNTHESIZER =================
 function playClassAlarmChime(isTest = false) {
+    if (typeof window.playAudioAlert === 'function') {
+        window.playAudioAlert('class');
+        return;
+    }
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
         if (!classAlarmAudioCtx) classAlarmAudioCtx = new AudioContext();
         if (classAlarmAudioCtx.state === 'suspended') classAlarmAudioCtx.resume();
-
         const now = classAlarmAudioCtx.currentTime;
-        // Melodi Chime Akademik 4 Nada: C5 (523Hz), E5 (659Hz), G5 (784Hz), C6 (1046Hz)
-        const notes = [
-            { freq: 523.25, time: 0.0, dur: 0.26 },
-            { freq: 659.25, time: 0.16, dur: 0.26 },
-            { freq: 783.99, time: 0.32, dur: 0.30 },
-            { freq: 1046.50, time: 0.48, dur: 0.70 }
-        ];
-
-        notes.forEach(n => {
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
             const osc = classAlarmAudioCtx.createOscillator();
             const gain = classAlarmAudioCtx.createGain();
-
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(n.freq, now + n.time);
-
-            // Selubung gain lembut (gentle attack & smooth exponential decay)
-            gain.gain.setValueAtTime(0.001, now + n.time);
-            gain.gain.exponentialRampToValueAtTime(0.24, now + n.time + 0.03);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + n.time + n.dur);
-
+            osc.frequency.setValueAtTime(freq, now + i * 0.16);
+            gain.gain.setValueAtTime(0.001, now + i * 0.16);
+            gain.gain.exponentialRampToValueAtTime(0.24, now + i * 0.16 + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.16 + 0.35);
             osc.connect(gain);
             gain.connect(classAlarmAudioCtx.destination);
-
-            osc.start(now + n.time);
-            osc.stop(now + n.time + n.dur);
+            osc.start(now + i * 0.16);
+            osc.stop(now + i * 0.16 + 0.4);
         });
-    } catch (err) {
-        console.warn('[ClassSchedule] Gagal memutar chime alarm:', err);
+    } catch (_) {}
+}
+
+function setClassSchedules(newList) {
+    classScheduleList = Array.isArray(newList) ? newList : [];
+    saveClassSchedules();
+    renderScheduleList();
+    if (typeof renderCalendar === 'function') renderCalendar();
+}
+
+function appendClassSchedules(items) {
+    if (Array.isArray(items) && items.length > 0) {
+        classScheduleList.push(...items);
+        saveClassSchedules();
+        renderScheduleList();
+        if (typeof renderCalendar === 'function') renderCalendar();
     }
 }
 
@@ -391,12 +395,103 @@ function setupScheduleUI() {
     const addFormEl = document.getElementById('sched-add-form');
     if (addFormToggleBtn && addFormEl) {
         addFormToggleBtn.addEventListener('click', () => {
+            const ksmDrawer = document.getElementById('sched-ksm-drawer');
+            const soundDrawer = document.getElementById('sched-sound-drawer');
+            if (ksmDrawer) ksmDrawer.classList.remove('open');
+            if (soundDrawer) soundDrawer.classList.remove('open');
             addFormEl.classList.toggle('open');
             if (addFormEl.classList.contains('open')) {
                 document.getElementById('sched-input-name').focus();
             }
         });
     }
+
+    // ================= DRAWER PENGATURAN SUARA & VOLUME =================
+    const soundDrawer = document.getElementById('sched-sound-drawer');
+    const toggleSoundBtn = document.getElementById('btn-toggle-sound-settings');
+    const closeSoundBtn = document.getElementById('btn-sound-close');
+
+    function syncSoundSettingsUI() {
+        if (typeof window.loadAudioSettings !== 'function') return;
+        const cfg = window.loadAudioSettings();
+
+        const selClass = document.getElementById('sel-sound-class');
+        const rngClass = document.getElementById('range-vol-class');
+        const valClass = document.getElementById('val-vol-class');
+        if (selClass && cfg.classAlarm) selClass.value = cfg.classAlarm.preset || 'chime';
+        if (rngClass && cfg.classAlarm) rngClass.value = cfg.classAlarm.volume !== undefined ? cfg.classAlarm.volume : 85;
+        if (valClass && cfg.classAlarm) valClass.textContent = `${rngClass ? rngClass.value : 85}%`;
+
+        const selNotif = document.getElementById('sel-sound-notif');
+        const rngNotif = document.getElementById('range-vol-notif');
+        const valNotif = document.getElementById('val-vol-notif');
+        if (selNotif && cfg.notif) selNotif.value = cfg.notif.preset || 'pop';
+        if (rngNotif && cfg.notif) rngNotif.value = cfg.notif.volume !== undefined ? cfg.notif.volume : 70;
+        if (valNotif && cfg.notif) valNotif.textContent = `${rngNotif ? rngNotif.value : 70}%`;
+
+        const selDead = document.getElementById('sel-sound-deadline');
+        const rngDead = document.getElementById('range-vol-deadline');
+        const valDead = document.getElementById('val-vol-deadline');
+        if (selDead && cfg.deadline) selDead.value = cfg.deadline.preset || 'pulse';
+        if (rngDead && cfg.deadline) rngDead.value = cfg.deadline.volume !== undefined ? cfg.deadline.volume : 80;
+        if (valDead && cfg.deadline) valDead.textContent = `${rngDead ? rngDead.value : 80}%`;
+    }
+
+    if (toggleSoundBtn && soundDrawer) {
+        toggleSoundBtn.addEventListener('click', () => {
+            if (ksmDrawer) ksmDrawer.classList.remove('open');
+            if (addFormEl) addFormEl.classList.remove('open');
+            soundDrawer.classList.toggle('open');
+            if (soundDrawer.classList.contains('open')) {
+                syncSoundSettingsUI();
+            }
+        });
+    }
+
+    if (closeSoundBtn && soundDrawer) {
+        closeSoundBtn.addEventListener('click', () => {
+            soundDrawer.classList.remove('open');
+        });
+    }
+
+    function bindSoundControl(channel, selId, rngId, valId, testBtnId) {
+        const sel = document.getElementById(selId);
+        const rng = document.getElementById(rngId);
+        const val = document.getElementById(valId);
+        const testBtn = document.getElementById(testBtnId);
+
+        function updateSettings(triggerTest = false) {
+            if (typeof window.saveAudioSettings !== 'function') return;
+            const preset = sel ? sel.value : 'chime';
+            const volume = rng ? parseInt(rng.value, 10) : 80;
+            if (val) val.textContent = `${volume}%`;
+            const updateObj = {};
+            updateObj[channel] = { preset, volume };
+            window.saveAudioSettings(updateObj);
+            if (triggerTest && typeof window.playAudioAlert === 'function') {
+                window.playAudioAlert(channel, preset, volume);
+            }
+        }
+
+        if (sel) sel.addEventListener('change', () => updateSettings(true));
+        if (rng) {
+            rng.addEventListener('input', () => updateSettings(false));
+            rng.addEventListener('change', () => updateSettings(true));
+        }
+        if (testBtn) {
+            testBtn.addEventListener('click', () => {
+                const preset = sel ? sel.value : null;
+                const volume = rng ? parseInt(rng.value, 10) : null;
+                if (typeof window.playAudioAlert === 'function') {
+                    window.playAudioAlert(channel, preset, volume);
+                }
+            });
+        }
+    }
+
+    bindSoundControl('classAlarm', 'sel-sound-class', 'range-vol-class', 'val-vol-class', 'btn-test-sound-class');
+    bindSoundControl('notif', 'sel-sound-notif', 'range-vol-notif', 'val-vol-notif', 'btn-test-sound-notif');
+    bindSoundControl('deadline', 'sel-sound-deadline', 'range-vol-deadline', 'val-vol-deadline', 'btn-test-sound-deadline');
 
     // Form Submit Tambah Matkul
     const submitAddBtn = document.getElementById('btn-submit-add-sched');
@@ -459,6 +554,8 @@ window.closeScheduleModal = closeScheduleModal;
 window.playClassAlarmChime = playClassAlarmChime;
 window.getClassScheduleForDateKey = getClassScheduleForDateKey;
 window.getUpcomingClassEvents = getUpcomingClassEvents;
+window.setClassSchedules = setClassSchedules;
+window.appendClassSchedules = appendClassSchedules;
 
 // Inisialisasi saat script dimuat
 if (document.readyState === 'loading') {

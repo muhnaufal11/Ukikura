@@ -1,6 +1,6 @@
 {
   "name": "ukikura",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Ukikura (浮倉) — A fluid Windows 11 Dynamic Island & Local Task Vault",
   "main": "dynamic-island/main.js",
   "scripts": {
