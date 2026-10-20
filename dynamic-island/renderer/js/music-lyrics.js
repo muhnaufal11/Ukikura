@@ -291,7 +291,7 @@ if (btnSubToggleEl) {
     });
 }
 
-let karaokeSubMode = false;
+let karaokeSubMode = localStorage.getItem('ukikura_karaoke_sub_mode') !== 'false';
 
 function updateKaraokeOverlay() {
     const kLine1 = document.getElementById('karaoke-line-1');
@@ -313,14 +313,20 @@ function updateKaraokeOverlay() {
     if (curLine) {
         if (curLine.rawText && curLine.romaText) {
             curMain = curLine.rawText;
-            curSub = curLine.romaText || curLine.transText;
+            const r = curLine.romaText;
+            const t = curLine.transText;
+            curSub = (r && t) ? `${r} · ${t}` : (r || t || '');
         } else if (curLine.text && curLine.text.includes(' · ')) {
             const parts = curLine.text.split(' · ');
             curMain = parts.slice(1).join(' · ');
-            curSub = parts[0] || curLine.transText;
+            const r = parts[0];
+            const t = curLine.transText;
+            curSub = (r && t) ? `${r} · ${t}` : (r || t || '');
         } else {
             curMain = curLine.text || '';
-            curSub = curLine.transText || curLine.romaText || '';
+            const r = curLine.romaText;
+            const t = curLine.transText;
+            curSub = (r && t) ? `${r} · ${t}` : (t || r || '');
         }
 
         if (curSub && /[\u4e00-\u9fa5]/.test(curSub)) {
@@ -393,9 +399,11 @@ if (btnKaraokeClose) {
 
 const btnKaraokeSub = document.getElementById('btn-karaoke-sub');
 if (btnKaraokeSub) {
+    btnKaraokeSub.classList.toggle('active', karaokeSubMode);
     btnKaraokeSub.addEventListener('click', (e) => {
         e.stopPropagation();
         karaokeSubMode = !karaokeSubMode;
+        try { localStorage.setItem('ukikura_karaoke_sub_mode', String(karaokeSubMode)); } catch (_) {}
         btnKaraokeSub.classList.toggle('active', karaokeSubMode);
         updateKaraokeOverlay();
     });

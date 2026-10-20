@@ -145,9 +145,23 @@ function parseTrackMetadata(rawTitle, rawArtist) {
     const origArtist = String(rawArtist || '').replace(/-\s*topic$/i, '').replace(/VEVO$/i, '').trim();
 
     const isEnglishVersion = /\b(english\s*ver(?:sion)?|eng\s*ver(?:sion)?|english\s*cover|eng\s*cover|cover\s*in\s*english|en\s*ver)\b/i.test(`${origTitle} ${origArtist}`) ||
-        /\b(amalee|leeandlie|jonathan\s*young|pellek|caleb\s*hyles|natewantstobattle|richaadeb|studio\s*yuraki|sapphire|will\s*stetson)\b/i.test(`${origTitle} ${origArtist}`);
-    const isJapaneseVersion = /\b(japanese\s*ver(?:sion)?|jp\s*ver(?:sion)?|japanese\s*cover|jp\s*cover)\b/i.test(`${origTitle} ${origArtist}`);
-    const isCover = isEnglishVersion || isJapaneseVersion || /\b(cover|covered|utattemita|歌ってみた|うたってみた)\b/i.test(`${origTitle} ${origArtist}`);
+        (/\b(cover|covered|utattemita)\b/i.test(`${origTitle} ${origArtist}`) && /\b(english|eng)\b/i.test(origTitle)) ||
+        /\b(amalee|leeandlie|jonathan\s*young|pellek|caleb\s*hyles|natewantstobattle|richaadeb|studio\s*yuraki|sapphire|will\s*stetson|trickle|lizz\s*robinett|rachie|annapantsu)\b/i.test(`${origTitle} ${origArtist}`);
+
+    const isIndonesianVersion = /\b(indonesian\s*ver(?:sion)?|indo\s*ver(?:sion)?|indonesian\s*cover|indo\s*cover|cover\s*bahasa\s*indonesia|bahasa\s*indonesia\s*ver|sub\s*indo\s*cover)\b/i.test(`${origTitle} ${origArtist}`) ||
+        (/\b(cover|covered)\b/i.test(`${origTitle} ${origArtist}`) && /\b(indonesia|bahasa\s*indonesia)\b/i.test(origTitle));
+
+    const isJapaneseVersion = /\b(japanese\s*ver(?:sion)?|jp\s*ver(?:sion)?|japanese\s*cover|jp\s*cover|cover\s*in\s*japanese)\b/i.test(`${origTitle} ${origArtist}`) ||
+        /歌ってみた|うたってみた|utattemita/i.test(`${origTitle} ${origArtist}`);
+
+    const isKoreanVersion = /\b(korean\s*ver(?:sion)?|kr\s*ver(?:sion)?|korean\s*cover|kr\s*cover|한국어\s*ver)\b/i.test(`${origTitle} ${origArtist}`) ||
+        (/\b(cover|covered)\b/i.test(`${origTitle} ${origArtist}`) && /[\uac00-\ud7af]/.test(origTitle));
+
+    const isSpanishVersion = /\b(spanish\s*ver(?:sion)?|espa[nñ]ol\s*ver|cover\s*en\s*espa[nñ]ol)\b/i.test(`${origTitle} ${origArtist}`);
+
+    const isCover = isEnglishVersion || isIndonesianVersion || isJapaneseVersion || isKoreanVersion || isSpanishVersion ||
+        /\b(cover|covered|utattemita|self\s*cover|acoustic\s*cover|metal\s*cover|rock\s*cover|lofi\s*cover|jazz\s*cover|piano\s*cover|guitar\s*cover|band\s*cover|remix\s*cover|vtuber\s*cover)\b|歌ってみた|うたってみた|翻唱/i.test(`${origTitle} ${origArtist}`);
+
     const isLofiOrInst = /\b(lofi|lo-fi|instrumental|karaoke|off\s*vocal|piano\s*ver|8-bit|nightcore)\b/i.test(origTitle);
 
     // 1. Ekstrak isi kurung Jepang 『...』, 「...」, 【...】 yang sering berisi judul lagu asli atau nama artis!
@@ -280,7 +294,7 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         likelyJapanese = false;
     }
 
-    if (isEnglishVersion) {
+    if (isEnglishVersion || isIndonesianVersion || isKoreanVersion || isSpanishVersion) {
         likelyJapanese = false;
     }
 
@@ -292,7 +306,10 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         isLyricChannel,
         isCover,
         isEnglishVersion,
+        isIndonesianVersion,
         isJapaneseVersion,
+        isKoreanVersion,
+        isSpanishVersion,
         isLofiOrInst,
         likelyJapanese,
         jpQuotes,
@@ -381,11 +398,23 @@ function isUnwantedForeignTranslation(metaStr, lyrSample, origTitle) {
 }
 
 function computeMetadataSimilarity(candidateTitle, candidateArtist, meta) {
-    // Jika track yang diputar secara eksplisit adalah versi/cover Bahasa Inggris,
-    // TOLAK kandidat jika judul atau artisnya berbahasa Jepang!
-    if (meta && meta.isEnglishVersion) {
-        if (hasJapaneseChars(candidateTitle || '') || hasJapaneseChars(candidateArtist || '')) {
-            return 0;
+    // Proteksi Lintas Bahasa untuk SEMUA lagu cover:
+    if (meta) {
+        if (meta.isEnglishVersion) {
+            // Lagu cover bahasa Inggris tidak boleh tertimpa lirik Jepang, Mandarin, atau Korea
+            if (hasJapaneseChars(candidateTitle || '') || hasJapaneseChars(candidateArtist || '') || /[\uac00-\ud7af]/.test(`${candidateTitle} ${candidateArtist}`)) {
+                return 0;
+            }
+        } else if (meta.isIndonesianVersion) {
+            // Lagu cover bahasa Indonesia tidak boleh tertimpa lirik Jepang atau Mandarin
+            if (hasJapaneseChars(candidateTitle || '') || hasJapaneseChars(candidateArtist || '')) {
+                return 0;
+            }
+        } else if (meta.isJapaneseVersion) {
+            // Cover lagu Jepang (utattemita) tidak boleh tertimpa lirik adaptasi bahasa Inggris/Spanyol
+            if (/\b(english\s*ver|eng\s*ver|spanish\s*ver)\b/i.test(`${candidateTitle} ${candidateArtist}`)) {
+                return 0;
+            }
         }
     }
 

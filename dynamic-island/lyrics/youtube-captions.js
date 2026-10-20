@@ -248,27 +248,37 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     // dan kandidat Manual CC (subtitle dari kreator)
     const isJpSong = Boolean(meta && meta.likelyJapanese);
     const isEngSong = Boolean(meta && meta.isEnglishVersion);
+    const isIdSong = Boolean(meta && meta.isIndonesianVersion);
 
     const scoreLang = (t) => {
         const lang = String(t.languageCode || '').toLowerCase();
         let s = 0;
-        if (isEngSong) {
-            // Untuk lagu cover bahasa Inggris, prioritaskan CC bahasa Inggris!
-            if (lang.startsWith('en')) s += 100;
-            else if (lang.startsWith('id')) s += 60;
-            else if (t.kind !== 'asr') s += 40; // Manual CC kreator
-            else s = -999; // Tolak ASR bahasa yang salah (misal ASR Vietnam / Rusia pada lagu Inggris)
-        } else if (isJpSong) {
-            // Untuk lagu Jepang, jalur CC bahasa Jepang adalah vokal/lirik asli yang dinyanyikan!
-            if (lang.startsWith('ja')) s += 100;
-            else if (lang.startsWith('en')) s += 45;
-            else if (lang.startsWith('id')) s += 30;
-            else if (t.kind === 'asr') s = -999; // Tolak ASR bahasa selain Jepang untuk lagu Jepang
+        if (t.kind !== 'asr') {
+            // Manual CC resmi yang diunggah kreator video cover/lagu (Prioritas Utama!)
+            if (isIdSong && lang.startsWith('id')) s += 120;
+            else if (isEngSong && lang.startsWith('en')) s += 120;
+            else if (isJpSong && lang.startsWith('ja')) s += 120;
+            else if (lang.startsWith('id') || lang.startsWith('en') || lang.startsWith('ja')) s += 90;
+            else s += 60;
         } else {
-            // Untuk lagu non-Jepang (lagu Indonesia/Global), prioritaskan lirik Indonesia jika ada
-            if (lang.startsWith('id')) s += 100;
-            else if (lang.startsWith('en')) s += 60;
-            else if (lang.startsWith('ja')) s += 30;
+            // Jalur Auto-ASR
+            if (isEngSong) {
+                if (lang.startsWith('en')) s += 100;
+                else if (lang.startsWith('id')) s += 60;
+                else s = -999; // Tolak ASR bahasa yang salah (misal ASR Vietnam / Rusia pada lagu Inggris)
+            } else if (isIdSong) {
+                if (lang.startsWith('id')) s += 100;
+                else s = -999;
+            } else if (isJpSong) {
+                if (lang.startsWith('ja')) s += 100;
+                else if (lang.startsWith('en')) s += 45;
+                else if (lang.startsWith('id')) s += 30;
+                else s = -999; // Tolak ASR bahasa selain Jepang untuk lagu Jepang
+            } else {
+                if (lang.startsWith('id')) s += 100;
+                else if (lang.startsWith('en')) s += 60;
+                else if (lang.startsWith('ja')) s += 30;
+            }
         }
         return { track: t, lang, langScore: s };
     };

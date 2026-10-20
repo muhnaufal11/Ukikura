@@ -5,6 +5,56 @@ const { searchNetEaseLyrics, searchLrclibLyrics, searchKuGouLyrics } = require("
 const { fetchYouTubeCaptionStream } = require("./youtube-captions");
 const { forceAlignLyricsToAudioStream } = require("./forced-alignment");
 
+async function enrichWithRomaji(lines, meta, bestDb) {
+    if (!Array.isArray(lines) || lines.length === 0) return lines;
+    const hasJp = lines.some(l => hasJapaneseChars(l.rawText || l.text));
+    if (!hasJp) return lines;
+
+    const unRomaCount = lines.filter(l => !l.romaText && hasJapaneseChars(l.rawText || l.text)).length;
+    if (unRomaCount === 0) return lines;
+
+    const searchQueries = [
+        bestDb ? `${bestDb.artistName} ${bestDb.trackName}` : '',
+        meta.jpQuotes && meta.jpQuotes[0] ? `${meta.cleanChannel || ''} ${meta.jpQuotes[0]}` : '',
+        meta.cleanedTitle,
+        meta.origTitle
+    ].map(q => String(q || '').replace(/\b(?:cover|covered|utattemita|歌ってみた)\b/gi, '').trim()).filter(q => q && q.length >= 2);
+
+    for (const q of searchQueries.slice(0, 2)) {
+        try {
+            const data = await httpRequestJson(
+                `https://music.163.com/api/search/get?s=${encodeURIComponent(q)}&type=1&limit=3`,
+                { method: 'POST', headers: { Referer: 'https://music.163.com' }, timeout: 3500 }
+            );
+            const firstSong = data?.result?.songs?.[0];
+            if (firstSong && firstSong.id) {
+                const lyrData = await httpRequestJson(
+                    `https://music.163.com/api/song/lyric?id=${firstSong.id}&lv=1&kv=1&tv=-1&rv=-1`,
+                    { headers: { Referer: 'https://music.163.com' }, timeout: 3500 }
+                );
+                if (lyrData?.romalrc?.lyric) {
+                    const romaLines = parseLrcText(lyrData.romalrc.lyric);
+                    if (romaLines.length >= 4) {
+                        return mergeJapaneseAndRomajiLines(
+                            lines.map(l => ({ time: l.time, text: l.rawText || l.text, transText: l.transText })),
+                            romaLines
+                        );
+                    }
+                }
+            }
+        } catch (_) {}
+    }
+
+    return lines.map(l => {
+        if (!l.romaText) {
+            const txt = l.rawText || l.text || '';
+            const pureKana = (!hasKanji(txt) && hasHiraganaOrKatakana(txt)) ? kanaToRomaji(txt) : '';
+            return { ...l, romaText: pureKana };
+        }
+        return l;
+    });
+}
+
 // ==================== PIPELINE UTAMA PENYEDIA LIRIK SINKRON 100% ====================
 
 async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFastResult = null) {
@@ -83,9 +133,8 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             } catch (_) {}
         }
         if (top && top.source !== 'NetEase' && ne && ne.lines.some(l => l.transText)) {
-            const isOrigChinese = /[\u4e00-\u9fa5]/.test(`${meta.origTitle} ${meta.origArtist}`);
             const transPool = ne.lines
-                .filter(l => l.transText && (!/[\u4e00-\u9fa5]/.test(l.transText) || isOrigChinese))
+                .filter(l => l.transText && !/[\u4e00-\u9fa5]/.test(l.transText))
                 .map(l => ({ time: l.time, text: l.transText }));
             if (transPool.length > 0) {
                 top.lines = attachTranslationLines(top.lines, transPool);
@@ -107,8 +156,9 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     let trackDuration = mediaDur || (bestDb && bestDb.duration) || (ytCaptions && ytCaptions.videoDur) || 0;
 
     // KASUS 1: Video YouTube memiliki Subtitle Resmi / Manual CC dari kreator video itu sendiri!
-    // (Sangat akurat untuk video musik resmi, cover utattemita dengan intro/skit dialog unik, dan video animasi)
-    if (ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4) {
+    // (Atau lagu adalah COVER dan YouTube memiliki CC langsung dari pembuat cover!)
+    const isCoverWithCaptions = Boolean(meta && meta.isCover && ytCaptions && ytCaptions.lines.length >= 4);
+    if ((ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4) || isCoverWithCaptions) {
         finalLines = ytCaptions.lines.map(l => {
             const rawNormalized = String(l.rawText || l.text || '').normalize('NFKD').trim();
             // Cek apakah baris memuat kombinasi Romaji + Karakter Jepang (seperti gaya subtitle resmi YOASOBI/Ayase)
@@ -141,18 +191,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             };
         });
 
-        // Jika lirik Jepang belum memiliki Romaji (hanya Kanji), gabungkan Romaji dari database NetEase jika ada
-        if (dbBundle && dbBundle.neRes && Array.isArray(dbBundle.neRes.lines)) {
-            const romaPool = dbBundle.neRes.lines.filter(l => l.romaText).map(l => ({ time: l.time, text: l.romaText }));
-            if (romaPool.length > 0 && finalLines.some(l => !l.romaText && hasJapaneseChars(l.rawText || l.text))) {
-                finalLines = mergeJapaneseAndRomajiLines(
-                    finalLines.map(l => ({ time: l.time, text: l.rawText || l.text })),
-                    romaPool
-                );
-            }
-        }
-
-        syncMethod = 'YouTube Official CC (.srv3)';
+        syncMethod = ytCaptions.isManualCC ? 'YouTube Official CC (.srv3)' : 'YouTube Cover Captions (.srv3)';
     }
     // KASUS 2: Kita punya Lirik Standar Akurat dari Database + Gelombang Vokal Auto-ASR YouTube
     // -> Jalankan Audio-to-Text Forced Alignment agar ejaan 100% akurat & timestamp mengikuti vokal video!
@@ -203,27 +242,35 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
         syncMethod = 'YouTube Captions Stream (.srv3)';
     }
 
-    // 1. Lampirkan sub-lirik terjemahan Bahasa Indonesia resmi jika tersedia dari YouTube TimedText!
-    // (Hanya jika lirik utama BUKAN bahasa Indonesia, agar tidak menduplikasi teks)
-    const isAlreadyIndonesian = ytCaptions && ytCaptions.languageCode && ytCaptions.languageCode.toLowerCase().startsWith('id');
+    // 1. Lengkapi Romaji untuk SEMUA lagu Jepang yang belum memiliki Romaji (NetEase Canonical Search)
+    if (finalLines.length > 0 && finalLines.some(l => !l.romaText && hasJapaneseChars(l.rawText || l.text))) {
+        finalLines = await enrichWithRomaji(finalLines, meta, bestDb);
+    }
+
+    // 2. Lampirkan sub-lirik terjemahan Bahasa Indonesia resmi jika tersedia dari YouTube TimedText!
+    const isAlreadyIndonesian = meta.isIndonesianVersion || (ytCaptions && ytCaptions.languageCode && ytCaptions.languageCode.toLowerCase().startsWith('id'));
     if (!isAlreadyIndonesian && ytCaptions && Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 3 && finalLines.length > 0) {
         finalLines = attachTranslationLines(finalLines, ytCaptions.indonesianLines);
     }
 
-    // 2. Terjemahan cerdas ke Bahasa Indonesia jika belum ada sub-lirik Indonesia
-    const hasAnyIndoTrans = finalLines.some(l => l.transText && !/[\u4e00-\u9fa5]/.test(l.transText));
-    if (!isAlreadyIndonesian && !hasAnyIndoTrans && finalLines.length > 0) {
-        const toTranslate = finalLines.slice(0, 45);
-        const targetTexts = toTranslate.map(l => l.rawText || l.text || '');
-        const isJp = toTranslate.some(l => hasJapaneseChars(l.rawText || l.text));
-        try {
-            const batchTrans = await translateBatchToIndonesian(targetTexts, isJp ? 'ja' : 'en');
-            batchTrans.forEach((trans, idx) => {
-                if (trans && toTranslate[idx] && trans.toLowerCase() !== targetTexts[idx].toLowerCase()) {
-                    toTranslate[idx].transText = trans;
-                }
-            });
-        } catch (_) {}
+    // 3. Terjemahkan SEMUA baris lagu ke Bahasa Indonesia secara batch cepat
+    if (!isAlreadyIndonesian && finalLines.length > 0) {
+        const missingLines = finalLines.filter(l => !l.transText || (!/[\u4e00-\u9fa5]/.test(meta.origTitle) && /[\u4e00-\u9fa5]/.test(l.transText)));
+        if (missingLines.length > 0) {
+            const toProcess = missingLines.slice(0, 85);
+            const rawTexts = toProcess.map(l => l.rawText || l.text || '');
+            const isJp = rawTexts.some(t => hasJapaneseChars(t));
+            const isKr = rawTexts.some(t => /[\uac00-\ud7af]/.test(t));
+            const srcLang = isJp ? 'ja' : (isKr ? 'ko' : 'en');
+            try {
+                const transResults = await translateBatchToIndonesian(rawTexts, srcLang);
+                transResults.forEach((tr, idx) => {
+                    if (tr && toProcess[idx] && tr.toLowerCase() !== rawTexts[idx].toLowerCase()) {
+                        toProcess[idx].transText = tr;
+                    }
+                });
+            } catch (_) {}
+        }
     }
 
     const coverUrl = (ytCaptions && ytCaptions.videoId)
@@ -231,7 +278,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
         : '';
 
     let displayTrack = rawTitle;
-    if (syncMethod.startsWith('YouTube')) {
+    if (syncMethod.startsWith('YouTube') || (meta && meta.isCover)) {
         displayTrack = rawTitle;
     } else if (bestDb) {
         displayTrack = [bestDb.artistName, bestDb.trackName].filter(Boolean).join(' - ') || rawTitle;

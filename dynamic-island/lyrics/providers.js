@@ -95,7 +95,7 @@ async function searchNetEaseLyrics(meta, mediaDur) {
         }
 
         const isJpLrc = hasJapaneseChars(sample);
-        if (meta && meta.isEnglishVersion && isJpLrc) {
+        if (meta && ((meta.isEnglishVersion || meta.isIndonesianVersion) && isJpLrc)) {
             continue;
         }
 
@@ -124,10 +124,8 @@ async function searchNetEaseLyrics(meta, mediaDur) {
             }));
         }
 
-        const isOrigChinese = /[\u4e00-\u9fa5]/.test(`${meta.origTitle} ${meta.origArtist}`);
         const isTransChinese = transLines.some(l => /[\u4e00-\u9fa5]/.test(l.text));
-
-        if (transLines.length > 0 && finalLines.length > 0 && (!isTransChinese || isOrigChinese)) {
+        if (transLines.length > 0 && finalLines.length > 0 && !isTransChinese) {
             finalLines = attachTranslationLines(finalLines, transLines);
         }
 
@@ -186,11 +184,23 @@ async function searchLrclibLyrics(meta, mediaDur) {
             const isJpText = hasJapaneseChars(lyrSample);
 
             if (meta && meta.isEnglishVersion) {
-                // TOLAK lirik Jepang jika lagu secara eksplisit adalah versi/cover Bahasa Inggris!
-                if (isJpText || hasJapaneseChars(item.trackName || '') || hasJapaneseChars(item.artistName || '')) {
+                // TOLAK lirik Jepang/Korea jika lagu adalah versi/cover Bahasa Inggris!
+                if (isJpText || hasJapaneseChars(item.trackName || '') || hasJapaneseChars(item.artistName || '') || /[\uac00-\ud7af]/.test(lyrSample)) {
                     continue;
                 }
                 score += 30; // Bonus kecocokan bahasa Inggris
+            } else if (meta && meta.isIndonesianVersion) {
+                // TOLAK lirik Jepang/Mandarin/Korea jika lagu adalah versi/cover Bahasa Indonesia!
+                if (isJpText || hasJapaneseChars(item.trackName || '') || hasJapaneseChars(item.artistName || '')) {
+                    continue;
+                }
+                score += 30;
+            } else if (meta && meta.isJapaneseVersion) {
+                // Jangan terima terjemahan bahasa Inggris studio jika sedang memutar versi cover Jepang (Utattemita)
+                if (!isJpText && /\b(the|and|you|i|my|to|in)\b/i.test(lyrSample)) {
+                    continue;
+                }
+                score += 35;
             } else if (meta && meta.likelyJapanese) {
                 if (isJpText) {
                     score += 35;
@@ -311,7 +321,7 @@ async function searchKuGouLyrics(meta, mediaDur) {
         const parsed = parseLrcText(rawLrc);
         if (parsed.length >= 5) {
             const isJp = hasJapaneseChars(rawLrc.slice(0, 500));
-            if (meta && meta.isEnglishVersion && isJp) {
+            if (meta && ((meta.isEnglishVersion || meta.isIndonesianVersion) && isJp)) {
                 continue;
             }
             return {
