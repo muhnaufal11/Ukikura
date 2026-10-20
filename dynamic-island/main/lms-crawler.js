@@ -12,6 +12,30 @@ function initLmsCrawler(mainWinGetter) { getMainWindow = mainWinGetter; }
 const CHROME_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 let backgroundScraperWin = null;
 
+// Fungsi verifikasi apakah pengguna benar-benar sudah login di Moodle LMS (bukan halaman login/SSO)
+async function checkMoodleLoginState(win) {
+    if (!win || win.isDestroyed()) return { loggedIn: false };
+    try {
+        return await win.webContents.executeJavaScript(`
+            (function() {
+                const href = window.location.href || '';
+                if (href.includes('login.microsoftonline.com') || href.includes('microsoft.com') || href.includes('/login/') || href.includes('/auth/oidc') || href.includes('oauth2')) {
+                    return { loggedIn: false, stage: 'authenticating', href };
+                }
+                if (!href.includes('lms.telkomuniversity.ac.id')) return { loggedIn: false, stage: 'external', href };
+                if (document.body && (document.body.classList.contains('notloggedin') || document.querySelector('.loginbox, #login'))) {
+                    return { loggedIn: false, stage: 'login-form', href };
+                }
+                const hasUserNav = Boolean(document.querySelector('.usermenu, .userbutton, .userpicture, #usernavigation, a[href*="login/logout.php"]'));
+                const hasSessKey = Boolean(window.M && window.M.cfg && window.M.cfg.sesskey);
+                return { loggedIn: Boolean(hasUserNav || hasSessKey), stage: 'in-lms', href };
+            })()
+        `);
+    } catch (_) {
+        return { loggedIn: false, stage: 'error' };
+    }
+}
+
 async function openLmsLoginWindow() {
     if (loginWindow && !loginWindow.isDestroyed()) {
         loginWindow.focus();
@@ -76,43 +100,9 @@ async function openLmsLoginWindow() {
         }
 
         loginWindow.setTitle('Gagal Memuat LMS Telkom University');
-        const failHtml = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Koneksi Terputus</title>
-    <style>
-        body {
-            margin: 0; background: #0f172a; color: #f8fafc;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            display: flex; align-items: center; justify-content: center; height: 100vh;
-        }
-        .box {
-            background: #1e293b; padding: 36px; border-radius: 16px;
-            border: 1px solid #334155; text-align: center; max-width: 440px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
-        }
-        h2 { margin: 0 0 10px; font-size: 20px; font-weight: 600; color: #f87171; }
-        p { margin: 0 0 20px; color: #94a3b8; font-size: 14px; line-height: 1.5; }
-        .code { font-family: monospace; font-size: 12px; color: #64748b; margin-bottom: 24px; }
-        button {
-            background: #3b82f6; color: #ffffff; border: none; padding: 10px 24px;
-            border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
-            transition: all 0.2s;
-        }
-        button:hover { background: #2563eb; transform: translateY(-1px); }
-    </style>
-</head>
-<body>
-    <div class="box">
-        <h2>Gagal Terhubung ke LMS</h2>
-        <p>Halaman LMS Telkom University gagal dimuat. Periksa sambungan internet Anda atau klik tombol di bawah untuk mereset sesi login.</p>
-        <div class="code">${errorDescription} (${errorCode})</div>
-        <button onclick="window.location.href='https://lms.telkomuniversity.ac.id/?redirect=0'">Coba Muat Ulang</button>
-    </div>
-</body>
-</html>`;
+        const failHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Koneksi Terputus</title>
+        <style>body{margin:0;background:#0f172a;color:#f8fafc;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh}.box{background:#1e293b;padding:32px;border-radius:16px;border:1px solid #334155;text-align:center;max-width:440px}h2{color:#f87171;margin:0 0 10px}p{color:#94a3b8;font-size:14px}button{background:#3b82f6;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:600;cursor:pointer}</style></head>
+        <body><div class="box"><h2>Gagal Terhubung ke LMS</h2><p>Halaman LMS Telkom University gagal dimuat (${errorCode}). Periksa koneksi internet Anda.</p><button onclick="window.location.href='https://lms.telkomuniversity.ac.id/?redirect=0'">Coba Muat Ulang</button></div></body></html>`;
         loginWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(failHtml)}`);
     });
 
@@ -120,6 +110,8 @@ async function openLmsLoginWindow() {
     await ensurePersistentLmsCookie(loginWindow.webContents.session);
 
     let autoSsoAttempted = false;
+    let autoCloseTimer = null;
+    let hasClosedSuccess = false;
 
     if (loginWindow && !loginWindow.isDestroyed()) {
         loginWindow.loadURL('https://lms.telkomuniversity.ac.id/my/courses.php');
@@ -131,41 +123,61 @@ async function openLmsLoginWindow() {
         const currentUrl = loginWindow.webContents.getURL();
         if (currentUrl.startsWith('data:')) return;
 
-        loginWindow.setTitle('Login LMS Telkom University — Sinkronisasi Dynamic Island');
-
-        // Jika terlempar ke halaman login LMS, otomatis klik "Connect with Office365" sekali agar SSO Microsoft menyambung ulang otomatis
+        // 1. Jika terlempar ke halaman login LMS, otomatis klik "Connect with Office365" sekali
         if (currentUrl.includes('lms.telkomuniversity.ac.id/login/') && !autoSsoAttempted) {
             autoSsoAttempted = true;
+            loginWindow.setTitle('Menyambungkan SSO Office365 Telkom University...');
             try {
-                const clicked = await loginWindow.webContents.executeJavaScript(`
+                await loginWindow.webContents.executeJavaScript(`
                     (function() {
                         const ssoBtn = document.querySelector('a[href*="auth/oidc"], a[href*="oauth2"], .login-identityprovider-btn, a.btn-block');
                         if (ssoBtn && /office|365|microsoft|sso|oidc/i.test((ssoBtn.innerText || '') + ' ' + (ssoBtn.href || ''))) {
                             ssoBtn.click();
-                            return true;
                         }
-                        return false;
                     })();
                 `);
-                if (clicked) {
-                    loginWindow.setTitle('Menyambungkan ulang sesi Office365 SSO...');
-                    return;
-                }
             } catch (_) {}
+            return;
         }
 
-        if (currentUrl.includes('lms.telkomuniversity.ac.id') && !currentUrl.includes('/login/') && !currentUrl.includes('/auth/oidc')) {
-            loginWindow.setTitle('Login Berhasil — Sesi telah tersinkronisasi');
-            await captureCookiesAndScrape(loginWindow);
-            setTimeout(() => {
-                if (loginWindow && !loginWindow.isDestroyed()) {
-                    loginWindow.close();
+        // 2. Jika di portal Microsoft SSO, JANGAN PERNAH tutup jendela otomatis!
+        // Biarkan pengguna memasukkan email/password, approve Authenticator, atau verifikasi Passkey
+        if (currentUrl.includes('login.microsoftonline.com') || currentUrl.includes('microsoft.com') || currentUrl.includes('/auth/oidc')) {
+            loginWindow.setTitle('Login Microsoft SSO — Silakan masukkan kata sandi atau gunakan Passkey');
+            if (autoCloseTimer) {
+                clearTimeout(autoCloseTimer);
+                autoCloseTimer = null;
+            }
+            return;
+        }
+
+        // 3. Jika kembali ke domain LMS, verifikasi keberadaan profil autentikasi nyata
+        if (currentUrl.includes('lms.telkomuniversity.ac.id')) {
+            const loginState = await checkMoodleLoginState(loginWindow);
+            if (loginState.loggedIn && !hasClosedSuccess) {
+                hasClosedSuccess = true;
+                loginWindow.setTitle('✅ Login Berhasil! Sesi telah tersinkronisasi — Menutup jendela...');
+                await captureCookiesAndScrape(loginWindow);
+                autoCloseTimer = setTimeout(() => {
+                    if (loginWindow && !loginWindow.isDestroyed()) {
+                        loginWindow.close();
+                    }
+                }, 2000);
+            } else if (!loginState.loggedIn) {
+                loginWindow.setTitle('LMS Telkom University — Silakan Login');
+                if (autoCloseTimer) {
+                    clearTimeout(autoCloseTimer);
+                    autoCloseTimer = null;
                 }
-            }, 1500);
+            }
         }
     });
 
     loginWindow.on('closed', () => {
+        if (autoCloseTimer) {
+            clearTimeout(autoCloseTimer);
+            autoCloseTimer = null;
+        }
         loginWindow = null;
     });
 }
@@ -244,6 +256,13 @@ async function runHiddenLmsCrawler() {
         return;
     }
 
+    // Hindari menjalankan background crawler jika pengguna belum pernah login (tidak ada cookie tersimpan)
+    const { loadKuraConfig } = require('./kura-server');
+    const savedCfg = loadKuraConfig();
+    if (!savedCfg || !savedCfg.lmsCookie || !savedCfg.lmsCookie.includes('MoodleSession')) {
+        return { ok: false, reason: 'no-saved-cookie' };
+    }
+
     backgroundScraperWin = new BrowserWindow({
         width: 800,
         height: 600,
@@ -271,28 +290,21 @@ async function runHiddenLmsCrawler() {
         }
 
         let currentUrl = backgroundScraperWin.webContents.getURL();
-        // Jika sesi Moodle habis di server, coba silent auto-login via tombol Office365 SSO di background
-        if (currentUrl.includes('/login/')) {
-            try {
-                const ssoHref = await backgroundScraperWin.webContents.executeJavaScript(`
-                    (function() {
-                        const ssoBtn = document.querySelector('a[href*="auth/oidc"], a[href*="oauth2"], .login-identityprovider-btn');
-                        return ssoBtn ? ssoBtn.href : '';
-                    })();
-                `);
-                if (ssoHref) {
-                    await backgroundScraperWin.loadURL(ssoHref);
-                    await new Promise(r => setTimeout(r, 3500));
-                    currentUrl = backgroundScraperWin.webContents.getURL();
-                }
-            } catch (_) {}
-        }
-
-        if (!currentUrl.includes('lms.telkomuniversity.ac.id') || currentUrl.includes('/login/')) {
-            // Belum login di session Electron, biarkan server sync via iCal/Proxy Cookie
+        
+        // JANGAN PERNAH buka SSO Microsoft (login.microsoftonline.com) di jendela tersembunyi (hidden window)!
+        // Membuka SSO di jendela hidden memicu Windows Security memunculkan dialog Passkey tanpa sengaja di desktop.
+        if (!currentUrl.includes('lms.telkomuniversity.ac.id') || currentUrl.includes('/login/') || currentUrl.includes('login.microsoftonline.com')) {
             backgroundScraperWin.destroy();
             backgroundScraperWin = null;
-            return { ok: false, reason: 'not-logged-in' };
+            return { ok: false, reason: 'session-expired-or-not-logged-in' };
+        }
+
+        // Verifikasi apakah benar-benar terautentikasi
+        const loginCheck = await checkMoodleLoginState(backgroundScraperWin);
+        if (!loginCheck.loggedIn) {
+            backgroundScraperWin.destroy();
+            backgroundScraperWin = null;
+            return { ok: false, reason: 'not-authenticated' };
         }
 
         // Tangkap & kunci cookie terbaru secara persisten
@@ -302,18 +314,12 @@ async function runHiddenLmsCrawler() {
         const scrapedData = await backgroundScraperWin.webContents.executeJavaScript(`
             (async function() {
                 const months = {
-                    'januari': 0, 'jan': 0, 'january': 0,
-                    'februari': 1, 'feb': 1, 'february': 1,
-                    'maret': 2, 'mar': 2, 'march': 2,
-                    'april': 3, 'apr': 3,
-                    'mei': 4, 'may': 4,
-                    'juni': 5, 'jun': 5, 'june': 5,
-                    'juli': 6, 'jul': 6, 'july': 6,
-                    'agustus': 7, 'ags': 7, 'aug': 7, 'august': 7,
-                    'september': 8, 'sep': 8,
-                    'oktober': 9, 'okt': 9, 'oct': 9, 'october': 9,
-                    'november': 10, 'nov': 10,
-                    'desember': 11, 'des': 11, 'dec': 11, 'december': 11
+                    'jan': 0, 'januari': 0, 'january': 0, 'feb': 1, 'februari': 1, 'february': 1,
+                    'mar': 2, 'maret': 2, 'march': 2, 'apr': 3, 'april': 3, 'mei': 4, 'may': 4,
+                    'jun': 5, 'juni': 5, 'june': 5, 'jul': 6, 'juli': 6, 'july': 6,
+                    'ags': 7, 'agustus': 7, 'aug': 7, 'august': 7, 'sep': 8, 'september': 8,
+                    'okt': 9, 'oktober': 9, 'oct': 9, 'october': 9, 'nov': 10, 'november': 10,
+                    'des': 11, 'desember': 11, 'dec': 11, 'december': 11
                 };
                 function parseDateStr(text) {
                     if (!text) return null;
@@ -424,30 +430,15 @@ async function runHiddenLmsCrawler() {
 
                 function inspectActivityHtml(actHtml) {
                     const low = actHtml.toLowerCase();
-                    const isDone =
-                        low.includes('terkirim dan siap dinilai') ||
-                        low.includes('submitted for grading') ||
-                        low.includes('dikumpulkan untuk dinilai') ||
-                        low.includes('sudah dikumpulkan') ||
-                        low.includes('telah dikirim') ||
-                        low.includes('penugasan diajukan') ||
-                        low.includes('assignment was submitted') ||
-                        low.includes('submissionstatussubmitted') ||
-                        low.includes('earlysubmission') ||
-                        low.includes('edit pengajuan') ||
-                        low.includes('hapus pengajuan') ||
-                        low.includes('edit submission') ||
-                        low.includes('remove submission') ||
-                        low.includes('nilai akhir anda untuk kuis ini') ||
-                        low.includes('your final grade for this quiz') ||
-                        low.includes('tidak ada lagi kesempatan') ||
-                        low.includes('no more attempts are allowed') ||
-                        (low.includes('quizattemptsummary') && (
-                            low.includes('>selesai<') ||
-                            low.includes('>finished<') ||
-                            low.includes('dikirimkan') ||
-                            low.includes('submitted')
-                        )) ||
+                    const doneWords = [
+                        'terkirim dan siap dinilai', 'submitted for grading', 'dikumpulkan untuk dinilai',
+                        'sudah dikumpulkan', 'telah dikirim', 'penugasan diajukan', 'assignment was submitted',
+                        'submissionstatussubmitted', 'earlysubmission', 'edit pengajuan', 'hapus pengajuan',
+                        'edit submission', 'remove submission', 'nilai akhir anda untuk kuis ini',
+                        'your final grade for this quiz', 'tidak ada lagi kesempatan', 'no more attempts are allowed'
+                    ];
+                    const isDone = doneWords.some(k => low.includes(k)) ||
+                        (low.includes('quizattemptsummary') && (low.includes('>selesai<') || low.includes('>finished<') || low.includes('dikirimkan') || low.includes('submitted'))) ||
                         (low.includes('badge-success') && (low.includes('done') || low.includes('selesai')));
 
                     let dueTs = null;
@@ -593,19 +584,12 @@ async function runHiddenLmsCrawler() {
 function postJsonToServer(urlPath, obj) {
     const data = JSON.stringify(obj);
     const req = http.request({
-        hostname: '127.0.0.1',
-        port: PROXY_PORT,
-        path: urlPath,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(data)
-        }
+        hostname: '127.0.0.1', port: PROXY_PORT, path: urlPath, method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
     }, (res) => { res.resume(); });
     req.on('error', () => {});
     req.write(data);
     req.end();
 }
-
 
 module.exports = { initLmsCrawler, openLmsLoginWindow, runHiddenLmsCrawler, postJsonToServer };
