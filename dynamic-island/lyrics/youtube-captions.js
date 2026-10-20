@@ -247,7 +247,8 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     // Pisahkan kandidat ASR (memiliki <s t="..."> timestamp vokal per kata langsung dari gelombang audio)
     // dan kandidat Manual CC (subtitle dari kreator)
     const hasJpChars = hasJapaneseChars(rawTitle) || hasJapaneseChars(rawArtist);
-    const isJpSong = Boolean(meta && (meta.likelyJapanese || meta.isJapaneseVersion || hasJpChars));
+    const isJpMeta = /\b(hololive|nijisanji|vshojo|vtuber|anime|vocaloid|j-?pop)\b/i.test(`${rawTitle} ${rawArtist}`);
+    const isJpSong = Boolean(meta && (meta.likelyJapanese || meta.isJapaneseVersion || hasJpChars || isJpMeta));
     const isIdSong = Boolean(meta && meta.isIndonesianVersion);
     const isEngSong = Boolean(meta && meta.isEnglishVersion) || (!isJpSong && !isIdSong && !(meta && meta.isKoreanVersion));
 
@@ -356,6 +357,55 @@ function mergeFragmentedAsrLines(rawLines) {
     return merged;
 }
 
+function sanitizeBilingualManualLines(rawLines) {
+    if (!Array.isArray(rawLines) || rawLines.length <= 2) return rawLines;
+    const cleaned = [];
+    for (let i = 0; i < rawLines.length; i++) {
+        const cur = rawLines[i];
+        const next = rawLines[i + 1];
+
+        // 1. Cek pasangan bilingual pada timestamp berdekatan (<= 0.65s)
+        if (next && Math.abs(next.time - cur.time) <= 0.65) {
+            const curIsJp = hasJapaneseChars(cur.text);
+            const nextIsJp = hasJapaneseChars(next.text);
+            if (curIsJp !== nextIsJp) {
+                const jpLine = curIsJp ? cur : next;
+                const nonJpLine = curIsJp ? next : cur;
+                cleaned.push({
+                    time: jpLine.time,
+                    endTime: Math.max(jpLine.endTime || 0, nonJpLine.endTime || 0),
+                    text: jpLine.text,
+                    rawText: jpLine.text,
+                    transText: nonJpLine.text
+                });
+                i++; // lewati next karena sudah dipasangkan
+
+                // Cek jika ada baris pengulangan nonJpLine segera setelahnya (<= 1.2s)
+                const next2 = rawLines[i + 1];
+                if (next2 && Math.abs(next2.time - jpLine.time) <= 1.2 &&
+                    next2.text.trim().toLowerCase() === nonJpLine.text.trim().toLowerCase()) {
+                    i++;
+                }
+                continue;
+            }
+        }
+
+        // 2. Cek jika teks berulang sama persis dalam <= 1.2s dari baris yang baru saja dimasukkan
+        const prev = cleaned[cleaned.length - 1];
+        if (prev && Math.abs(cur.time - prev.time) <= 1.2) {
+            const curNorm = cur.text.trim().toLowerCase();
+            const prevNorm = (prev.rawText || prev.text).trim().toLowerCase();
+            const prevTransNorm = (prev.transText || '').trim().toLowerCase();
+            if (curNorm === prevNorm || (prevTransNorm && curNorm === prevTransNorm)) {
+                continue;
+            }
+        }
+
+        cleaned.push(cur);
+    }
+    return cleaned;
+}
+
     // Untuk Forced Alignment:
     // - Jika ada Manual CC pada bahasa lagu yang sama (langScore >= 45), gunakan Manual CC karena bebas jeda decoding ASR!
     // - Jika menggunakan Auto-ASR (kind === 'asr'), tandai isAsrTokens = true untuk kompensasi jeda vokal ASR (-1.05s)
@@ -364,8 +414,10 @@ function mergeFragmentedAsrLines(rawLines) {
     const useAsrPrimary = !manualHasSameLang && parsedAsr.tokens.length >= 6;
     const primaryTokens = useAsrPrimary ? parsedAsr.tokens : (parsedManual.tokens.length >= 6 ? parsedManual.tokens : parsedAsr.tokens);
     const asrMergedLines = mergeFragmentedAsrLines(parsedAsr.lines);
-    const primaryLines = isManualCC ? parsedManual.lines : asrMergedLines;
+    const sanitizedManual = isManualCC ? sanitizeBilingualManualLines(parsedManual.lines) : [];
+    const primaryLines = isManualCC ? sanitizedManual : asrMergedLines;
     const languageCode = (bestManual && bestManual.lang) || (bestAsr && bestAsr.lang) || '';
+    const cleanIdLines = parsedId.lines.length > 0 ? sanitizeBilingualManualLines(parsedId.lines) : [];
 
     if (primaryTokens.length === 0 && primaryLines.length === 0) return null;
 
@@ -377,7 +429,7 @@ function mergeFragmentedAsrLines(rawLines) {
         languageCode,
         tokens: primaryTokens,
         lines: primaryLines,
-        indonesianLines: parsedId.lines
+        indonesianLines: cleanIdLines
     };
 }
 

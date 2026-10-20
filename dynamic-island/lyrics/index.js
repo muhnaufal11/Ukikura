@@ -9,7 +9,8 @@ const {
     parseLrcText,
     mergeJapaneseAndRomajiLines,
     attachTranslationLines,
-    isIndonesianText
+    isIndonesianText,
+    computeMetadataSimilarity
 } = require("./text-romaji");
 const { searchNetEaseLyrics, searchLrclibLyrics, searchKuGouLyrics } = require("./providers");
 const { fetchYouTubeCaptionStream } = require("./youtube-captions");
@@ -44,6 +45,9 @@ async function enrichWithRomaji(lines, meta, bestDb) {
             const songs = data?.result?.songs || [];
             for (const s of songs) {
                 if (!s || !s.id) continue;
+                const sim = computeMetadataSimilarity(s.name, s.artists?.[0]?.name, meta);
+                if (sim < 22) continue;
+
                 const lyrData = await httpRequestJson(
                     `https://music.163.com/api/song/lyric?id=${s.id}&lv=1&kv=1&tv=-1&rv=-1`,
                     { headers: { Referer: 'https://music.163.com' }, timeout: 3500 }
@@ -131,18 +135,21 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
                 );
                 const firstSong = targeted?.result?.songs?.[0];
                 if (firstSong && firstSong.id) {
-                    const lyrData = await httpRequestJson(
-                        `https://music.163.com/api/song/lyric?id=${firstSong.id}&lv=1&kv=1&tv=-1&rv=-1`,
-                        { headers: { Referer: 'https://music.163.com' }, timeout: 3500 }
-                    );
-                    if (lyrData && lyrData.romalrc && lyrData.romalrc.lyric) {
-                        const targetedRomaLines = parseLrcText(lyrData.romalrc.lyric);
-                        if (targetedRomaLines.length >= 4) {
-                            top.lines = mergeJapaneseAndRomajiLines(
-                                top.lines.map(l => ({ time: l.time, text: l.rawText || l.text })),
-                                targetedRomaLines
-                            );
-                            top.score += 30;
+                    const sim = computeMetadataSimilarity(firstSong.name, firstSong.artists?.[0]?.name, meta);
+                    if (sim >= 22) {
+                        const lyrData = await httpRequestJson(
+                            `https://music.163.com/api/song/lyric?id=${firstSong.id}&lv=1&kv=1&tv=-1&rv=-1`,
+                            { headers: { Referer: 'https://music.163.com' }, timeout: 3500 }
+                        );
+                        if (lyrData && lyrData.romalrc && lyrData.romalrc.lyric) {
+                            const targetedRomaLines = parseLrcText(lyrData.romalrc.lyric);
+                            if (targetedRomaLines.length >= 4) {
+                                top.lines = mergeJapaneseAndRomajiLines(
+                                    top.lines.map(l => ({ time: l.time, text: l.rawText || l.text })),
+                                    targetedRomaLines
+                                );
+                                top.score += 30;
+                            }
                         }
                     }
                 }

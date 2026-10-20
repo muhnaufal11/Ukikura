@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 31,
+  "versionCode": 32,
   "version": "1.0.6",
-  "fixCount": 31,
-  "displayVersion": "1.0.6 (Patch 31)",
+  "fixCount": 32,
+  "displayVersion": "1.0.6 (Patch 32)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 31): Memperbaiki pemotongan lirik 1-2 kata pada cover video YouTube dengan Forced Alignment database vokal dan penggabungan Auto-ASR beruntun, mengembalikan Romaji resmi untuk lagu Jepang dengan pencarian NetEase multi-kandidat, serta mencegah terjemahan Bahasa Indonesia keliru pada lagu yang sudah berbahasa Indonesia."
+  "changelog": "Ukikura v1.0.6 (Patch 32): Memperbaiki penggabungan lirik bilingual multilingual agar tidak terduplikasi menjadi 4 baris terpisah pada video dengan subtitle dwibahasa (seperti ALiCE&u Ayunda Risu), serta memastikan Romaji hanya diambil dari lagu yang sama persis untuk mencegah Romaji asing tertukar."
 }

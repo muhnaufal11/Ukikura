@@ -148,6 +148,9 @@ function renderLyricItemHtml(l, i) {
     if (transText && transText.trim().toLowerCase() === mainText.trim().toLowerCase()) {
         transText = '';
     }
+    if (transText && romaText && transText.trim().toLowerCase() === romaText.trim().toLowerCase()) {
+        transText = '';
+    }
 
     // Sembunyikan terjemahan Mandarin (tlyric NetEase) jika lagu aslinya bukan lagu berbahasa Mandarin
     if (transText && /[\u4e00-\u9fa5]/.test(transText)) {
