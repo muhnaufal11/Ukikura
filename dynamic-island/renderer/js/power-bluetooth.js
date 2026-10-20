@@ -15,13 +15,18 @@ function setPeekMode(modeName, durationMs = 4800) {
     }
     holderEl.classList.remove('passthrough');
     mnEl.dataset.s = modeName;
+    ipcRenderer.send('island-peek-active', true);
     if (peekTimer) clearTimeout(peekTimer);
     peekTimer = setTimeout(() => {
         peekTimer = null;
         if (!isExpanded && mnEl.dataset.s === modeName) {
             mnEl.dataset.s = getClosedVisualMode();
+            mnEl.classList.remove('has-reply');
+            ipcRenderer.send('island-peek-active', false);
         } else if (isExpanded) {
             mnEl.dataset.s = getEffectiveState();
+            mnEl.classList.remove('has-reply');
+            ipcRenderer.send('island-peek-active', false);
         }
     }, durationMs);
 }

@@ -50,11 +50,13 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
 
 ## 3. Modul Komunikasi & Notifikasi (`notifications-wa.js` & `whatsapp-companion.js`)
 
-- [ ] **9. Inline Quick Reply WhatsApp dari Peek Popup**
+- [x] **9. Inline Quick Reply WhatsApp dari Peek Popup**
   - Saat muncul *Peek Popup* pesan WhatsApp masuk di atas layar, tersedia kolom ketik singkat (`Balas cepat...` + tekan `Enter`) yang langsung mengirim balasan melalui jendela pendamping `whatsapp-companion.js` tanpa perlu membuka jendela WhatsApp.
+  - Dilengkapi kolom balas cepat langsung dari tiap kartu notifikasi di Halaman Notifikasi tanpa membuka jendela WhatsApp.
 
-- [ ] **10. Pratinjau Gambar & Voice Note WhatsApp**
-  - Menampilkan *thumbnail* foto yang dikirim teman (selain stiker yang sudah didukung) langsung di dalam daftar notifikasi kapsul.
+- [x] **10. Pratinjau Gambar & Voice Note WhatsApp**
+  - Menampilkan *thumbnail* foto yang dikirim teman (selain stiker yang sudah didukung) langsung di dalam daftar notifikasi kapsul dan Peek Popup.
+  - Mendeteksi pesan Voice Note (PTT) lengkap dengan durasi (`0:15`) dan animasi gelombang audio hidup (*live audio waveform*).
 
 ---
 

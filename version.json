@@ -1,11 +1,11 @@
 {
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
-  "versionName": "1.0.5",
-  "versionCode": 26,
-  "version": "1.0.5",
-  "fixCount": 26,
-  "displayVersion": "1.0.5 (Kode: 26)",
+  "versionName": "1.0.6",
+  "versionCode": 27,
+  "version": "1.0.6",
+  "fixCount": 27,
+  "displayVersion": "1.0.6 (Kode: 27)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -13,8 +13,8 @@
     "Nauflix/Ukikura"
   ],
   "branch": "main",
-  "installerFile": "installer/Ukikura-Setup-v1.0.5.exe",
+  "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.5 (Patch 26): Universal Cover & Dual-Sub System — Deteksi cover lintas bahasa menyeluruh, pencegahan kebocoran sub Mandarin NetEase pada lagu Jepang, Romaji otomatis terpadu, dan penerjemahan Bahasa Indonesia penuh 100% pada semua lagu."
+  "changelog": "Ukikura v1.0.6: WhatsApp Inline Quick Reply & Media Preview — Balas pesan WhatsApp langsung dari Peek Popup Dynamic Island & kartu notifikasi tanpa membuka jendela WhatsApp, pratinjau thumbnail foto, serta deteksi Voice Note audio waveform & durasi."
 }

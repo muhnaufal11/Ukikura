@@ -60,10 +60,17 @@
                 </div>
                 <div class="pk-sub" id="pk-sub">Ketuk untuk melihat detail notifikasi</div>
             </div>
-            <img class="a c pk-sticker" id="pk-sticker" alt="Stiker" />
-            <span class="a c" style="right:14px;top:32px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.12);display:grid;place-items:center">
+            <img class="a c pk-sticker" id="pk-sticker" alt="Pratinjau Media" />
+            <span class="a c pk-open-btn" id="pk-open-btn" style="right:14px;top:32px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.12);display:grid;place-items:center">
                 <svg viewBox="0 0 10 10" style="width:9px;height:9px;stroke:#fff;stroke-width:2.2;fill:none"><path d="M3.5 1.5 7 5l-3.5 3.5"/></svg>
             </span>
+            <!-- Kolom Quick Reply Balas Cepat WhatsApp -->
+            <div class="pk-reply-bar" id="pk-reply-bar" style="display:none">
+                <input type="text" class="pk-reply-input" id="pk-reply-input" placeholder="Balas cepat... (tekan Enter)" autocomplete="off" />
+                <button type="button" class="pk-reply-send" id="pk-reply-send" title="Kirim Balasan WhatsApp">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                </button>
+            </div>
         </div>
 
         <!-- 3B. MODE PEEK CAS LAPTOP (Nusa Charging Peek) -->

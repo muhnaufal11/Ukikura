@@ -599,3 +599,120 @@
         filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
     }
 
+    /* Pratinjau Foto WhatsApp di Notifikasi */
+    .nrow-photo-wrap {
+        position: relative;
+        width: 36px;
+        height: 36px;
+        border-radius: 7px;
+        overflow: hidden;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .nrow-photo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.22s var(--spring);
+    }
+    .nrow:hover .nrow-photo {
+        transform: scale(1.15);
+    }
+    .nrow-photo-tag {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.65);
+        font-size: 7.5px;
+        text-align: center;
+        color: #fff;
+        line-height: 10px;
+        font-weight: 600;
+    }
+
+    /* Indikator Voice Note WhatsApp */
+    .nrow-vn-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(37, 211, 102, 0.16);
+        border: 1px solid rgba(37, 211, 102, 0.32);
+        border-radius: 10px;
+        padding: 1px 7px;
+        font-size: 9.5px;
+        font-weight: 600;
+        color: #5ef296;
+        margin-top: 3px;
+    }
+    .vn-live-bars {
+        display: inline-flex;
+        align-items: center;
+        gap: 1.5px;
+        height: 10px;
+        margin-left: 2px;
+    }
+    .vn-live-bars b {
+        display: inline-block;
+        width: 2px;
+        background: #25d366;
+        border-radius: 1px;
+        animation: vnbars 0.75s ease-in-out infinite alternate;
+    }
+    .vn-live-bars b:nth-child(1) { height: 4px; animation-delay: 0.1s; }
+    .vn-live-bars b:nth-child(2) { height: 9px; animation-delay: 0.2s; }
+    .vn-live-bars b:nth-child(3) { height: 6px; animation-delay: 0.35s; }
+    .vn-live-bars b:nth-child(4) { height: 10px; animation-delay: 0.15s; }
+    @keyframes vnbars {
+        0% { transform: scaleY(0.4); opacity: 0.5; }
+        100% { transform: scaleY(1); opacity: 1; }
+    }
+
+    /* Quick Reply di Kartu Notifikasi */
+    .nrow-reply-row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+    }
+    .nrow-reply-input {
+        flex: 1;
+        height: 22px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 11px;
+        padding: 0 8px;
+        color: #fff;
+        font-size: 10px;
+        font-family: inherit;
+        outline: none;
+        transition: all 0.18s ease;
+    }
+    .nrow-reply-input:focus {
+        background: rgba(37, 211, 102, 0.12);
+        border-color: #25d366;
+    }
+    .nrow-reply-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+    }
+    .nrow-reply-send {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: none;
+        background: #25d366;
+        color: #0b1d12;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: transform 0.15s ease;
+    }
+    .nrow-reply-send:hover {
+        transform: scale(1.1);
+        filter: brightness(1.15);
+    }
+

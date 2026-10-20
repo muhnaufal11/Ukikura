@@ -11,13 +11,28 @@ function triggerPeekPopup(item) {
     const pkSubEl = document.getElementById('pk-sub');
     const pkArcEl = document.getElementById('pk-arc');
     const pkStickerEl = document.getElementById('pk-sticker');
+    const pkReplyBar = document.getElementById('pk-reply-bar');
+    const pkReplyInput = document.getElementById('pk-reply-input');
+    const pkReplySend = document.getElementById('pk-reply-send');
 
     pkAppEl.textContent = isWa ? 'WhatsApp' : (appStr || 'Notifikasi HP');
     pkAppEl.classList.toggle('phone', !isWa && !item.isQuizAlarm && !item.isClassAlarm);
     pkAppEl.classList.toggle('quiz', Boolean(item.isQuizAlarm));
     pkAppEl.classList.toggle('class-bell', Boolean(item.isClassAlarm));
     pkTitleEl.textContent = item.sender || item.title || 'Pesan Baru';
-    pkSubEl.textContent = item.message || item.text || 'Ketuk untuk membuka';
+
+    // Voice Note vs Teks Biasa
+    if (item.isVoiceNote) {
+        pkSubEl.innerHTML = `
+            <span class="pk-vn-badge">
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                <span>Pesan Suara (${escapeHtml(item.vnDuration || '0:15')})</span>
+                <span class="pk-vn-waves"><span></span><span></span><span></span><span></span></span>
+            </span>
+        `;
+    } else {
+        pkSubEl.textContent = item.message || item.text || 'Ketuk untuk melihat detail';
+    }
 
     if (item.isQuizAlarm) {
         pkArcEl.setAttribute('stroke', '#ff4757');
@@ -28,21 +43,43 @@ function triggerPeekPopup(item) {
     }
     pkArcEl.style.setProperty('--arc-off', '16');
 
+    // Tampilkan Media: Foto atau Stiker
     if (pkStickerEl) {
-        if (item.sticker) {
+        if (item.image) {
+            pkStickerEl.src = item.image;
+            pkStickerEl.className = 'a c pk-sticker pk-photo';
+            pkStickerEl.style.display = 'block';
+        } else if (item.sticker) {
             pkStickerEl.src = item.sticker;
+            pkStickerEl.className = 'a c pk-sticker';
             pkStickerEl.style.display = 'block';
         } else {
             pkStickerEl.removeAttribute('src');
+            pkStickerEl.className = 'a c pk-sticker';
             pkStickerEl.style.display = 'none';
         }
+    }
+
+    // Quick Reply Bar di Peek Popup (Hanya saat pesan WhatsApp)
+    if (isWa && pkReplyBar && pkReplyInput && pkReplySend) {
+        mnEl.classList.add('has-reply');
+        pkReplyBar.style.display = 'flex';
+        pkReplyInput.value = '';
+        pkReplyInput.disabled = false;
+        pkReplyInput.placeholder = `Balas cepat ke ${item.sender || 'WhatsApp'}... (tekan Enter)`;
+        pkReplySend.disabled = false;
+        pkReplySend.style.background = '#25d366';
+        pkReplySend.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`;
+    } else {
+        mnEl.classList.remove('has-reply');
+        if (pkReplyBar) pkReplyBar.style.display = 'none';
     }
 
     if (!isExpanded) {
         if (mnEl.dataset.s === 'tucked') {
             ipcRenderer.send('island-tuck', false);
         }
-        setPeekMode('peek', 6000);
+        setPeekMode('peek', isWa ? 8500 : 6000);
     }
 
     const notifKey = `${String(item.sender || '').trim()}::${String(item.message || '').trim()}`.toLowerCase();
@@ -59,6 +96,84 @@ function triggerPeekPopup(item) {
     }
 }
 
+// Handler pengiriman Quick Reply dari Peek Popup
+async function executePeekReply() {
+    const pkReplyInput = document.getElementById('pk-reply-input');
+    const pkReplySend = document.getElementById('pk-reply-send');
+    const pkReplyBar = document.getElementById('pk-reply-bar');
+    if (!pkReplyInput || !pkReplySend) return;
+
+    const text = pkReplyInput.value.trim();
+    if (!text) return;
+
+    const sender = window.lastPeekItem ? (window.lastPeekItem.sender || '') : '';
+    pkReplyInput.disabled = true;
+    pkReplySend.disabled = true;
+    pkReplySend.innerHTML = `...`;
+
+    try {
+        const res = await ipcRenderer.invoke('send-wa-reply', { sender, text });
+        if (res && res.success) {
+            pkReplyInput.value = '';
+            pkReplyInput.placeholder = '✓ Pesan berhasil terkirim!';
+            pkReplySend.innerHTML = `✓`;
+            pkReplySend.style.background = '#2ed573';
+            setTimeout(() => {
+                collapseIsland();
+                mnEl.classList.remove('has-reply');
+                if (pkReplyBar) pkReplyBar.style.display = 'none';
+            }, 1000);
+        } else {
+            pkReplyInput.placeholder = res && res.reason ? res.reason : 'Gagal mengirim balasan.';
+            pkReplySend.innerHTML = `✕`;
+            setTimeout(() => {
+                pkReplyInput.disabled = false;
+                pkReplySend.disabled = false;
+                pkReplySend.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`;
+            }, 2200);
+        }
+    } catch (err) {
+        pkReplyInput.placeholder = 'Error: ' + err.message;
+        pkReplyInput.disabled = false;
+        pkReplySend.disabled = false;
+    }
+}
+
+const pkReplyInputEl = document.getElementById('pk-reply-input');
+const pkReplySendEl = document.getElementById('pk-reply-send');
+const pkReplyBarEl = document.getElementById('pk-reply-bar');
+
+if (pkReplyBarEl) {
+    pkReplyBarEl.addEventListener('click', (e) => e.stopPropagation());
+}
+if (pkReplyInputEl) {
+    pkReplyInputEl.addEventListener('click', (e) => e.stopPropagation());
+    pkReplyInputEl.addEventListener('focus', () => {
+        // Hentikan auto-close peek timer saat pengguna sedang mengetik
+        if (peekTimer) {
+            clearTimeout(peekTimer);
+            peekTimer = null;
+        }
+    });
+    pkReplyInputEl.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            executePeekReply();
+        } else if (e.key === 'Escape') {
+            collapseIsland();
+            mnEl.classList.remove('has-reply');
+            if (pkReplyBarEl) pkReplyBarEl.style.display = 'none';
+        }
+    });
+}
+if (pkReplySendEl) {
+    pkReplySendEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        executePeekReply();
+    });
+}
+
 function renderNotifications() {
     const hasWa = notificationsList.some(n => Boolean(n.isWhatsApp) || String(n.app || '').toLowerCase().includes('whatsapp'));
     mnEl.classList.toggle('has-wa', hasWa || notificationsList.length > 0);
@@ -72,16 +187,52 @@ function renderNotifications() {
         return;
     }
 
-    notifListEl.innerHTML = notificationsList.map(n => {
+    notifListEl.innerHTML = notificationsList.map((n, idx) => {
         const isWa = Boolean(n.isWhatsApp) || String(n.app || '').toLowerCase().includes('whatsapp');
         const title = n.sender || n.title || 'Notifikasi';
         const body = n.message || n.text || '';
         const tStr = typeof n.time === 'number'
             ? new Date(n.time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
             : (n.time || '');
-        const stickerHtml = n.sticker
-            ? `<img class="nrow-sticker" src="${escapeHtml(n.sticker)}" alt="Stiker" />`
-            : '';
+
+        // Pratinjau Foto atau Stiker
+        let mediaHtml = '';
+        if (n.image) {
+            mediaHtml = `
+                <div class="nrow-photo-wrap" title="Pratinjau Foto WhatsApp">
+                    <img class="nrow-photo" src="${escapeHtml(n.image)}" alt="Foto" />
+                    <span class="nrow-photo-tag">📷 Foto</span>
+                </div>
+            `;
+        } else if (n.sticker) {
+            mediaHtml = `<img class="nrow-sticker" src="${escapeHtml(n.sticker)}" alt="Stiker" />`;
+        }
+
+        // Indikator Voice Note WhatsApp
+        let vnHtml = '';
+        if (n.isVoiceNote) {
+            vnHtml = `
+                <div class="nrow-vn-pill">
+                    <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                    <span>Pesan Suara (${escapeHtml(n.vnDuration || '0:15')})</span>
+                    <span class="vn-live-bars"><b></b><b></b><b></b><b></b></span>
+                </div>
+            `;
+        }
+
+        // Baris Quick Reply WhatsApp di dalam kartu notifikasi
+        let replyHtml = '';
+        if (isWa) {
+            replyHtml = `
+                <div class="nrow-reply-row" data-sender="${escapeHtml(title)}">
+                    <input type="text" class="nrow-reply-input" placeholder="Balas ke ${escapeHtml(title)}..." />
+                    <button type="button" class="nrow-reply-send" title="Kirim Balasan Cepat">
+                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                    </button>
+                </div>
+            `;
+        }
+
         return `
             <div class="nrow ${isWa ? 'wa' : 'phone'}" data-napp="${escapeHtml(n.app || '')}">
                 <div style="min-width:0;flex:1">
@@ -89,16 +240,20 @@ function renderNotifications() {
                         <span class="trow-badge" style="background:${isWa ? 'rgba(37,211,102,.22)' : 'rgba(25,184,255,.22)'};color:${isWa ? '#5ef296' : '#8ce0ff'}">${escapeHtml(isWa ? 'WhatsApp' : (n.app || 'HP'))}</span>
                         <span class="trow-title">${escapeHtml(title)}</span>
                     </div>
+                    ${vnHtml}
                     <div class="trow-sub" style="margin-top:2px">${escapeHtml(body)}</div>
+                    ${replyHtml}
                 </div>
-                ${stickerHtml}
+                ${mediaHtml}
                 <span class="trow-timer" style="font-size:9px;color:rgba(255,255,255,.5)">${escapeHtml(tStr)}</span>
             </div>
         `;
     }).join('');
 
+    // Listener klik untuk membuka WhatsApp Companion / HP
     notifListEl.querySelectorAll('.nrow').forEach(row => {
-        row.addEventListener('click', () => {
+        row.addEventListener('click', (e) => {
+            if (e.target.closest('.nrow-reply-row')) return;
             const app = String(row.getAttribute('data-napp') || '').toLowerCase();
             if (app.includes('whatsapp') || app.includes('electron')) {
                 ipcRenderer.send('island-open-wa');
@@ -106,6 +261,63 @@ function renderNotifications() {
                 shell.openExternal('ms-phone:');
             }
         });
+    });
+
+    // Listener pengiriman Quick Reply langsung dari kartu notifikasi
+    notifListEl.querySelectorAll('.nrow-reply-row').forEach(rowEl => {
+        const inputEl = rowEl.querySelector('.nrow-reply-input');
+        const sendBtn = rowEl.querySelector('.nrow-reply-send');
+        const sender = rowEl.getAttribute('data-sender') || '';
+
+        const submitRowReply = async () => {
+            const text = inputEl.value.trim();
+            if (!text || !sender) return;
+            inputEl.disabled = true;
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = `...`;
+            try {
+                const res = await ipcRenderer.invoke('send-wa-reply', { sender, text });
+                if (res && res.success) {
+                    inputEl.value = '';
+                    inputEl.placeholder = '✓ Terkirim!';
+                    sendBtn.innerHTML = `✓`;
+                    setTimeout(() => {
+                        inputEl.disabled = false;
+                        sendBtn.disabled = false;
+                        inputEl.placeholder = `Balas ke ${sender}...`;
+                        sendBtn.innerHTML = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`;
+                    }, 2000);
+                } else {
+                    inputEl.placeholder = res && res.reason ? res.reason : 'Gagal mengirim.';
+                    setTimeout(() => {
+                        inputEl.disabled = false;
+                        sendBtn.disabled = false;
+                        inputEl.placeholder = `Balas ke ${sender}...`;
+                    }, 2000);
+                }
+            } catch (err) {
+                inputEl.placeholder = 'Error: ' + err.message;
+                inputEl.disabled = false;
+                sendBtn.disabled = false;
+            }
+        };
+
+        if (inputEl) {
+            inputEl.addEventListener('click', (e) => e.stopPropagation());
+            inputEl.addEventListener('keydown', (e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitRowReply();
+                }
+            });
+        }
+        if (sendBtn) {
+            sendBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                submitRowReply();
+            });
+        }
     });
 }
 
@@ -126,7 +338,10 @@ ipcRenderer.on('notif-update', (event, payload) => {
                 isWhatsApp: isWa,
                 sender: senderStr || 'WhatsApp',
                 message: msgStr,
-                sticker: rawItem.sticker || ''
+                sticker: rawItem.sticker || '',
+                image: rawItem.image || '',
+                isVoiceNote: Boolean(rawItem.isVoiceNote),
+                vnDuration: rawItem.vnDuration || ''
             });
 
             // Deduplikasi hanya berdasarkan nama pengirim/grup yang sama agar chat dari grup yang sudah ada tetap memicu Peek baru
@@ -142,9 +357,13 @@ ipcRenderer.on('notif-update', (event, payload) => {
                 const nextMessage = (!isGenericNew || !prev.message) ? item.message : prev.message;
                 const sameMsg = String(prev.message || '').trim() === String(nextMessage || '').trim();
                 const mergedSticker = item.sticker || (sameMsg ? (prev.sticker || '') : '');
+                const mergedImage = item.image || (sameMsg ? (prev.image || '') : '');
                 const updatedItem = Object.assign({}, prev, item, {
                     message: nextMessage,
                     sticker: mergedSticker,
+                    image: mergedImage,
+                    isVoiceNote: Boolean(item.isVoiceNote || prev.isVoiceNote),
+                    vnDuration: item.vnDuration || prev.vnDuration || '',
                     time: item.time || Date.now()
                 });
                 notificationsList.splice(dupIdx, 1);
@@ -154,8 +373,8 @@ ipcRenderer.on('notif-update', (event, payload) => {
                 const isActuallyNewMessage = !sameMsg && !isGenericNew;
                 if (isActuallyNewMessage && item.isNew) {
                     newestNew = updatedItem;
-                } else if (item.sticker && !prev.sticker) {
-                    // Update visual stiker susulan tanpa memicu ulang suara notifikasi
+                } else if ((item.sticker && !prev.sticker) || (item.image && !prev.image)) {
+                    // Update visual media susulan tanpa memicu ulang suara notifikasi
                     updatedItem.isSilent = true;
                     newestNew = updatedItem;
                 }
@@ -173,4 +392,3 @@ ipcRenderer.on('notif-update', (event, payload) => {
         triggerPeekPopup(payload.item);
     }
 });
-

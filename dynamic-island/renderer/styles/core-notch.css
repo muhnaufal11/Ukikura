@@ -116,6 +116,12 @@
         cursor: pointer;
     }
 
+    .mn[data-s="peek"].has-reply {
+        --w: 390px;
+        --h: 96px;
+        --r: 22px;
+    }
+
     /* Mode Peek Cas Laptop & Baterai HP/Bluetooth Khas Nusa */
     .mn[data-s="charge"],
     .mn[data-s="bt"] {
@@ -881,6 +887,127 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    /* Penyesuaian tata letak Peek saat Quick Reply Aktif */
+    .mn[data-s="peek"].has-reply .pk-ring {
+        top: 24px;
+    }
+    .mn[data-s="peek"].has-reply .ly.l-peek > svg.a.c {
+        top: 24px;
+    }
+    .mn[data-s="peek"].has-reply .pk-body {
+        top: 6px;
+        bottom: auto;
+        height: 38px;
+    }
+    .mn[data-s="peek"].has-reply .pk-sticker {
+        top: 24px;
+    }
+    .mn[data-s="peek"].has-reply .pk-open-btn {
+        top: 24px;
+    }
+
+    /* Quick Reply Bar di Peek Popup */
+    .pk-reply-bar {
+        position: absolute;
+        left: 14px;
+        right: 14px;
+        bottom: 10px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        z-index: 10;
+        animation: pkreplyfade 0.25s ease-out;
+    }
+    @keyframes pkreplyfade {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .pk-reply-input {
+        flex: 1;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 17px;
+        padding: 0 14px;
+        color: #fff;
+        font-size: 11.5px;
+        font-family: inherit;
+        outline: none;
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .pk-reply-input:focus {
+        border-color: #25d366;
+        background: rgba(37, 211, 102, 0.12);
+        box-shadow: 0 0 12px rgba(37, 211, 102, 0.3);
+    }
+    .pk-reply-input::placeholder {
+        color: rgba(255, 255, 255, 0.45);
+    }
+    .pk-reply-send {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: none;
+        background: #25d366;
+        color: #0b1d12;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.18s ease;
+        box-shadow: 0 2px 8px rgba(37, 211, 102, 0.35);
+    }
+    .pk-reply-send:hover {
+        transform: scale(1.08);
+        filter: brightness(1.12);
+    }
+    .pk-reply-send:active {
+        transform: scale(0.92);
+    }
+    .pk-reply-send:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .pk-sticker.pk-photo {
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        object-fit: cover;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+        background: rgba(0, 0, 0, 0.35);
+    }
+    .pk-vn-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #5ef296;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .pk-vn-waves {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        height: 12px;
+    }
+    .pk-vn-waves span {
+        display: inline-block;
+        width: 2.5px;
+        background: #25d366;
+        border-radius: 2px;
+        animation: vnpulse 0.8s ease-in-out infinite alternate;
+    }
+    .pk-vn-waves span:nth-child(1) { height: 5px; animation-delay: 0.1s; }
+    .pk-vn-waves span:nth-child(2) { height: 11px; animation-delay: 0.25s; }
+    .pk-vn-waves span:nth-child(3) { height: 7px; animation-delay: 0.4s; }
+    .pk-vn-waves span:nth-child(4) { height: 13px; animation-delay: 0.15s; }
+    @keyframes vnpulse {
+        0% { transform: scaleY(0.4); opacity: 0.6; }
+        100% { transform: scaleY(1); opacity: 1; }
     }
 
     /* Header Bar saat Terbuka */

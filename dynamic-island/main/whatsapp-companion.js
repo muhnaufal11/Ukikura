@@ -1,9 +1,11 @@
 "use strict";
 const { app, BrowserWindow } = require("electron");
+const { sendWhatsAppReply } = require("./whatsapp-sender");
 let waWindow = null;
 let getMainWindow = () => null;
 function initWhatsAppCompanion(mainWinGetter) { getMainWindow = mainWinGetter; }
 function resetWaState() { seenWaSignatures.clear(); initialWaPass = true; }
+function replyWhatsApp(sender, text) { return sendWhatsAppReply(waWindow, sender, text); }
 
 
 // Companion WhatsApp Background agar chat WA dari HP selalu terdeteksi realtime
@@ -49,11 +51,12 @@ function ensureWhatsAppWindow(showWindow = false) {
             try {
                 const data = JSON.parse(message.slice('__NUSA_WA_LIVE__:'.length));
                 if (data && data.sender) {
-                    const sig = `wa_live_${data.sender}_${data.message}_${data.sticker ? 'stk' : 'txt'}`;
+                    const sig = `wa_live_${data.sender}_${data.message}_${data.sticker ? 'stk' : (data.image ? 'img' : 'txt')}`;
                     const baseSig = `wa_${data.sender}_${data.message}`;
                     seenWaSignatures.add(baseSig);
                     seenWaSignatures.add(`${baseSig}_txt`);
                     seenWaSignatures.add(`${baseSig}_stk`);
+                    seenWaSignatures.add(`${baseSig}_img`);
                     const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
                         mainWindow.webContents.send('notif-update', [{
                             id: sig,
@@ -61,6 +64,9 @@ function ensureWhatsAppWindow(showWindow = false) {
                             sender: data.sender,
                             message: data.message || 'Pesan baru masuk',
                             sticker: data.sticker || '',
+                            image: data.image || '',
+                            isVoiceNote: Boolean(data.isVoiceNote),
+                            vnDuration: data.vnDuration || '',
                             isWhatsApp: true,
                             isPhone: true,
                             time: Date.now(),
@@ -121,9 +127,18 @@ async function pollWhatsAppUnread() {
                     const WrappedNotif = function(title, options) {
                         const opts = options || {};
                         try {
+                            const bodyStr = String(opts.body || 'Pesan baru masuk').trim();
+                            const isVn = /(?:pesan suara|voice message|\b\d{1,2}:\d{2}\b)/i.test(bodyStr);
+                            const isPhoto = /(?:foto|photo|gambar|image)/i.test(bodyStr);
+                            let vnDur = '';
+                            const durMatch = bodyStr.match(/\b(\d{1,2}:\d{2})\b/);
+                            if (durMatch) vnDur = durMatch[1];
                             console.log('__NUSA_WA_LIVE__:' + JSON.stringify({
                                 sender: String(title || 'WhatsApp').trim(),
-                                message: String(opts.body || 'Pesan baru masuk').trim(),
+                                message: bodyStr,
+                                isVoiceNote: isVn,
+                                vnDuration: vnDur,
+                                isPhoto: isPhoto,
                                 tag: String(opts.tag || '')
                             }));
                         } catch (_) {}
@@ -196,9 +211,9 @@ async function pollWhatsAppUnread() {
                     return '';
                 };
 
-                const extractStickerFromChatModel = async (chat) => {
+                const extractMediaFromChatModel = async (chat) => {
                     try {
-                        if (!chat || !chat.msgs) return '';
+                        if (!chat || !chat.msgs) return null;
                         const msgs = typeof chat.msgs.getModelsArray === 'function'
                             ? chat.msgs.getModelsArray()
                             : (Array.isArray(chat.msgs._models) ? chat.msgs._models : []);
@@ -206,7 +221,18 @@ async function pollWhatsAppUnread() {
                             const m = msgs[i];
                             if (!m) continue;
                             const mType = m.type || (m._data && m._data.type) || '';
+
+                            if (mType === 'ptt' || mType === 'audio') {
+                                let durSec = m.duration || (m._data && m._data.duration) || (m.mediaData && m.mediaData.duration) || 0;
+                                if (typeof durSec === 'string') durSec = parseFloat(durSec) || 0;
+                                const min = Math.floor(durSec / 60);
+                                const sec = Math.floor(durSec % 60);
+                                const durStr = min + ':' + (sec < 10 ? '0' : '') + sec;
+                                return { type: 'voice', isVoiceNote: true, duration: durStr !== '0:00' ? durStr : '0:15', dataUrl: '' };
+                            }
+
                             if (mType === 'sticker' || mType === 'image') {
+                                const isStk = mType === 'sticker';
                                 if (m.mediaData && !m.mediaData.mediaBlob && typeof m.downloadMedia === 'function') {
                                     try {
                                         await m.downloadMedia({ downloadEvenIfExpensive: true, rmrReason: 1 });
@@ -216,32 +242,32 @@ async function pollWhatsAppUnread() {
                                 }
                                 if (m.mediaData && m.mediaData.mediaBlob instanceof Blob) {
                                     const dUrl = await blobToDataUrl(m.mediaData.mediaBlob);
-                                    if (dUrl) return dUrl;
+                                    if (dUrl) return { type: isStk ? 'sticker' : 'image', dataUrl: dUrl };
                                 }
                                 if (m.mediaData && m.mediaData.preview) {
                                     if (m.mediaData.preview instanceof Blob) {
                                         const dUrl = await blobToDataUrl(m.mediaData.preview);
-                                        if (dUrl) return dUrl;
+                                        if (dUrl) return { type: isStk ? 'sticker' : 'image', dataUrl: dUrl };
                                     }
                                     if (typeof m.mediaData.preview._b64 === 'string' && m.mediaData.preview._b64.length > 20) {
-                                        return 'data:image/webp;base64,' + m.mediaData.preview._b64;
+                                        return { type: isStk ? 'sticker' : 'image', dataUrl: 'data:image/webp;base64,' + m.mediaData.preview._b64 };
                                     }
                                 }
                                 const rawBody = (typeof m.body === 'string' && m.body.length > 30)
                                     ? m.body
                                     : ((m._data && typeof m._data.body === 'string' && m._data.body.length > 30) ? m._data.body : '');
                                 if (rawBody) {
-                                    if (rawBody.startsWith('data:image/')) return rawBody;
+                                    if (rawBody.startsWith('data:image/')) return { type: isStk ? 'sticker' : 'image', dataUrl: rawBody };
                                     if (/^(?:\\/9j\\/|iVBOR|UklGR)/.test(rawBody)) {
-                                        const mime = mType === 'sticker' ? 'image/webp' : 'image/jpeg';
-                                        return 'data:' + mime + ';base64,' + rawBody;
+                                        const mime = isStk ? 'image/webp' : 'image/jpeg';
+                                        return { type: isStk ? 'sticker' : 'image', dataUrl: 'data:' + mime + ';base64,' + rawBody };
                                     }
                                 }
                                 break;
                             }
                         }
                     } catch (_) {}
-                    return '';
+                    return null;
                 };
 
                 const getOpenChatHeaderName = () => {
@@ -366,18 +392,37 @@ async function pollWhatsAppUnread() {
                     }
 
                     const countText = unreadBadge ? (unreadBadge.innerText || unreadBadge.getAttribute('aria-label') || '1').trim() : '0';
-                    const isStickerMsg = /(?:stiker|sticker|foto|photo)/i.test(cleanMsg);
+                    const hasAudioIcon = Boolean(row.querySelector('[data-icon*="audio" i], [data-icon*="ptt" i], [data-testid*="audio" i]'));
+                    let isVnMsg = hasAudioIcon || /(?:pesan suara|voice message|audio|\b\d{1,2}:\d{2}\b)/i.test(cleanMsg);
+                    const isPhotoMsg = Boolean(row.querySelector('[data-icon*="image" i], [data-icon*="camera" i]')) || /(?:foto|photo|gambar|image)/i.test(cleanMsg);
+                    const isStickerMsg = /(?:stiker|sticker)/i.test(cleanMsg);
+
                     let stickerData = '';
+                    let imageData = '';
+                    let isVoiceNote = isVnMsg;
+                    let vnDuration = '';
+                    const durMatch = cleanMsg.match(/\b(\d{1,2}:\d{2})\b/);
+                    if (durMatch) vnDuration = durMatch[1];
+
                     let stickerId = '';
                     let clickCoords = null;
                     const cacheKey = sender + '|' + cleanMsg;
 
-                    if (isStickerMsg) {
-                        if (chatModel) {
-                            stickerData = await extractStickerFromChatModel(chatModel);
-                            if (stickerData) stickerId = stickerData.slice(-14).replace(/[^a-zA-Z0-9]/g, '');
+                    if (chatModel) {
+                        const mData = await extractMediaFromChatModel(chatModel);
+                        if (mData) {
+                            if (mData.type === 'voice') {
+                                isVoiceNote = true;
+                                if (mData.duration) vnDuration = mData.duration;
+                            } else if (mData.type === 'image') {
+                                imageData = mData.dataUrl;
+                            } else if (mData.type === 'sticker') {
+                                stickerData = mData.dataUrl;
+                            }
                         }
+                    }
 
+                    if (isPhotoMsg || isStickerMsg || isVnMsg) {
                         const isMainOpenForThisSender = Boolean(
                             openHeaderName &&
                             normName(openHeaderName) &&
@@ -387,23 +432,32 @@ async function pollWhatsAppUnread() {
                              normName(sender).includes(normName(openHeaderName)))
                         );
 
-                        if (!stickerData && isMainOpenForThisSender) {
+                        if (!stickerData && !imageData && isMainOpenForThisSender) {
                             const domStk = await extractStickerFromOpenMainDom();
                             if (domStk.dataUrl) {
-                                stickerData = domStk.dataUrl;
-                                stickerId = domStk.id;
+                                if (isPhotoMsg) {
+                                    imageData = domStk.dataUrl;
+                                    stickerId = domStk.id || 'img';
+                                } else {
+                                    stickerData = domStk.dataUrl;
+                                    stickerId = domStk.id || 'stk';
+                                }
                             }
                         }
 
                         if (stickerData) {
-                            window.__nusaStickerCache[cacheKey] = { dataUrl: stickerData, id: stickerId || 'stk' };
+                            window.__nusaStickerCache[cacheKey] = { dataUrl: stickerData, id: stickerId || 'stk', type: 'sticker' };
+                        } else if (imageData) {
+                            window.__nusaStickerCache[cacheKey] = { dataUrl: imageData, id: stickerId || 'img', type: 'image' };
                         } else if (window.__nusaStickerCache[cacheKey] && isMainOpenForThisSender) {
-                            stickerData = window.__nusaStickerCache[cacheKey].dataUrl;
-                            stickerId = window.__nusaStickerCache[cacheKey].id;
+                            const cached = window.__nusaStickerCache[cacheKey];
+                            if (cached.type === 'image') imageData = cached.dataUrl;
+                            else stickerData = cached.dataUrl;
+                            stickerId = cached.id;
                         }
 
-                        // Jika stiker belum terambil pada chat teratas/unread, buka otomatis baris tersebut di #main
-                        if (!stickerData && (rowIdx <= 1 || isUnread)) {
+                        // Jika media belum terambil pada chat teratas/unread, buka otomatis baris tersebut di #main
+                        if (!stickerData && !imageData && !isVoiceNote && (rowIdx <= 1 || isUnread)) {
                             const targetEl = row.querySelector('[role="gridcell"]') || row.querySelector('div[tabindex="-1"]') || row.firstElementChild || row;
                             const rect = targetEl.getBoundingClientRect();
                             if (rect && rect.width > 20 && rect.height > 20) {
@@ -429,7 +483,10 @@ async function pollWhatsAppUnread() {
                         isUnread: isUnread,
                         rowIdx: rowIdx,
                         sticker: stickerData || '',
-                        stickerId: stickerId || (stickerData ? 'stk' : 'txt'),
+                        image: imageData || '',
+                        isVoiceNote: isVoiceNote,
+                        vnDuration: vnDuration || '0:15',
+                        stickerId: stickerId || (stickerData ? 'stk' : (imageData ? 'img' : 'txt')),
                         clickCoords: clickCoords
                     });
                 }
@@ -440,8 +497,8 @@ async function pollWhatsAppUnread() {
         if (Array.isArray(chatItems) && chatItems.length > 0) {
             const newNotifs = [];
             for (const c of chatItems) {
-                // Jika chat stiker belum terbuka di #main, klik barisnya secara native di waWindow agar #main merender stiker WebP
-                if (!c.sticker && c.clickCoords && waWindow && !waWindow.isDestroyed()) {
+                // Jika media belum terbuka di #main, klik barisnya secara native di waWindow agar #main merender preview
+                if (!c.sticker && !c.image && c.clickCoords && waWindow && !waWindow.isDestroyed()) {
                     const attemptKey = `${c.sender}|${c.message}`;
                     const prevAttempts = waClickAttempts.get(attemptKey) || 0;
                     if (prevAttempts < 4) {
@@ -457,24 +514,28 @@ async function pollWhatsAppUnread() {
                     }
                 }
 
-                const sig = `wa_${c.sender}_${c.message}_${c.stickerId || (c.sticker ? 'stk' : 'txt')}`;
+                const sig = `wa_${c.sender}_${c.message}_${c.stickerId || (c.sticker ? 'stk' : (c.image ? 'img' : 'txt'))}`;
                 const baseSig = `wa_${c.sender}_${c.message}`;
-                const isAlreadySeen = seenWaSignatures.has(sig) || seenWaSignatures.has(baseSig) || seenWaSignatures.has(`${baseSig}_txt`) || seenWaSignatures.has(`${baseSig}_stk`);
+                const isAlreadySeen = seenWaSignatures.has(sig) || seenWaSignatures.has(baseSig) || seenWaSignatures.has(`${baseSig}_txt`) || seenWaSignatures.has(`${baseSig}_stk`) || seenWaSignatures.has(`${baseSig}_img`);
                 if (!isAlreadySeen) {
                     seenWaSignatures.add(sig);
                     seenWaSignatures.add(baseSig);
                     seenWaSignatures.add(`${baseSig}_txt`);
                     seenWaSignatures.add(`${baseSig}_stk`);
+                    seenWaSignatures.add(`${baseSig}_img`);
                     newNotifs.push({
                         id: sig,
                         app: 'WhatsApp',
                         sender: c.sender,
                         message: c.message || 'Pesan baru masuk',
                         sticker: c.sticker || '',
+                        image: c.image || '',
+                        isVoiceNote: Boolean(c.isVoiceNote),
+                        vnDuration: c.vnDuration || '',
                         isWhatsApp: true,
                         isPhone: true,
                         time: Date.now(),
-                        isNew: (!initialWaPass && (Boolean(c.isUnread) || c.rowIdx <= 1)) || (c.rowIdx === 0 && Boolean(c.sticker))
+                        isNew: (!initialWaPass && (Boolean(c.isUnread) || c.rowIdx <= 1)) || (c.rowIdx === 0 && Boolean(c.sticker || c.image))
                     });
                 }
             }
@@ -488,4 +549,4 @@ async function pollWhatsAppUnread() {
     } catch (_) {}
 }
 
-module.exports = { initWhatsAppCompanion, ensureWhatsAppWindow, pollWhatsAppUnread, resetWaState };
+module.exports = { initWhatsAppCompanion, ensureWhatsAppWindow, pollWhatsAppUnread, resetWaState, replyWhatsApp };

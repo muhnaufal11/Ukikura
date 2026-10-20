@@ -5,7 +5,7 @@ const path = require("path");
 const http = require("http");
 const { initLmsCrawler, openLmsLoginWindow, runHiddenLmsCrawler, postJsonToServer } = require("./main/lms-crawler");
 const { initWinRtClient, startWinRtBridge, sendMediaCommand, fetchSyncedLyrics, getWinRtProc, resetLyricsTrackKey, getLastLyricsPayload } = require("./main/winrt-client");
-const { initWhatsAppCompanion, ensureWhatsAppWindow, pollWhatsAppUnread, resetWaState } = require("./main/whatsapp-companion");
+const { initWhatsAppCompanion, ensureWhatsAppWindow, pollWhatsAppUnread, resetWaState, replyWhatsApp } = require("./main/whatsapp-companion");
 const { initAutoStart, isWindowsAutoStartEnabled, setWindowsAutoStart } = require("./main/autostart");
 const { startKuraServer } = require("./main/kura-server");
 const { initAutoUpdater, checkGitHubForUpdates, getLastUpdateStatus, openUpdateDownloadPage, getLocalVersionInfo, setUpdateChannel } = require("./main/updater");
@@ -16,6 +16,7 @@ let loginWindow = null;
 let tray = null;
 let serverProcess = null;
 let isExpanded = false;
+let isPeekActive = false;
 
 const PROXY_PORT = 8089;
 const SERVER_BASE = `http://127.0.0.1:${PROXY_PORT}`;
@@ -234,6 +235,18 @@ function startNusaHoverLoop() {
                 dx: pt.x - centerX,
                 dy: pt.y - 15
             });
+        }
+
+        if (!isExpanded && isPeekActive) {
+            const halfPeekW = 205;
+            const insidePeek = pt.x >= (centerX - halfPeekW) && pt.x <= (centerX + halfPeekW) && pt.y >= 0 && pt.y <= 96;
+            if (insidePeek) {
+                if (lastIgnoreState !== false) {
+                    lastIgnoreState = false;
+                    mainWindow.setIgnoreMouseEvents(false);
+                }
+                return;
+            }
         }
 
         const halfClosedW = Math.round(CLOSED_NOTCH_W / 2) + 6;
@@ -523,6 +536,16 @@ ipcMain.on('island-request-lyrics', (event, data) => {
 });
 
 ipcMain.on('island-open-wa', () => ensureWhatsAppWindow(true));
+ipcMain.handle('send-wa-reply', async (event, payload) => {
+    const { sender, text } = payload || {};
+    return await replyWhatsApp(sender, text);
+});
+ipcMain.on('island-peek-active', (event, active) => {
+    isPeekActive = Boolean(active);
+    if (isPeekActive && mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.setIgnoreMouseEvents(false);
+    }
+});
 ipcMain.on('island-open-phonelink', () => shell.openExternal('ms-phone:'));
 ipcMain.on('island-open-url', (event, targetUrl) => { if (targetUrl && typeof targetUrl === 'string') shell.openExternal(targetUrl); });
 ipcMain.on('island-login-lms', () => openLmsLoginWindow());

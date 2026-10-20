@@ -212,11 +212,13 @@ document.getElementById('l-idle').addEventListener('click', () => {
     expandIsland();
 });
 
-document.getElementById('l-peek').addEventListener('click', () => {
+document.getElementById('l-peek').addEventListener('click', (e) => {
+    if (e && e.target && e.target.closest('#pk-reply-bar')) return;
     if (peekTimer) {
         clearTimeout(peekTimer);
         peekTimer = null;
     }
+    mnEl.classList.remove('has-reply');
     isExpanded = true;
     if (window.lastPeekItem && window.lastPeekItem.isQuizAlarm) {
         setPage('todo');
