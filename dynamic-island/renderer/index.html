@@ -338,15 +338,14 @@
                     </div>
                 </div>
                 <div class="todo-left-btns">
-                    <button class="pill" id="btn-open-courses" style="flex:1">
+                    <button class="pill" id="btn-open-courses" style="flex:1" title="Buka Halaman Kursus LMS">
                         <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
                         Courses
                     </button>
-                    <button class="pill" id="btn-open-sound-todo" style="flex:1" title="Pengaturan Suara & Volume Alarm">
+                    <button class="pill icon-pill" id="btn-open-sound-todo" title="Pengaturan Suara & Volume Alarm (Custom Audio)">
                         <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                        Suara
                     </button>
-                    <button class="pill primary" id="btn-open-ai-1" style="flex:1">
+                    <button class="pill primary" id="btn-open-ai-1" style="flex:1" title="Buka Asisten Kuis LMS AI">
                         <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                         AI
                     </button>
@@ -619,10 +618,16 @@
                     </div>
                     <div class="sound-cc-controls">
                         <select class="sound-form-sel" id="sel-sound-class-main">
-                            <option value="chime">Akademik Chime</option><option value="bell">Lonceng Menara</option><option value="digital">Radar Synth</option><option value="marimba">Marimba Akustik</option><option value="mute">Mute (Hening)</option>
+                            <option value="chime">Akademik Chime</option><option value="bell">Lonceng Menara</option><option value="digital">Radar Synth</option><option value="marimba">Marimba Akustik</option><option value="custom">📁 Custom Audio (File Sendiri)</option><option value="mute">Mute (Hening)</option>
                         </select>
                         <input type="range" min="0" max="100" value="85" class="sound-range-slider" id="range-vol-class-main" />
                         <button class="sound-test-btn" id="btn-test-sound-class-main" title="Uji Suara Bel Kuliah">▶ Uji</button>
+                    </div>
+                    <div class="sound-custom-row" id="row-custom-class" style="display:none">
+                        <span class="sound-custom-badge">FILE:</span>
+                        <span class="sound-custom-path" id="label-custom-class">Pilih berkas audio (.mp3, .wav)</span>
+                        <button class="sound-btn-pick" id="btn-pick-custom-class" title="Cari file audio di laptop">Pilih File</button>
+                        <button class="sound-btn-clear" id="btn-clear-custom-class" title="Reset nada bawaan">✕</button>
                     </div>
                 </div>
 
@@ -634,10 +639,16 @@
                     </div>
                     <div class="sound-cc-controls">
                         <select class="sound-form-sel" id="sel-sound-notif-main">
-                            <option value="pop">Bubble Pop (Lembut)</option><option value="ding">Glass Ding (Apple)</option><option value="chirp">Dua Ketukan Ceria</option><option value="mute">Mute (Hening)</option>
+                            <option value="pop">Bubble Pop (Lembut)</option><option value="ding">Glass Ding (Apple)</option><option value="chirp">Dua Ketukan Ceria</option><option value="custom">📁 Custom Audio (File Sendiri)</option><option value="mute">Mute (Hening)</option>
                         </select>
                         <input type="range" min="0" max="100" value="70" class="sound-range-slider" id="range-vol-notif-main" />
                         <button class="sound-test-btn" id="btn-test-sound-notif-main" title="Uji Suara Notifikasi">▶ Uji</button>
+                    </div>
+                    <div class="sound-custom-row" id="row-custom-notif" style="display:none">
+                        <span class="sound-custom-badge">FILE:</span>
+                        <span class="sound-custom-path" id="label-custom-notif">Pilih berkas audio (.mp3, .wav)</span>
+                        <button class="sound-btn-pick" id="btn-pick-custom-notif" title="Cari file audio di laptop">Pilih File</button>
+                        <button class="sound-btn-clear" id="btn-clear-custom-notif" title="Reset nada bawaan">✕</button>
                     </div>
                 </div>
 
@@ -649,10 +660,16 @@
                     </div>
                     <div class="sound-cc-controls">
                         <select class="sound-form-sel" id="sel-sound-deadline-main">
-                            <option value="pulse">Pulse Alert (Tegas)</option><option value="chime">Chime Halus</option><option value="beep">Triple Beep</option><option value="mute">Mute (Hening)</option>
+                            <option value="pulse">Pulse Alert (Tegas)</option><option value="chime">Chime Halus</option><option value="beep">Triple Beep</option><option value="custom">📁 Custom Audio (File Sendiri)</option><option value="mute">Mute (Hening)</option>
                         </select>
                         <input type="range" min="0" max="100" value="80" class="sound-range-slider" id="range-vol-deadline-main" />
                         <button class="sound-test-btn" id="btn-test-sound-deadline-main" title="Uji Suara Deadline">▶ Uji</button>
+                    </div>
+                    <div class="sound-custom-row" id="row-custom-deadline" style="display:none">
+                        <span class="sound-custom-badge">FILE:</span>
+                        <span class="sound-custom-path" id="label-custom-deadline">Pilih berkas audio (.mp3, .wav)</span>
+                        <button class="sound-btn-pick" id="btn-pick-custom-deadline" title="Cari file audio di laptop">Pilih File</button>
+                        <button class="sound-btn-clear" id="btn-clear-custom-deadline" title="Reset nada bawaan">✕</button>
                     </div>
                 </div>
             </div>

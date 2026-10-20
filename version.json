@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.5.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.5 (Patch 16): Penempatan panel Pengaturan Suara & Volume langsung di Halaman Utama (LMS Todolist), Header Bar, dan Halaman Pengaturan; perbaikan synthesizer Web Audio API dengan penguncian state asinkron running & penguatan gain volume hingga 100% sehingga bel kuliah, notifikasi WA/HP, dan deadline LMS berbunyi lantang dan jernih."
+  "changelog": "Ukikura v1.0.5 (Patch 16): Penataan rapi tombol Halaman Utama LMS Todolist (Courses, Bel Suara kompak, AI Kuis), dan penambahan dukungan Custom Audio (pemilihan file audio lokal .mp3/.wav untuk bel kuliah, notifikasi WA/HP, dan deadline LMS) dengan pengatur volume mandiri serta fallback synthesizer otomatis."
 }

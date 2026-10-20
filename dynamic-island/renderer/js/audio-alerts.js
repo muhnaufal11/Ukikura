@@ -8,17 +8,29 @@ const DEFAULT_AUDIO_SETTINGS = {
     classAlarm: {
         preset: 'chime', // 'chime' | 'bell' | 'digital' | 'marimba' | 'custom'
         volume: 85,
-        customPath: ''
+        customPath: '',
+        customName: ''
     },
     notif: {
-        preset: 'pop', // 'pop' | 'ding' | 'chirp' | 'mute'
-        volume: 70
+        preset: 'pop', // 'pop' | 'ding' | 'chirp' | 'custom' | 'mute'
+        volume: 70,
+        customPath: '',
+        customName: ''
     },
     deadline: {
-        preset: 'pulse', // 'pulse' | 'chime' | 'beep' | 'mute'
-        volume: 80
+        preset: 'pulse', // 'pulse' | 'chime' | 'beep' | 'custom' | 'mute'
+        volume: 80,
+        customPath: '',
+        customName: ''
     }
 };
+
+function formatAudioUri(filePath) {
+    if (!filePath || typeof filePath !== 'string') return '';
+    if (/^(https?|file|data):/i.test(filePath)) return filePath;
+    const clean = filePath.replace(/\\/g, '/');
+    return clean.startsWith('/') ? `file://${clean}` : `file:///${clean}`;
+}
 
 let currentAudioSettings = null;
 let globalAudioCtx = null;
@@ -55,8 +67,13 @@ function loadAudioSettings() {
 }
 
 function saveAudioSettings(newSettings) {
+    const current = loadAudioSettings();
     if (newSettings) {
-        currentAudioSettings = Object.assign({}, loadAudioSettings(), newSettings);
+        currentAudioSettings = {
+            classAlarm: Object.assign({}, current.classAlarm, newSettings.classAlarm || {}),
+            notif: Object.assign({}, current.notif, newSettings.notif || {}),
+            deadline: Object.assign({}, current.deadline, newSettings.deadline || {})
+        };
     }
     try {
         localStorage.setItem(AUDIO_SETTINGS_KEY, JSON.stringify(currentAudioSettings));
@@ -277,14 +294,20 @@ async function playAudioAlert(channel = 'class', forcePreset = null, forceVol = 
 
     if (preset === 'mute' || volPct <= 0) return;
 
-    // Jika custom audio file dipilih untuk bel kuliah
+    // Jika custom audio file dipilih (berlaku untuk semua kanal)
     if (preset === 'custom' && chanCfg.customPath) {
         try {
-            const audio = new Audio(chanCfg.customPath);
-            audio.volume = Math.max(0, Math.min(1, volPct / 100));
-            audio.play().catch(() => {});
+            const uri = formatAudioUri(chanCfg.customPath);
+            const audio = new Audio(uri);
+            audio.volume = Math.max(0.01, Math.min(1, volPct / 100));
+            const p = audio.play();
+            if (p !== undefined) {
+                await p;
+            }
             return;
-        } catch (_) {}
+        } catch (err) {
+            console.warn('[AudioAlerts] Gagal memutar custom audio, fallback ke synthesizer:', err);
+        }
     }
 
     const ctx = getAudioContext();
@@ -338,3 +361,4 @@ async function playAudioAlert(channel = 'class', forcePreset = null, forceVol = 
 window.loadAudioSettings = loadAudioSettings;
 window.saveAudioSettings = saveAudioSettings;
 window.playAudioAlert = playAudioAlert;
+window.formatAudioUri = formatAudioUri;

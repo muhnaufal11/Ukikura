@@ -1,5 +1,5 @@
 "use strict";
-const { app, BrowserWindow, ipcMain, screen, shell, Tray, Menu, nativeImage, powerMonitor, desktopCapturer, session } = require("electron");
+const { app, BrowserWindow, ipcMain, screen, shell, Tray, Menu, nativeImage, powerMonitor, desktopCapturer, session, dialog } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
@@ -534,6 +534,20 @@ ipcMain.on('island-recenter', () => {
     if (mainWindow) mainWindow.setBounds({ x: getCenteredX(WINDOW_WIDTH), y: 0, width: WINDOW_WIDTH, height: WINDOW_HEIGHT }, true);
 });
 ipcMain.on('island-hide', () => { if (mainWindow) mainWindow.hide(); });
+ipcMain.handle('island-pick-audio-file', async () => {
+    const res = await dialog.showOpenDialog(mainWindow, {
+        title: 'Pilih File Audio Custom (Alarm / Notifikasi)',
+        properties: ['openFile'],
+        filters: [
+            { name: 'Berkas Audio (*.mp3, *.wav, *.ogg, *.m4a, *.aac, *.flac)', extensions: ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'] },
+            { name: 'Semua Berkas (*.*)', extensions: ['*'] }
+        ]
+    });
+    if (!res.canceled && res.filePaths && res.filePaths.length > 0) {
+        return res.filePaths[0];
+    }
+    return null;
+});
 
 ipcMain.on('island-quit', () => {
     app.isQuitting = true;
