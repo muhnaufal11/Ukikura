@@ -253,9 +253,9 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
         finalLines = attachTranslationLines(finalLines, ytCaptions.indonesianLines);
     }
 
-    // 3. Terjemahkan SEMUA baris lagu ke Bahasa Indonesia secara batch cepat
+    // 3. Terjemahkan SEMUA baris lagu ke Bahasa Indonesia secara batch cepat jika belum ada terjemahan
     if (!isAlreadyIndonesian && finalLines.length > 0) {
-        const missingLines = finalLines.filter(l => !l.transText || (!/[\u4e00-\u9fa5]/.test(meta.origTitle) && /[\u4e00-\u9fa5]/.test(l.transText)));
+        const missingLines = finalLines.filter(l => !l.transText || l.transText.trim().toLowerCase() === (l.rawText || l.text || '').trim().toLowerCase() || (!/[\u4e00-\u9fa5]/.test(meta.origTitle) && /[\u4e00-\u9fa5]/.test(l.transText)));
         if (missingLines.length > 0) {
             const toProcess = missingLines.slice(0, 85);
             const rawTexts = toProcess.map(l => l.rawText || l.text || '');

@@ -246,20 +246,23 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
 
     // Pisahkan kandidat ASR (memiliki <s t="..."> timestamp vokal per kata langsung dari gelombang audio)
     // dan kandidat Manual CC (subtitle dari kreator)
-    const isJpSong = Boolean(meta && meta.likelyJapanese);
-    const isEngSong = Boolean(meta && meta.isEnglishVersion);
+    const hasJpChars = hasJapaneseChars(rawTitle) || hasJapaneseChars(rawArtist);
+    const isJpSong = Boolean(meta && (meta.likelyJapanese || meta.isJapaneseVersion || hasJpChars));
     const isIdSong = Boolean(meta && meta.isIndonesianVersion);
+    const isEngSong = Boolean(meta && meta.isEnglishVersion) || (!isJpSong && !isIdSong && !(meta && meta.isKoreanVersion));
 
     const scoreLang = (t) => {
         const lang = String(t.languageCode || '').toLowerCase();
         let s = 0;
         if (t.kind !== 'asr') {
             // Manual CC resmi yang diunggah kreator video cover/lagu (Prioritas Utama!)
-            if (isIdSong && lang.startsWith('id')) s += 120;
-            else if (isEngSong && lang.startsWith('en')) s += 120;
-            else if (isJpSong && lang.startsWith('ja')) s += 120;
-            else if (lang.startsWith('id') || lang.startsWith('en') || lang.startsWith('ja')) s += 90;
-            else s += 60;
+            if (isIdSong && lang.startsWith('id')) s += 140;
+            else if (isEngSong && lang.startsWith('en')) s += 140;
+            else if (isJpSong && lang.startsWith('ja')) s += 140;
+            else if (lang.startsWith('en')) s += 90;
+            else if (lang.startsWith('ja')) s += 80;
+            else if (lang.startsWith('id')) s += 70;
+            else s += 50;
         } else {
             // Jalur Auto-ASR
             if (isEngSong) {

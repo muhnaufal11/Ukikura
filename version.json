@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 29,
+  "versionCode": 30,
   "version": "1.0.6",
-  "fixCount": 29,
-  "displayVersion": "1.0.6 (Patch 29)",
+  "fixCount": 30,
+  "displayVersion": "1.0.6 (Patch 30)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 29): Menghilangkan bulatan/cincin hijau meteran pada logo notifikasi chat dan menggantinya dengan badge ikon resmi yang bersih, mencegah tabrakan stiker dan tombol panah di kanan pop-up, serta merapikan tata letak baris balas cepat."
+  "changelog": "Ukikura v1.0.6 (Patch 30): Memperbaiki pemilihan track lirik YouTube agar lirik utama konsisten sesuai bahasa lagu asli (tanpa melompat antar bahasa), menyaring duplikasi lirik bilingual pada track subtitle, dan memastikan sub-lirik terjemahan resmi Bahasa Indonesia (Sub Indo) tampil tersinkronisasi."
 }
