@@ -313,11 +313,11 @@ function updateKaraokeOverlay() {
     if (curLine) {
         if (curLine.rawText && curLine.romaText) {
             curMain = curLine.rawText;
-            curSub = curLine.transText || curLine.romaText;
+            curSub = curLine.romaText || curLine.transText;
         } else if (curLine.text && curLine.text.includes(' · ')) {
             const parts = curLine.text.split(' · ');
             curMain = parts.slice(1).join(' · ');
-            curSub = curLine.transText || parts[0];
+            curSub = parts[0] || curLine.transText;
         } else {
             curMain = curLine.text || '';
             curSub = curLine.transText || curLine.romaText || '';

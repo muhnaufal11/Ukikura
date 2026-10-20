@@ -259,9 +259,12 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     const bestAsr = asrCandidates[0] || null;
     const bestManual = manualCandidates[0] || null;
 
-    const [asrXmlRes, manualXmlRes] = await Promise.all([
+    const idTrack = captionTracks.find(t => t && t.baseUrl && String(t.languageCode || '').toLowerCase().startsWith('id'));
+
+    const [asrXmlRes, manualXmlRes, idXmlRes] = await Promise.all([
         bestAsr ? httpRequestRaw(`${bestAsr.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 4000 }) : Promise.resolve({ body: '' }),
-        bestManual ? httpRequestRaw(`${bestManual.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 4000 }) : Promise.resolve({ body: '' })
+        bestManual ? httpRequestRaw(`${bestManual.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 4000 }) : Promise.resolve({ body: '' }),
+        idTrack ? httpRequestRaw(`${idTrack.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 4000 }).catch(() => ({ body: '' })) : Promise.resolve({ body: '' })
     ]);
 
     const parsedAsr = (asrXmlRes && asrXmlRes.body && asrXmlRes.body.length > 50)
@@ -269,6 +272,9 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         : { tokens: [], lines: [] };
     const parsedManual = (manualXmlRes && manualXmlRes.body && manualXmlRes.body.length > 50)
         ? parseSrv3Stream(manualXmlRes.body)
+        : { tokens: [], lines: [] };
+    const parsedId = (idXmlRes && idXmlRes.body && idXmlRes.body.length > 50)
+        ? parseSrv3Stream(idXmlRes.body)
         : { tokens: [], lines: [] };
 
     // Untuk Forced Alignment:
@@ -290,7 +296,8 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         isAsrTokens: useAsrPrimary,
         languageCode,
         tokens: primaryTokens,
-        lines: primaryLines
+        lines: primaryLines,
+        indonesianLines: parsedId.lines
     };
 }
 

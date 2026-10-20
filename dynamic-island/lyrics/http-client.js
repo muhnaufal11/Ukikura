@@ -119,4 +119,43 @@ async function httpRequestJson(url, opts = {}) {
 }
 
 
-module.exports = { ANDROID_CLIENT, IOS_CLIENT, WEB_CLIENT, httpRequestRaw, httpRequestJson, lyricsCache };
+const translationCache = new Map();
+
+function translateToIndonesian(text, sourceLang = 'auto') {
+    if (!text || typeof text !== 'string') return Promise.resolve('');
+    const clean = text.trim();
+    if (!clean) return Promise.resolve('');
+    if (translationCache.has(clean)) return Promise.resolve(translationCache.get(clean));
+
+    return new Promise((resolve) => {
+        try {
+            const pair = (sourceLang === 'ja' || sourceLang === 'japanese') ? 'ja|id' : 'en|id';
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=${pair}`;
+            const req = https.get(url, {
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                timeout: 3500
+            }, (res) => {
+                let data = '';
+                res.on('data', d => data += d);
+                res.on('end', () => {
+                    try {
+                        const parsed = JSON.parse(data);
+                        const trans = parsed && parsed.responseData && parsed.responseData.translatedText ? parsed.responseData.translatedText.trim() : '';
+                        if (trans && !trans.toLowerCase().startsWith('mymemory warning')) {
+                            translationCache.set(clean, trans);
+                            resolve(trans);
+                            return;
+                        }
+                    } catch (_) {}
+                    resolve('');
+                });
+            });
+            req.on('error', () => resolve(''));
+            req.on('timeout', () => { req.destroy(); resolve(''); });
+        } catch (_) {
+            resolve('');
+        }
+    });
+}
+
+module.exports = { ANDROID_CLIENT, IOS_CLIENT, WEB_CLIENT, httpRequestRaw, httpRequestJson, lyricsCache, translateToIndonesian };

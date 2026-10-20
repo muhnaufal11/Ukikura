@@ -1,6 +1,6 @@
 "use strict";
-const { lyricsCache } = require("./http-client");
-const { hasKanji, hasHiraganaOrKatakana, kanaToRomaji, parseTrackMetadata, mergeJapaneseAndRomajiLines, attachTranslationLines } = require("./text-romaji");
+const { lyricsCache, translateToIndonesian } = require("./http-client");
+const { hasJapaneseChars, hasKanji, hasHiraganaOrKatakana, kanaToRomaji, parseTrackMetadata, mergeJapaneseAndRomajiLines, attachTranslationLines } = require("./text-romaji");
 const { searchNetEaseLyrics, searchLrclibLyrics, searchKuGouLyrics } = require("./providers");
 const { fetchYouTubeCaptionStream } = require("./youtube-captions");
 const { forceAlignLyricsToAudioStream } = require("./forced-alignment");
@@ -141,6 +141,28 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             };
         });
         syncMethod = 'YouTube Captions Stream (.srv3)';
+    }
+
+    // 1. Lampirkan sub-lirik terjemahan Bahasa Indonesia resmi jika tersedia dari YouTube TimedText!
+    if (ytCaptions && Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 3 && finalLines.length > 0) {
+        finalLines = attachTranslationLines(finalLines, ytCaptions.indonesianLines);
+    }
+
+    // 2. Terjemahan cerdas ke Bahasa Indonesia jika belum ada sub-lirik Indonesia
+    const hasAnyIndoTrans = finalLines.some(l => l.transText && !/[\u4e00-\u9fa5]/.test(l.transText));
+    if (!hasAnyIndoTrans && finalLines.length > 0) {
+        const isJapanese = Boolean(meta.likelyJapanese || finalLines.some(l => l.romaText || hasJapaneseChars(l.rawText || l.text)));
+        const toTranslate = finalLines.slice(0, 40);
+        try {
+            await Promise.all(toTranslate.map(async (l) => {
+                const targetText = l.rawText || l.text;
+                if (!targetText || targetText.length < 2) return;
+                const translated = await translateToIndonesian(targetText, isJapanese ? 'ja' : 'en');
+                if (translated && translated.toLowerCase() !== targetText.toLowerCase()) {
+                    l.transText = translated;
+                }
+            }));
+        } catch (_) {}
     }
 
     const coverUrl = (ytCaptions && ytCaptions.videoId)
