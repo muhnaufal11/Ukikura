@@ -128,6 +128,20 @@ function stripParensNoise(str) {
         .trim();
 }
 
+function cleanArtistName(rawArtist) {
+    if (!rawArtist || typeof rawArtist !== 'string') return '';
+    return stripParensNoise(rawArtist)
+        .replace(/-\s*topic$/i, '')
+        .replace(/VEVO$/i, '')
+        .replace(/\b(?:official\s*youtube\s*channel|youtube\s*channel|official\s*channel)\b/gi, '')
+        .replace(/\b(?:ch\.|channel)\s*(?:hololive(?:[-_ ]?[a-z0-9]+)?|nijisanji|vshojo|774inc|kamitsubaki|production\s*kawaii|idol\s*corp|brave\s*group)?(?:\s*[-–—]\s*[a-z0-9]+)?\b/gi, '')
+        .replace(/\s*[-–—]?\s*\bhololive(?:\s*[-–—]\s*|\s*-\s*|-)[a-z0-9]+\b/gi, '')
+        .replace(/\s*[-–—]?\s*\bhololive\b/gi, '')
+        .replace(/\b(?:ch\.|channel)\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 function parseTrackMetadata(rawTitle, rawArtist) {
     const origTitle = String(rawTitle || '').trim();
     const origArtist = String(rawArtist || '').replace(/-\s*topic$/i, '').replace(/VEVO$/i, '').trim();
@@ -135,7 +149,7 @@ function parseTrackMetadata(rawTitle, rawArtist) {
     const isCover = /\b(cover|covered|utattemita)\b|歌ってみた|うたってみた/i.test(`${origTitle} ${origArtist}`);
     const isLofiOrInst = /\b(lofi|lo-fi|instrumental|karaoke|off\s*vocal|piano\s*ver|8-bit|nightcore)\b/i.test(origTitle);
 
-    // 1. Ekstrak isi kurung Jepang 『...』, 「...」, 【...】 yang sering berisi judul lagu asli!
+    // 1. Ekstrak isi kurung Jepang 『...』, 「...」, 【...】 yang sering berisi judul lagu asli atau nama artis!
     const jpQuotes = [];
     for (const m of origTitle.matchAll(/[『「]([^』」]+)[』」]/g)) {
         const inner = m[1].trim();
@@ -176,20 +190,31 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         .map(s => stripParensNoise(s).replace(/^[-/•|:\s]+|[-/•|:\s]+$/g, '').trim())
         .filter(s => s.length > 0 && !NOISE_BRACKET_RE.test(s));
 
-    // Bersihkan nama channel jika nama channel adalah channel lirik (misal "FARFAD LYRICS", "Lirik Musik", dll.)
-    const isLyricChannel = /\b(lyrics?|lirik|musik|music|ch\.|channel|official|ost|anime|vibes|records|entertainment)\b/i.test(origArtist);
-    const cleanChannel = stripParensNoise(origArtist)
-        .replace(/\b(official\s*channel|official|youtube\s*channel|ch\.|channel|lyrics?|lirik)\b/gi, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+    // Bersihkan nama channel (buang suffix Ch., Channel, agency VTuber seperti hololive/nijisanji)
+    const isLyricChannel = /\b(?:lyrics?|lirik|color\s*coded|terjemahan|indo\s*sub|sub\s*indo)\b/i.test(origArtist);
+    const cleanChannel = cleanArtistName(origArtist);
+
+    // Cari kandidat nama artis di dalam kurung siku jika channel kosong/tidak cocok
+    let bracketArtist = '';
+    for (const b of squareBrackets) {
+        if (!NOISE_BRACKET_RE.test(b) && b !== cleaned) {
+            const ca = cleanArtistName(b);
+            if (ca && ca.length >= 2 && ca.length <= 35) {
+                bracketArtist = ca;
+                break;
+            }
+        }
+    }
+
+    const primaryArtist = cleanChannel || bracketArtist || '';
 
     const queries = [];
 
     // Prioritas 1: Jika ada 『Judul』 atau 「Judul」 khas MV/Cover Jepang
     if (jpQuotes.length > 0) {
         const qTitle = jpQuotes[0];
-        if (cleanChannel && !isLyricChannel) {
-            queries.push(`${cleanChannel} ${qTitle}`);
+        if (primaryArtist && !isLyricChannel) {
+            queries.push(`${primaryArtist} ${qTitle}`);
         }
         for (const seg of segments) {
             const segWithoutQuote = seg.replace(qTitle, '').replace(/\s+/g, ' ').trim();
@@ -209,27 +234,36 @@ function parseTrackMetadata(rawTitle, rawArtist) {
     if (segments.length >= 2) {
         queries.push(`${segments[0]} ${segments[1]}`);
         queries.push(segments[0]);
-        if (cleanChannel && !isLyricChannel) {
+        if (primaryArtist && !isLyricChannel) {
             const lastSeg = segments[segments.length - 1];
-            if (!lastSeg.toLowerCase().includes(cleanChannel.toLowerCase())) {
-                queries.push(`${cleanChannel} ${lastSeg}`);
+            if (!lastSeg.toLowerCase().includes(primaryArtist.toLowerCase())) {
+                queries.push(`${primaryArtist} ${lastSeg}`);
             }
-            if (!segments[0].toLowerCase().includes(cleanChannel.toLowerCase())) {
-                queries.push(`${cleanChannel} ${segments[0]}`);
+            if (!segments[0].toLowerCase().includes(primaryArtist.toLowerCase())) {
+                queries.push(`${primaryArtist} ${segments[0]}`);
             }
         }
         queries.push(`${segments[1]} ${segments[0]}`);
         queries.push(segments[segments.length - 1]);
     } else if (segments.length === 1) {
-        if (cleanChannel && !isLyricChannel && !segments[0].toLowerCase().includes(cleanChannel.toLowerCase())) {
-            queries.push(`${cleanChannel} ${segments[0]}`);
-            queries.push(`${segments[0]} ${cleanChannel}`);
+        if (primaryArtist && !isLyricChannel && !segments[0].toLowerCase().includes(primaryArtist.toLowerCase())) {
+            queries.push(`${primaryArtist} ${segments[0]}`);
+            if (segments[0].includes('&')) {
+                queries.push(`${primaryArtist} ${segments[0].replace(/&/g, ' ')}`);
+            }
+            queries.push(`${segments[0]} ${primaryArtist}`);
         }
         queries.push(segments[0]);
+        if (segments[0].includes('&')) {
+            queries.push(segments[0].replace(/&/g, ' '));
+        }
     }
 
     if (cleaned && !queries.includes(cleaned)) {
         queries.push(cleaned);
+        if (cleaned.includes('&')) {
+            queries.push(cleaned.replace(/&/g, ' '));
+        }
     }
 
     const uniqueQueries = [...new Set(queries.map(q => q.replace(/\s+/g, ' ').trim()).filter(q => q.length >= 2))].slice(0, 7);
@@ -382,8 +416,12 @@ function computeMetadataSimilarity(candidateTitle, candidateArtist, meta) {
 
     if (meta.cleanChannel && !meta.isLyricChannel) {
         const chNorm = normalizePhoneticLatin(meta.cleanChannel);
-        if (chNorm && (candArtistNorm.includes(chNorm) || candFull.includes(chNorm))) {
-            score += 40;
+        if (chNorm) {
+            if (candArtistNorm === chNorm || chNorm.includes(candArtistNorm) || candArtistNorm.includes(chNorm)) {
+                score += 55;
+            } else if (candFull.includes(chNorm)) {
+                score += 35;
+            }
         }
     }
 
@@ -424,6 +462,7 @@ module.exports = {
     katakanaToHiragana,
     kanaToRomaji,
     normalizePhoneticLatin,
+    cleanArtistName,
     parseTrackMetadata,
     parseLrcText,
     mergeJapaneseAndRomajiLines,

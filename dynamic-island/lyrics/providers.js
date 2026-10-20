@@ -128,9 +128,9 @@ async function searchNetEaseLyrics(meta, mediaDur) {
         }
 
         if (finalLines.length >= 4) {
-            let bonus = 60;
-            if (meta.likelyJapanese && (isJpLrc || romaLines.length >= 4)) bonus += 85;
-            if (romaLines.length >= 4 && lrcLines.length >= 4) bonus += 80;
+            let bonus = 40;
+            if (meta.likelyJapanese && isJpLrc) bonus += 25;
+            if (romaLines.length >= 4) bonus += 20;
 
             const candidateRes = {
                 source: 'NetEase',
@@ -166,7 +166,7 @@ async function searchLrclibLyrics(meta, mediaDur) {
         for (const item of list) {
             if (!item || (!item.syncedLyrics && !item.plainLyrics)) continue;
             const metaStr = `${item.artistName || ''} ${item.trackName || ''} ${item.albumName || ''}`;
-            const lyrSample = String(item.syncedLyrics || item.plainLyrics || '').slice(0, 700);
+            const lyrSample = String(item.syncedLyrics || item.plainLyrics || '').slice(0, 1500);
 
             if (!meta.isLofiOrInst && /\b(lofi|lo-fi|instrumental|karaoke|8-bit|nightcore)\b/i.test(metaStr)) {
                 continue;
@@ -183,11 +183,9 @@ async function searchLrclibLyrics(meta, mediaDur) {
 
             if (meta.likelyJapanese) {
                 if (isJpText) {
-                    score += 80;
+                    score += 35;
                 } else if (/\b(kimi|boku|watashi|kokoro|yume|namida|kotoba|sekai|hikari|ashita|yoru|kaze|sora|uta|ai)\b/i.test(lyrSample)) {
-                    score += 65;
-                } else {
-                    score -= 90;
+                    score += 20;
                 }
             }
 

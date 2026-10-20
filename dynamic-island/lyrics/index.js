@@ -151,13 +151,13 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     // 2. Terjemahan cerdas ke Bahasa Indonesia jika belum ada sub-lirik Indonesia
     const hasAnyIndoTrans = finalLines.some(l => l.transText && !/[\u4e00-\u9fa5]/.test(l.transText));
     if (!hasAnyIndoTrans && finalLines.length > 0) {
-        const isJapanese = Boolean(meta.likelyJapanese || finalLines.some(l => l.romaText || hasJapaneseChars(l.rawText || l.text)));
-        const toTranslate = finalLines.slice(0, 40);
+        const toTranslate = finalLines.slice(0, 45);
         try {
             await Promise.all(toTranslate.map(async (l) => {
                 const targetText = l.rawText || l.text;
                 if (!targetText || targetText.length < 2) return;
-                const translated = await translateToIndonesian(targetText, isJapanese ? 'ja' : 'en');
+                const isLineJp = hasJapaneseChars(targetText);
+                const translated = await translateToIndonesian(targetText, isLineJp ? 'ja' : 'en');
                 if (translated && translated.toLowerCase() !== targetText.toLowerCase()) {
                     l.transText = translated;
                 }
