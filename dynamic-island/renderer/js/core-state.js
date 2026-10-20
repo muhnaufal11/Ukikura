@@ -25,6 +25,13 @@ var isExpanded = false;
 var isPinned = false;
 var peekTimer = null;
 var notifiedUrgentIds = new Set();
+var notified5HourQuizIds = new Set();
+try {
+    const saved5h = JSON.parse(localStorage.getItem('ukikura_notified_5h_quizzes') || '[]');
+    if (Array.isArray(saved5h)) {
+        saved5h.forEach(id => notified5HourQuizIds.add(id));
+    }
+} catch (_) {}
 
 // Live Media & Lyrics state
 let mediaState = {
@@ -211,7 +218,13 @@ document.getElementById('l-peek').addEventListener('click', () => {
         peekTimer = null;
     }
     isExpanded = true;
-    setPage('notif');
+    if (window.lastPeekItem && window.lastPeekItem.isQuizAlarm) {
+        setPage('todo');
+    } else if (window.lastPeekItem && window.lastPeekItem.isClassAlarm) {
+        setPage('calendar');
+    } else {
+        setPage('notif');
+    }
     ipcRenderer.send('island-resize', true);
 });
 

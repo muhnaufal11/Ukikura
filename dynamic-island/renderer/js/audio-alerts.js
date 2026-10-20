@@ -285,6 +285,12 @@ function synthTripleBeep(ctx, now, masterGain) {
 
 // ---------------- DISPATCHER SUARA UTAMA ----------------
 
+const lastPlayedChannelTimestamps = {
+    classAlarm: 0,
+    notif: 0,
+    deadline: 0
+};
+
 async function playAudioAlert(channel = 'class', forcePreset = null, forceVol = null) {
     const cfg = loadAudioSettings();
     const key = (channel === 'class' || channel === 'classAlarm') ? 'classAlarm' : channel;
@@ -293,6 +299,16 @@ async function playAudioAlert(channel = 'class', forcePreset = null, forceVol = 
     const volPct = forceVol !== null ? forceVol : chanCfg.volume;
 
     if (preset === 'mute' || volPct <= 0) return;
+
+    // Debounce anti-suara dobel: cegah nada berulang tumpang tindih dalam jeda < 1.8 detik (kecuali tes manual dari modal)
+    if (forcePreset === null) {
+        const nowMs = Date.now();
+        const minCooldown = (key === 'notif') ? 1800 : 1200;
+        if (nowMs - (lastPlayedChannelTimestamps[key] || 0) < minCooldown) {
+            return;
+        }
+        lastPlayedChannelTimestamps[key] = nowMs;
+    }
 
     // Jika custom audio file dipilih (berlaku untuk semua kanal)
     if (preset === 'custom' && chanCfg.customPath) {

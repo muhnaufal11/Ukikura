@@ -1,5 +1,9 @@
 // ================= DETEKSI NOTIFIKASI WHATSAPP & HP =================
+let lastAlertedNotifKey = '';
+let lastAlertedNotifTime = 0;
+
 function triggerPeekPopup(item) {
+    window.lastPeekItem = item;
     const appStr = String(item.app || '');
     const isWa = Boolean(item.isWhatsApp) || appStr.toLowerCase().includes('whatsapp');
     const pkAppEl = document.getElementById('pk-app');
@@ -9,10 +13,19 @@ function triggerPeekPopup(item) {
     const pkStickerEl = document.getElementById('pk-sticker');
 
     pkAppEl.textContent = isWa ? 'WhatsApp' : (appStr || 'Notifikasi HP');
-    pkAppEl.classList.toggle('phone', !isWa);
+    pkAppEl.classList.toggle('phone', !isWa && !item.isQuizAlarm && !item.isClassAlarm);
+    pkAppEl.classList.toggle('quiz', Boolean(item.isQuizAlarm));
+    pkAppEl.classList.toggle('class-bell', Boolean(item.isClassAlarm));
     pkTitleEl.textContent = item.sender || item.title || 'Pesan Baru';
     pkSubEl.textContent = item.message || item.text || 'Ketuk untuk membuka';
-    pkArcEl.setAttribute('stroke', isWa ? '#25d366' : '#19b8ff');
+
+    if (item.isQuizAlarm) {
+        pkArcEl.setAttribute('stroke', '#ff4757');
+    } else if (item.isClassAlarm) {
+        pkArcEl.setAttribute('stroke', '#ffd32a');
+    } else {
+        pkArcEl.setAttribute('stroke', isWa ? '#25d366' : '#19b8ff');
+    }
     pkArcEl.style.setProperty('--arc-off', '16');
 
     if (pkStickerEl) {
@@ -32,8 +45,14 @@ function triggerPeekPopup(item) {
         setPeekMode('peek', 6000);
     }
 
-    // Bunyikan nada alert notifikasi WA/HP (kecuali jika berasal dari alarm kuliah yang punya bel sendiri)
-    if (!item.isClassAlarm && typeof window.playAudioAlert === 'function') {
+    const notifKey = `${item.sender || ''}_${item.message || ''}_${item.sticker ? 'stk' : 'txt'}`;
+    const now = Date.now();
+    const isDuplicateAlert = (notifKey === lastAlertedNotifKey && (now - lastAlertedNotifTime) < 3500);
+    lastAlertedNotifKey = notifKey;
+    lastAlertedNotifTime = now;
+
+    // Bunyikan nada alert notifikasi WA/HP (hanya jika bukan duplikat, bukan alarm kuliah, dan bukan kuis yang punya nada sendiri)
+    if (!item.isClassAlarm && !item.isQuizAlarm && !item.isSilent && !isDuplicateAlert && typeof window.playAudioAlert === 'function') {
         window.playAudioAlert('notif');
     }
 }
@@ -128,7 +147,14 @@ ipcRenderer.on('notif-update', (event, payload) => {
                 });
                 notificationsList.splice(dupIdx, 1);
                 notificationsList.unshift(updatedItem);
-                if (item.isNew || (item.sticker && !prev.sticker)) {
+
+                // Anti-dobel: Hanya picu nada/peek baru jika ada pesan teks BARU yang berbeda dari sebelumnya
+                const isActuallyNewMessage = !sameMsg && !isGenericNew;
+                if (isActuallyNewMessage && item.isNew) {
+                    newestNew = updatedItem;
+                } else if (item.sticker && !prev.sticker) {
+                    // Update visual stiker susulan tanpa memicu ulang suara notifikasi
+                    updatedItem.isSilent = true;
                     newestNew = updatedItem;
                 }
             } else {

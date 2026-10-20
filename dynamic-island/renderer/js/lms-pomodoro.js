@@ -1,4 +1,65 @@
 // Format Countdown
+function formatHoursMinutes(ms) {
+    if (ms <= 0) return '0 Menit';
+    const totalMins = Math.floor(ms / 60000);
+    const hours = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    if (hours > 0 && mins > 0) return `${hours} Jam ${mins} Menit`;
+    if (hours > 0) return `${hours} Jam`;
+    return `${mins} Menit`;
+}
+
+function check5HourQuizAlerts(pendingTasks, now) {
+    if (!Array.isArray(pendingTasks)) return;
+    for (const t of pendingTasks) {
+        if (!t || t.isDone || t.dueTimestamp === null) continue;
+        const diffMs = t.dueTimestamp - now;
+        // Peringatkan saat sisa waktu <= 5 jam dan belum lewat waktu (diffMs > 0)
+        if (diffMs > 0 && diffMs <= 5 * 3600 * 1000) {
+            const isQuiz = t.type === 'quiz' || /\b(kuis|quiz|uts|uas|ujian|evaluasi|pre[- ]?test|post[- ]?test)\b/i.test(`${t.title || ''} ${t.courseName || ''}`);
+            const storageKey = `5h_${t.id}`;
+            if (!notified5HourQuizIds.has(storageKey)) {
+                notified5HourQuizIds.add(storageKey);
+                try {
+                    localStorage.setItem('ukikura_notified_5h_quizzes', JSON.stringify([...notified5HourQuizIds].slice(-100)));
+                } catch (_) {}
+
+                const remainingText = formatHoursMinutes(diffMs);
+                const appLabel = isQuiz ? 'Kuis LMS (Sisa 5 Jam)' : 'Deadline LMS (Sisa 5 Jam)';
+                const messageText = `Sisa waktu ${remainingText}! ${t.courseName || ''}. Segera selesaikan sebelum tertutup.`;
+
+                // 1. Tampilkan Peek Popup di Dynamic Island
+                if (typeof triggerPeekPopup === 'function') {
+                    triggerPeekPopup({
+                        app: appLabel,
+                        sender: t.title || 'Kuis LMS',
+                        message: messageText,
+                        isClassAlarm: false,
+                        isQuizAlarm: true
+                    });
+                }
+
+                // 2. Bunyikan nada alert deadline
+                if (typeof window.playAudioAlert === 'function') {
+                    window.playAudioAlert('deadline');
+                }
+
+                // 3. Notifikasi Desktop Windows
+                try {
+                    new Notification(`⚠️ ${appLabel}`, {
+                        body: `${t.title} (${t.courseName}) — ${remainingText} lagi!`
+                    });
+                } catch (_) {}
+
+                // 4. Ubah emosi maskot menjadi terkejut/waspada
+                if (typeof setMascotMood === 'function') {
+                    setMascotMood('surprised');
+                }
+            }
+        }
+    }
+}
+
 function formatRealtimeCountdown(ms) {
     if (ms === null || ms === undefined) return 'Aktif';
     if (ms < 0) return 'Lewat';
@@ -77,6 +138,9 @@ function updateLiveMetrics() {
     } else {
         mnEl.classList.remove('urgent');
     }
+
+    // Peringatan Khusus Kuis LMS Sisa <= 5 Jam (Peek Popup + Suara Alert + Desktop Toast)
+    check5HourQuizAlerts(pending, now);
 
     // Update Closed Bar Text: Prioritaskan Judul Musik bila sedang diputar
     if (mediaState.active && mediaState.status === 'Playing' && mediaState.title) {

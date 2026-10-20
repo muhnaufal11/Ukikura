@@ -855,6 +855,17 @@
         color: #7fd6ff;
     }
 
+    .pk-app-tag.quiz {
+        background: rgba(255, 71, 87, 0.28);
+        color: #ff6b81;
+        box-shadow: 0 0 8px rgba(255, 71, 87, 0.35);
+    }
+
+    .pk-app-tag.class-bell {
+        background: rgba(255, 211, 42, 0.25);
+        color: #fed330;
+    }
+
     .pk-title {
         font-size: 13px;
         font-weight: 700;

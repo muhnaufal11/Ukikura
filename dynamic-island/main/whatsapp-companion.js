@@ -48,7 +48,10 @@ function ensureWhatsAppWindow(showWindow = false) {
                 const data = JSON.parse(message.slice('__NUSA_WA_LIVE__:'.length));
                 if (data && data.sender) {
                     const sig = `wa_live_${data.sender}_${data.message}_${data.sticker ? 'stk' : 'txt'}`;
-                    seenWaSignatures.add(`wa_${data.sender}_${data.message}_txt`);
+                    const baseSig = `wa_${data.sender}_${data.message}`;
+                    seenWaSignatures.add(baseSig);
+                    seenWaSignatures.add(`${baseSig}_txt`);
+                    seenWaSignatures.add(`${baseSig}_stk`);
                     const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
                         mainWindow.webContents.send('notif-update', [{
                             id: sig,
@@ -449,8 +452,13 @@ async function pollWhatsAppUnread() {
                 }
 
                 const sig = `wa_${c.sender}_${c.message}_${c.stickerId || (c.sticker ? 'stk' : 'txt')}`;
-                if (!seenWaSignatures.has(sig)) {
+                const baseSig = `wa_${c.sender}_${c.message}`;
+                const isAlreadySeen = seenWaSignatures.has(sig) || seenWaSignatures.has(baseSig) || seenWaSignatures.has(`${baseSig}_txt`) || seenWaSignatures.has(`${baseSig}_stk`);
+                if (!isAlreadySeen) {
                     seenWaSignatures.add(sig);
+                    seenWaSignatures.add(baseSig);
+                    seenWaSignatures.add(`${baseSig}_txt`);
+                    seenWaSignatures.add(`${baseSig}_stk`);
                     newNotifs.push({
                         id: sig,
                         app: 'WhatsApp',
