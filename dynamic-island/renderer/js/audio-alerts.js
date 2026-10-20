@@ -81,7 +81,7 @@ function synthChime(ctx, now, masterGain) {
         osc.frequency.setValueAtTime(n.f, now + n.start);
 
         g.gain.setValueAtTime(0.0001, now + n.start);
-        g.gain.exponentialRampToValueAtTime(0.28, now + n.start + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.75, now + n.start + 0.03);
         g.gain.exponentialRampToValueAtTime(0.0001, now + n.start + n.dur);
 
         osc.connect(g);
@@ -108,7 +108,7 @@ function synthTowerBell(ctx, now, masterGain) {
         osc2.frequency.setValueAtTime(b.o, now + b.start);
 
         g.gain.setValueAtTime(0.001, now + b.start);
-        g.gain.exponentialRampToValueAtTime(0.35, now + b.start + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.85, now + b.start + 0.02);
         g.gain.exponentialRampToValueAtTime(0.0001, now + b.start + b.dur);
 
         osc1.connect(g);
@@ -132,7 +132,7 @@ function synthDigitalRadar(ctx, now, masterGain) {
         osc.frequency.exponentialRampToValueAtTime(1760, now + st + 0.14);
 
         g.gain.setValueAtTime(0.001, now + st);
-        g.gain.linearRampToValueAtTime(0.3, now + st + 0.02);
+        g.gain.linearRampToValueAtTime(0.80, now + st + 0.02);
         g.gain.exponentialRampToValueAtTime(0.0001, now + st + 0.18);
 
         osc.connect(g);
@@ -153,7 +153,7 @@ function synthMarimba(ctx, now, masterGain) {
         osc.frequency.setValueAtTime(freq, now + st);
 
         g.gain.setValueAtTime(0.001, now + st);
-        g.gain.linearRampToValueAtTime(0.32, now + st + 0.015);
+        g.gain.linearRampToValueAtTime(0.85, now + st + 0.015);
         g.gain.exponentialRampToValueAtTime(0.0001, now + st + 0.35);
 
         osc.connect(g);
@@ -172,7 +172,7 @@ function synthPopBubble(ctx, now, masterGain) {
     osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
 
     g.gain.setValueAtTime(0.001, now);
-    g.gain.linearRampToValueAtTime(0.38, now + 0.015);
+    g.gain.linearRampToValueAtTime(0.95, now + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
 
     osc.connect(g);
@@ -193,7 +193,7 @@ function synthGlassDing(ctx, now, masterGain) {
     osc2.frequency.setValueAtTime(2637.0, now);
 
     g.gain.setValueAtTime(0.001, now);
-    g.gain.linearRampToValueAtTime(0.32, now + 0.01);
+    g.gain.linearRampToValueAtTime(0.90, now + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
 
     osc1.connect(g);
@@ -216,7 +216,7 @@ function synthChirp(ctx, now, masterGain) {
         osc.frequency.exponentialRampToValueAtTime(i === 0 ? 1174 : 1567.9, now + st + 0.06);
 
         g.gain.setValueAtTime(0.001, now + st);
-        g.gain.linearRampToValueAtTime(0.28, now + st + 0.01);
+        g.gain.linearRampToValueAtTime(0.80, now + st + 0.01);
         g.gain.exponentialRampToValueAtTime(0.0001, now + st + 0.08);
 
         osc.connect(g);
@@ -237,7 +237,7 @@ function synthPulseAlert(ctx, now, masterGain) {
         osc.frequency.setValueAtTime(freq, now + st);
 
         g.gain.setValueAtTime(0.001, now + st);
-        g.gain.linearRampToValueAtTime(0.18, now + st + 0.02);
+        g.gain.linearRampToValueAtTime(0.75, now + st + 0.02);
         g.gain.exponentialRampToValueAtTime(0.0001, now + st + 0.28);
 
         osc.connect(g);
@@ -256,7 +256,7 @@ function synthTripleBeep(ctx, now, masterGain) {
         osc.frequency.setValueAtTime(880, now + st);
 
         g.gain.setValueAtTime(0.001, now + st);
-        g.gain.linearRampToValueAtTime(0.25, now + st + 0.01);
+        g.gain.linearRampToValueAtTime(0.85, now + st + 0.01);
         g.gain.exponentialRampToValueAtTime(0.0001, now + st + 0.07);
 
         osc.connect(g);
@@ -268,9 +268,10 @@ function synthTripleBeep(ctx, now, masterGain) {
 
 // ---------------- DISPATCHER SUARA UTAMA ----------------
 
-function playAudioAlert(channel = 'class', forcePreset = null, forceVol = null) {
+async function playAudioAlert(channel = 'class', forcePreset = null, forceVol = null) {
     const cfg = loadAudioSettings();
-    const chanCfg = cfg[channel] || cfg.classAlarm;
+    const key = (channel === 'class' || channel === 'classAlarm') ? 'classAlarm' : channel;
+    const chanCfg = cfg[key] || cfg.classAlarm;
     const preset = forcePreset !== null ? forcePreset : chanCfg.preset;
     const volPct = forceVol !== null ? forceVol : chanCfg.volume;
 
@@ -289,9 +290,15 @@ function playAudioAlert(channel = 'class', forcePreset = null, forceVol = null) 
     const ctx = getAudioContext();
     if (!ctx) return;
 
+    if (ctx.state === 'suspended') {
+        try {
+            await ctx.resume();
+        } catch (_) {}
+    }
+
     const now = ctx.currentTime;
     const masterGain = ctx.createGain();
-    const normVol = Math.max(0, Math.min(1, volPct / 100));
+    const normVol = Math.max(0.01, Math.min(1, volPct / 100));
     masterGain.gain.setValueAtTime(normVol, now);
     masterGain.connect(ctx.destination);
 

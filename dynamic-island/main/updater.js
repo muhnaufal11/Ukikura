@@ -28,9 +28,9 @@ function getLocalVersionInfo() {
     let info = {
         name: 'Ukikura',
         versionName: '1.0.5',
-        versionCode: 15,
+        versionCode: 16,
         version: '1.0.5',
-        fixCount: 15,
+        fixCount: 16,
         githubRepo: 'muhnaufal11/Ukikura',
         fallbackRepos: ['muhnaufal11/Ukikura', 'Nauflix/Ukikura'],
         branch: 'main'

@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="./styles/pages-lms-tools.css">
     <link rel="stylesheet" href="./styles/calendar-modals.css">
     <link rel="stylesheet" href="./styles/schedule-modal.css">
+    <link rel="stylesheet" href="./styles/sound-modal.css">
 </head>
 <body>
 
@@ -148,6 +149,9 @@
                     </button>
                     <button class="hdr-icon-btn" id="btn-login" title="Login / Tautkan Sesi LMS Background">
                         <svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    </button>
+                    <button class="hdr-icon-btn" id="btn-open-sound-hdr" title="Pengaturan Suara & Volume Alarm">
+                        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                     </button>
                     <button class="hdr-icon-btn" id="btn-pin" title="Sematkan Tetap Terbuka (Pin)">
                         <svg viewBox="0 0 24 24"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
@@ -338,6 +342,10 @@
                         <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
                         Courses
                     </button>
+                    <button class="pill" id="btn-open-sound-todo" style="flex:1" title="Pengaturan Suara & Volume Alarm">
+                        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        Suara
+                    </button>
                     <button class="pill primary" id="btn-open-ai-1" style="flex:1">
                         <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                         AI
@@ -483,6 +491,9 @@
                 <div class="cfg-bottom-row">
                     <span class="dim" id="last-sync-text" style="font-size:10.5px">Menunggu sinkronisasi...</span>
                     <div style="display:flex;gap:4px">
+                        <button class="pill" id="btn-open-sound-config" title="Pengaturan Suara & Volume Alarm">
+                            🔔 Suara
+                        </button>
                         <button class="pill" id="btn-version-info" title="Ukikura Versi Aplikasi & Kode Fix">
                             v<span id="version-name-label">1.0.4</span> (Kode: <span id="version-code-label">14</span>)
                         </button>
@@ -536,81 +547,11 @@
                 </div>
             </div>
 
-            <!-- Drawer Pengaturan Suara & Volume Alarm Multi-Kanal -->
-            <div class="sched-sound-drawer" id="sched-sound-drawer">
-                <div class="sched-sound-hdr">
-                    <span class="sched-sound-title">🔔 Pengaturan Suara & Volume Alarm Multi-Kanal</span>
-                    <button class="sched-pill-btn" id="btn-sound-close">✕ Tutup</button>
-                </div>
-                <div class="sched-sound-grid">
-                    <!-- Kanal Bel Kuliah -->
-                    <div class="sched-sound-card">
-                        <div class="sched-scard-top">
-                            <span class="sched-scard-title">🎓 Bel Kuliah</span>
-                            <span class="sched-scard-vol-val" id="val-vol-class">85%</span>
-                        </div>
-                        <div class="sched-scard-row">
-                            <select class="sched-form-sel" id="sel-sound-class">
-                                <option value="chime">Akademik Chime</option>
-                                <option value="bell">Lonceng Menara</option>
-                                <option value="digital">Radar Synth</option>
-                                <option value="marimba">Marimba Akustik</option>
-                                <option value="mute">Mute (Hening)</option>
-                            </select>
-                            <input type="range" min="0" max="100" value="85" class="sched-sound-slider" id="range-vol-class" />
-                            <button class="sched-mini-test-btn" id="btn-test-sound-class" title="Uji Suara Bel Kuliah">▶</button>
-                        </div>
-                    </div>
-
-                    <!-- Kanal Notifikasi WA & HP -->
-                    <div class="sched-sound-card">
-                        <div class="sched-scard-top">
-                            <span class="sched-scard-title">💬 Notifikasi WA / HP</span>
-                            <span class="sched-scard-vol-val" id="val-vol-notif">70%</span>
-                        </div>
-                        <div class="sched-scard-row">
-                            <select class="sched-form-sel" id="sel-sound-notif">
-                                <option value="pop">Bubble Pop (Lembut)</option>
-                                <option value="ding">Glass Ding (Apple)</option>
-                                <option value="chirp">Dua Ketukan Ceria</option>
-                                <option value="mute">Mute (Hening)</option>
-                            </select>
-                            <input type="range" min="0" max="100" value="70" class="sched-sound-slider" id="range-vol-notif" />
-                            <button class="sched-mini-test-btn" id="btn-test-sound-notif" title="Uji Suara Notifikasi">▶</button>
-                        </div>
-                    </div>
-
-                    <!-- Kanal Deadline LMS -->
-                    <div class="sched-sound-card">
-                        <div class="sched-scard-top">
-                            <span class="sched-scard-title">⏰ Deadline Tugas LMS</span>
-                            <span class="sched-scard-vol-val" id="val-vol-deadline">80%</span>
-                        </div>
-                        <div class="sched-scard-row">
-                            <select class="sched-form-sel" id="sel-sound-deadline">
-                                <option value="pulse">Pulse Alert (Tegas)</option>
-                                <option value="chime">Chime Lembut</option>
-                                <option value="beep">Triple Beep</option>
-                                <option value="mute">Mute (Hening)</option>
-                            </select>
-                            <input type="range" min="0" max="100" value="80" class="sched-sound-slider" id="range-vol-deadline" />
-                            <button class="sched-mini-test-btn" id="btn-test-sound-deadline" title="Uji Suara Deadline">▶</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Drawer Form Tambah Matkul -->
             <div class="sched-add-form" id="sched-add-form">
                 <div class="sched-form-row">
                     <select class="sched-form-sel" id="sched-select-day" style="width:75px">
-                        <option value="1">Senin</option>
-                        <option value="2">Selasa</option>
-                        <option value="3">Rabu</option>
-                        <option value="4">Kamis</option>
-                        <option value="5">Jumat</option>
-                        <option value="6">Sabtu</option>
-                        <option value="0">Minggu</option>
+                        <option value="1">Senin</option><option value="2">Selasa</option><option value="3">Rabu</option><option value="4">Kamis</option><option value="5">Jumat</option><option value="6">Sabtu</option><option value="0">Minggu</option>
                     </select>
                     <input type="text" class="sched-form-inp" id="sched-input-name" placeholder="Nama Mata Kuliah..." style="flex:2" />
                     <input type="text" class="sched-form-inp" id="sched-input-start" placeholder="Mulai (13:30)" style="width:70px" />
@@ -654,6 +595,74 @@
             </div>
         </div>
 
+        <!-- ================= MODAL PENGATURAN SUARA & ALARM MULTI-KANAL ================= -->
+        <div class="sound-modal" id="sound-modal">
+            <div class="sound-modal-hdr">
+                <div class="sound-hdr-left">
+                    <div class="sound-hdr-icon">
+                        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    </div>
+                    <div>
+                        <div class="sound-hdr-title">Pengaturan Suara & Volume Alarm</div>
+                        <div class="sound-hdr-sub">Bel Kuliah, Notifikasi WhatsApp/HP, dan Deadline LMS</div>
+                    </div>
+                </div>
+                <button class="sound-btn-close" id="btn-close-sound-modal" title="Tutup Pengaturan">✕</button>
+            </div>
+
+            <div class="sound-modal-grid">
+                <!-- Kanal Bel Kuliah -->
+                <div class="sound-channel-card">
+                    <div class="sound-cc-top">
+                        <span class="sound-cc-title">🎓 Bel Alarm Kuliah (iGracias)</span>
+                        <span class="sound-cc-vol" id="val-vol-class-main">85%</span>
+                    </div>
+                    <div class="sound-cc-controls">
+                        <select class="sound-form-sel" id="sel-sound-class-main">
+                            <option value="chime">Akademik Chime</option><option value="bell">Lonceng Menara</option><option value="digital">Radar Synth</option><option value="marimba">Marimba Akustik</option><option value="mute">Mute (Hening)</option>
+                        </select>
+                        <input type="range" min="0" max="100" value="85" class="sound-range-slider" id="range-vol-class-main" />
+                        <button class="sound-test-btn" id="btn-test-sound-class-main" title="Uji Suara Bel Kuliah">▶ Uji</button>
+                    </div>
+                </div>
+
+                <!-- Kanal Notifikasi WA & HP -->
+                <div class="sound-channel-card">
+                    <div class="sound-cc-top">
+                        <span class="sound-cc-title">💬 Notifikasi WhatsApp & HP</span>
+                        <span class="sound-cc-vol" id="val-vol-notif-main">70%</span>
+                    </div>
+                    <div class="sound-cc-controls">
+                        <select class="sound-form-sel" id="sel-sound-notif-main">
+                            <option value="pop">Bubble Pop (Lembut)</option><option value="ding">Glass Ding (Apple)</option><option value="chirp">Dua Ketukan Ceria</option><option value="mute">Mute (Hening)</option>
+                        </select>
+                        <input type="range" min="0" max="100" value="70" class="sound-range-slider" id="range-vol-notif-main" />
+                        <button class="sound-test-btn" id="btn-test-sound-notif-main" title="Uji Suara Notifikasi">▶ Uji</button>
+                    </div>
+                </div>
+
+                <!-- Kanal Deadline LMS -->
+                <div class="sound-channel-card">
+                    <div class="sound-cc-top">
+                        <span class="sound-cc-title">⏰ Pengingat Deadline Tugas LMS</span>
+                        <span class="sound-cc-vol" id="val-vol-deadline-main">80%</span>
+                    </div>
+                    <div class="sound-cc-controls">
+                        <select class="sound-form-sel" id="sel-sound-deadline-main">
+                            <option value="pulse">Pulse Alert (Tegas)</option><option value="chime">Chime Halus</option><option value="beep">Triple Beep</option><option value="mute">Mute (Hening)</option>
+                        </select>
+                        <input type="range" min="0" max="100" value="80" class="sound-range-slider" id="range-vol-deadline-main" />
+                        <button class="sound-test-btn" id="btn-test-sound-deadline-main" title="Uji Suara Deadline">▶ Uji</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sound-modal-ftr">
+                <span class="sound-ftr-hint">💡 Pengaturan volume & nada tersimpan otomatis dan persisten di Ukikura.</span>
+                <button class="sound-pill-btn primary" id="btn-save-close-sound">Selesai</button>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -661,6 +670,7 @@
     <!-- Modul-Modul Renderer Nusa Dynamic Island -->
     <script src="./js/core-state.js"></script>
     <script src="./js/audio-alerts.js"></script>
+    <script src="./js/sound-settings.js"></script>
     <script src="./js/music-lyrics.js"></script>
     <script src="./js/power-bluetooth.js"></script>
     <script src="./js/notifications-wa.js"></script>

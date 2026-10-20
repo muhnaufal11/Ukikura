@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.5",
-  "versionCode": 15,
+  "versionCode": 16,
   "version": "1.0.5",
-  "fixCount": 15,
-  "displayVersion": "1.0.5 (Kode: 15)",
+  "fixCount": 16,
+  "displayVersion": "1.0.5 (Kode: 16)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.5.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.5: Fitur Import Jadwal Kuliah otomatis dari data KSM (PDF Arsip & Tabel Web iGracias), synthesizer audio alarm multi-kanal Web Audio API tanpa dependensi eksternal (Bel Kuliah: Akademik Chime/Menara Bell/Radar/Marimba, Notifikasi WA/HP: Bubble Pop/Glass Ding/Chirp/Mute, Deadline LMS: Pulse Alert/Chime/Triple Beep/Mute), pengaturan volume suara independen (0-100%) dengan penyimpanan persisten, dan jadwal default bersih kosong siap pakai."
+  "changelog": "Ukikura v1.0.5 (Patch 16): Penempatan panel Pengaturan Suara & Volume langsung di Halaman Utama (LMS Todolist), Header Bar, dan Halaman Pengaturan; perbaikan synthesizer Web Audio API dengan penguncian state asinkron running & penguatan gain volume hingga 100% sehingga bel kuliah, notifikasi WA/HP, dan deadline LMS berbunyi lantang dan jernih."
 }
