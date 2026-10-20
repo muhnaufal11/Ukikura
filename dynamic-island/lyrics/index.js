@@ -1,6 +1,6 @@
 "use strict";
-const { lyricsCache, translateToIndonesian } = require("./http-client");
-const { hasJapaneseChars, hasKanji, hasHiraganaOrKatakana, kanaToRomaji, parseTrackMetadata, mergeJapaneseAndRomajiLines, attachTranslationLines } = require("./text-romaji");
+const { lyricsCache, httpRequestJson, translateToIndonesian, translateBatchToIndonesian } = require("./http-client");
+const { hasJapaneseChars, hasKanji, hasHiraganaOrKatakana, kanaToRomaji, parseTrackMetadata, parseLrcText, mergeJapaneseAndRomajiLines, attachTranslationLines } = require("./text-romaji");
 const { searchNetEaseLyrics, searchLrclibLyrics, searchKuGouLyrics } = require("./providers");
 const { fetchYouTubeCaptionStream } = require("./youtube-captions");
 const { forceAlignLyricsToAudioStream } = require("./forced-alignment");
@@ -43,7 +43,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
         searchNetEaseLyrics(meta, mediaDur).then(r => { maybeEmitFast(r, false); return r; }).catch(() => null),
         searchLrclibLyrics(meta, mediaDur).then(r => { maybeEmitFast(r, false); return r; }).catch(() => null),
         searchKuGouLyrics(meta, mediaDur).then(r => { maybeEmitFast(r, false); return r; }).catch(() => null)
-    ]).then(([ne, lrc, kg]) => {
+    ]).then(async ([ne, lrc, kg]) => {
         const cands = [ne, lrc, kg].filter(Boolean).sort((a, b) => b.score - a.score);
         const top = cands[0] || null;
         if (top && top.isJapanese && top.source !== 'NetEase' && ne && ne.lines.some(l => l.romaText)) {
@@ -55,6 +55,32 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
                 romaPool
             );
             top.score += 25;
+        } else if (top && top.isJapanese && top.source !== 'NetEase' && (!ne || !ne.lines.some(l => l.romaText))) {
+            // Jika kandidat teratas adalah lagu Jepang (misal dari LRCLIB) tanpa Romaji, cari Romaji langsung ke NetEase dengan artis & judul kanonikal
+            try {
+                const targetQ = `${top.artistName} ${top.trackName}`.trim();
+                const targeted = await httpRequestJson(
+                    `https://music.163.com/api/search/get?s=${encodeURIComponent(targetQ)}&type=1&limit=3`,
+                    { method: 'POST', headers: { Referer: 'https://music.163.com' }, timeout: 3500 }
+                );
+                const firstSong = targeted?.result?.songs?.[0];
+                if (firstSong && firstSong.id) {
+                    const lyrData = await httpRequestJson(
+                        `https://music.163.com/api/song/lyric?id=${firstSong.id}&lv=1&kv=1&tv=-1&rv=-1`,
+                        { headers: { Referer: 'https://music.163.com' }, timeout: 3500 }
+                    );
+                    if (lyrData && lyrData.romalrc && lyrData.romalrc.lyric) {
+                        const targetedRomaLines = parseLrcText(lyrData.romalrc.lyric);
+                        if (targetedRomaLines.length >= 4) {
+                            top.lines = mergeJapaneseAndRomajiLines(
+                                top.lines.map(l => ({ time: l.time, text: l.rawText || l.text })),
+                                targetedRomaLines
+                            );
+                            top.score += 30;
+                        }
+                    }
+                }
+            } catch (_) {}
         }
         if (top && top.source !== 'NetEase' && ne && ne.lines.some(l => l.transText)) {
             const isOrigChinese = /[\u4e00-\u9fa5]/.test(`${meta.origTitle} ${meta.origArtist}`);
@@ -188,16 +214,15 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     const hasAnyIndoTrans = finalLines.some(l => l.transText && !/[\u4e00-\u9fa5]/.test(l.transText));
     if (!isAlreadyIndonesian && !hasAnyIndoTrans && finalLines.length > 0) {
         const toTranslate = finalLines.slice(0, 45);
+        const targetTexts = toTranslate.map(l => l.rawText || l.text || '');
+        const isJp = toTranslate.some(l => hasJapaneseChars(l.rawText || l.text));
         try {
-            await Promise.all(toTranslate.map(async (l) => {
-                const targetText = l.rawText || l.text;
-                if (!targetText || targetText.length < 2) return;
-                const isLineJp = hasJapaneseChars(targetText);
-                const translated = await translateToIndonesian(targetText, isLineJp ? 'ja' : 'en');
-                if (translated && translated.toLowerCase() !== targetText.toLowerCase()) {
-                    l.transText = translated;
+            const batchTrans = await translateBatchToIndonesian(targetTexts, isJp ? 'ja' : 'en');
+            batchTrans.forEach((trans, idx) => {
+                if (trans && toTranslate[idx] && trans.toLowerCase() !== targetTexts[idx].toLowerCase()) {
+                    toTranslate[idx].transText = trans;
                 }
-            }));
+            });
         } catch (_) {}
     }
 

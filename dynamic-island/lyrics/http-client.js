@@ -121,41 +121,87 @@ async function httpRequestJson(url, opts = {}) {
 
 const translationCache = new Map();
 
+async function translateBatchToIndonesian(lines, sourceLang = 'auto') {
+    if (!Array.isArray(lines) || lines.length === 0) return [];
+    const results = new Array(lines.length).fill('');
+    const toFetch = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const clean = String(lines[i] || '').trim();
+        if (!clean || clean.length < 2) continue;
+        if (translationCache.has(clean)) {
+            results[i] = translationCache.get(clean);
+        } else {
+            toFetch.push({ text: clean, index: i });
+        }
+    }
+
+    if (toFetch.length === 0) return results;
+
+    const pair = (sourceLang === 'ja' || sourceLang === 'japanese') ? 'ja|id' : 'en|id';
+    const chunkSize = 4;
+
+    for (let i = 0; i < toFetch.length; i += chunkSize) {
+        const slice = toFetch.slice(i, i + chunkSize);
+        const joined = slice.map(item => item.text).join('\n');
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(joined)}&langpair=${pair}`;
+
+        try {
+            const transBody = await new Promise((resolve) => {
+                const req = https.get(url, {
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                    timeout: 4500
+                }, (res) => {
+                    let data = '';
+                    res.on('data', d => data += d);
+                    res.on('end', () => {
+                        try {
+                            const parsed = JSON.parse(data);
+                            const t = parsed && parsed.responseData && parsed.responseData.translatedText ? parsed.responseData.translatedText.trim() : '';
+                            if (t && !t.toLowerCase().startsWith('mymemory warning')) {
+                                resolve(t);
+                                return;
+                            }
+                        } catch (_) {}
+                        resolve('');
+                    });
+                });
+                req.on('error', () => resolve(''));
+                req.on('timeout', () => { req.destroy(); resolve(''); });
+            });
+
+            if (transBody) {
+                const split = transBody.split(/\r?\n/).map(s => s.trim());
+                slice.forEach((item, sIdx) => {
+                    const transLine = split[sIdx] || '';
+                    if (transLine && transLine.toLowerCase() !== item.text.toLowerCase()) {
+                        results[item.index] = transLine;
+                        translationCache.set(item.text, transLine);
+                    }
+                });
+            }
+        } catch (_) {}
+    }
+
+    return results;
+}
+
 function translateToIndonesian(text, sourceLang = 'auto') {
     if (!text || typeof text !== 'string') return Promise.resolve('');
     const clean = text.trim();
     if (!clean) return Promise.resolve('');
     if (translationCache.has(clean)) return Promise.resolve(translationCache.get(clean));
 
-    return new Promise((resolve) => {
-        try {
-            const pair = (sourceLang === 'ja' || sourceLang === 'japanese') ? 'ja|id' : 'en|id';
-            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=${pair}`;
-            const req = https.get(url, {
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                timeout: 3500
-            }, (res) => {
-                let data = '';
-                res.on('data', d => data += d);
-                res.on('end', () => {
-                    try {
-                        const parsed = JSON.parse(data);
-                        const trans = parsed && parsed.responseData && parsed.responseData.translatedText ? parsed.responseData.translatedText.trim() : '';
-                        if (trans && !trans.toLowerCase().startsWith('mymemory warning')) {
-                            translationCache.set(clean, trans);
-                            resolve(trans);
-                            return;
-                        }
-                    } catch (_) {}
-                    resolve('');
-                });
-            });
-            req.on('error', () => resolve(''));
-            req.on('timeout', () => { req.destroy(); resolve(''); });
-        } catch (_) {
-            resolve('');
-        }
-    });
+    return translateBatchToIndonesian([clean], sourceLang).then(res => res[0] || '');
 }
 
-module.exports = { ANDROID_CLIENT, IOS_CLIENT, WEB_CLIENT, httpRequestRaw, httpRequestJson, lyricsCache, translateToIndonesian };
+module.exports = {
+    ANDROID_CLIENT,
+    IOS_CLIENT,
+    WEB_CLIENT,
+    lyricsCache,
+    httpRequestRaw,
+    httpRequestJson,
+    translateToIndonesian,
+    translateBatchToIndonesian
+};

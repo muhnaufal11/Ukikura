@@ -247,14 +247,23 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     // Pisahkan kandidat ASR (memiliki <s t="..."> timestamp vokal per kata langsung dari gelombang audio)
     // dan kandidat Manual CC (subtitle dari kreator)
     const isJpSong = Boolean(meta && meta.likelyJapanese);
+    const isEngSong = Boolean(meta && meta.isEnglishVersion);
+
     const scoreLang = (t) => {
         const lang = String(t.languageCode || '').toLowerCase();
         let s = 0;
-        if (isJpSong) {
+        if (isEngSong) {
+            // Untuk lagu cover bahasa Inggris, prioritaskan CC bahasa Inggris!
+            if (lang.startsWith('en')) s += 100;
+            else if (lang.startsWith('id')) s += 60;
+            else if (t.kind !== 'asr') s += 40; // Manual CC kreator
+            else s = -999; // Tolak ASR bahasa yang salah (misal ASR Vietnam / Rusia pada lagu Inggris)
+        } else if (isJpSong) {
             // Untuk lagu Jepang, jalur CC bahasa Jepang adalah vokal/lirik asli yang dinyanyikan!
             if (lang.startsWith('ja')) s += 100;
             else if (lang.startsWith('en')) s += 45;
             else if (lang.startsWith('id')) s += 30;
+            else if (t.kind === 'asr') s = -999; // Tolak ASR bahasa selain Jepang untuk lagu Jepang
         } else {
             // Untuk lagu non-Jepang (lagu Indonesia/Global), prioritaskan lirik Indonesia jika ada
             if (lang.startsWith('id')) s += 100;
@@ -267,11 +276,13 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     const asrCandidates = captionTracks
         .filter(t => t && t.kind === 'asr' && t.baseUrl)
         .map(scoreLang)
+        .filter(c => c.langScore >= 0)
         .sort((a, b) => b.langScore - a.langScore);
 
     const manualCandidates = captionTracks
         .filter(t => t && t.kind !== 'asr' && t.baseUrl)
         .map(scoreLang)
+        .filter(c => c.langScore >= 0)
         .sort((a, b) => b.langScore - a.langScore);
 
     const bestAsr = asrCandidates[0] || null;

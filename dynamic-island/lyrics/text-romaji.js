@@ -118,7 +118,7 @@ function normalizePhoneticLatin(str) {
 
 // ==================== PARSER METADATA LAGU & COVER YOUTUBE ====================
 
-const NOISE_BRACKET_RE = /^(?:official.*|mv|music\s*video|lyric.*|lirik.*|audio.*|video.*|visualizer.*|cover.*|歌ってみた.*|うたってみた.*|utattemita.*|karaoke.*|instrumental.*|off\s*vocal.*|romaji.*|kanji.*|sub\s*indo.*|indo\s*sub.*|terjemahan.*|hd|4k|hq|live.*|pv|オリジナル.*|original.*|full.*|tv\s*size.*|short\s*ver.*)$/i;
+const NOISE_BRACKET_RE = /^(?:official.*|mv|music\s*video|lyric.*|lirik.*|audio.*|video.*|visualizer.*|cover.*|歌ってみた.*|うたってみた.*|utattemita.*|karaoke.*|instrumental.*|off\s*vocal.*|romaji.*|kanji.*|sub\s*indo.*|indo\s*sub.*|terjemahan.*|hd|4k|hq|live.*|pv|オリジナル.*|original.*|full.*|tv\s*size.*|short\s*ver.*|english\s*ver.*|eng\s*ver.*|japanese\s*ver.*|jp\s*ver.*|indonesian\s*ver.*|indo\s*ver.*)$/i;
 
 function stripParensNoise(str) {
     return String(str || '')
@@ -144,7 +144,10 @@ function parseTrackMetadata(rawTitle, rawArtist) {
     const origTitle = String(rawTitle || '').trim();
     const origArtist = String(rawArtist || '').replace(/-\s*topic$/i, '').replace(/VEVO$/i, '').trim();
 
-    const isCover = /\b(cover|covered|utattemita)\b|歌ってみた|うたってみた/i.test(`${origTitle} ${origArtist}`);
+    const isEnglishVersion = /\b(english\s*ver(?:sion)?|eng\s*ver(?:sion)?|english\s*cover|eng\s*cover|cover\s*in\s*english|en\s*ver)\b/i.test(`${origTitle} ${origArtist}`) ||
+        /\b(amalee|leeandlie|jonathan\s*young|pellek|caleb\s*hyles|natewantstobattle|richaadeb|studio\s*yuraki|sapphire|will\s*stetson)\b/i.test(`${origTitle} ${origArtist}`);
+    const isJapaneseVersion = /\b(japanese\s*ver(?:sion)?|jp\s*ver(?:sion)?|japanese\s*cover|jp\s*cover)\b/i.test(`${origTitle} ${origArtist}`);
+    const isCover = isEnglishVersion || isJapaneseVersion || /\b(cover|covered|utattemita|歌ってみた|うたってみた)\b/i.test(`${origTitle} ${origArtist}`);
     const isLofiOrInst = /\b(lofi|lo-fi|instrumental|karaoke|off\s*vocal|piano\s*ver|8-bit|nightcore)\b/i.test(origTitle);
 
     // 1. Ekstrak isi kurung Jepang 『...』, 「...」, 【...】 yang sering berisi judul lagu asli atau nama artis!
@@ -277,6 +280,10 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         likelyJapanese = false;
     }
 
+    if (isEnglishVersion) {
+        likelyJapanese = false;
+    }
+
     return {
         origTitle,
         origArtist,
@@ -284,6 +291,8 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         cleanChannel,
         isLyricChannel,
         isCover,
+        isEnglishVersion,
+        isJapaneseVersion,
         isLofiOrInst,
         likelyJapanese,
         jpQuotes,
@@ -372,6 +381,14 @@ function isUnwantedForeignTranslation(metaStr, lyrSample, origTitle) {
 }
 
 function computeMetadataSimilarity(candidateTitle, candidateArtist, meta) {
+    // Jika track yang diputar secara eksplisit adalah versi/cover Bahasa Inggris,
+    // TOLAK kandidat jika judul atau artisnya berbahasa Jepang!
+    if (meta && meta.isEnglishVersion) {
+        if (hasJapaneseChars(candidateTitle || '') || hasJapaneseChars(candidateArtist || '')) {
+            return 0;
+        }
+    }
+
     const candFull = normalizePhoneticLatin(`${candidateArtist || ''} ${candidateTitle || ''}`);
     const candTitleNorm = normalizePhoneticLatin(candidateTitle || '');
     const candArtistNorm = normalizePhoneticLatin(candidateArtist || '');

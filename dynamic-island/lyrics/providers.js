@@ -94,12 +94,16 @@ async function searchNetEaseLyrics(meta, mediaDur) {
             continue;
         }
 
+        const isJpLrc = hasJapaneseChars(sample);
+        if (meta && meta.isEnglishVersion && isJpLrc) {
+            continue;
+        }
+
         const lrcLines = parseLrcText(rawLrc);
         const romaLines = parseLrcText(rawRoma);
         const transLines = rawTrans ? parseLrcText(rawTrans) : [];
 
         let finalLines = [];
-        const isJpLrc = hasJapaneseChars(sample);
         if (isJpLrc && lrcLines.length >= 4) {
             finalLines = mergeJapaneseAndRomajiLines(lrcLines, romaLines);
         } else if (lrcLines.length >= 4) {
@@ -181,7 +185,13 @@ async function searchLrclibLyrics(meta, mediaDur) {
             let score = sim + (item.syncedLyrics ? 55 : 15);
             const isJpText = hasJapaneseChars(lyrSample);
 
-            if (meta.likelyJapanese) {
+            if (meta && meta.isEnglishVersion) {
+                // TOLAK lirik Jepang jika lagu secara eksplisit adalah versi/cover Bahasa Inggris!
+                if (isJpText || hasJapaneseChars(item.trackName || '') || hasJapaneseChars(item.artistName || '')) {
+                    continue;
+                }
+                score += 30; // Bonus kecocokan bahasa Inggris
+            } else if (meta && meta.likelyJapanese) {
                 if (isJpText) {
                     score += 35;
                 } else if (/\b(kimi|boku|watashi|kokoro|yume|namida|kotoba|sekai|hikari|ashita|yoru|kaze|sora|uta|ai)\b/i.test(lyrSample)) {
@@ -301,6 +311,9 @@ async function searchKuGouLyrics(meta, mediaDur) {
         const parsed = parseLrcText(rawLrc);
         if (parsed.length >= 5) {
             const isJp = hasJapaneseChars(rawLrc.slice(0, 500));
+            if (meta && meta.isEnglishVersion && isJp) {
+                continue;
+            }
             return {
                 source: 'KuGou',
                 trackName: c.song || '',
