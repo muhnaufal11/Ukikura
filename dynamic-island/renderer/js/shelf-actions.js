@@ -102,7 +102,8 @@ function switchShelfTab(tab) {
     if (btnTabShelfClip) btnTabShelfClip.classList.toggle('active', !isFiles);
     if (viewShelfFilesEl) viewShelfFilesEl.style.display = isFiles ? '' : 'none';
     if (viewShelfClipEl) viewShelfClipEl.style.display = isFiles ? 'none' : '';
-    if (shelfDragHintEl) shelfDragHintEl.style.display = isFiles ? '' : 'none';
+    const shelfFilesActionsEl = document.getElementById('shelf-files-actions');
+    if (shelfFilesActionsEl) shelfFilesActionsEl.style.display = isFiles ? 'flex' : 'none';
     if (clipFilterBarEl) clipFilterBarEl.style.display = isFiles ? 'none' : 'flex';
     if (!isFiles) {
         renderClipboardHistory();
@@ -112,12 +113,22 @@ function switchShelfTab(tab) {
 if (btnTabShelfFiles) btnTabShelfFiles.addEventListener('click', () => switchShelfTab('files'));
 if (btnTabShelfClip) btnTabShelfClip.addEventListener('click', () => switchShelfTab('clip'));
 
+const btnClearShelfEl = document.getElementById('btn-clear-shelf');
+if (btnClearShelfEl) {
+    btnClearShelfEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        shelfItems = [];
+        renderShelf();
+    });
+}
+
 function renderShelf() {
     shelfEl.classList.toggle('has', shelfItems.length > 0);
     if (shelfFilesCountEl) shelfFilesCountEl.textContent = String(shelfItems.length);
 
     shelfCardsEl.innerHTML = shelfItems.map((item, idx) => `
         <div class="sh-card" draggable="true" data-idx="${idx}" title="${escapeHtml(item.path || item.name)} · Tahan dan tarik ke luar untuk kirim">
+            <button class="sh-card-del" data-del-idx="${idx}" title="Hapus file ini dari rak">✕</button>
             <span class="sh-thumb">
                 <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 1-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             </span>
@@ -128,6 +139,20 @@ function renderShelf() {
     `).join('');
 
     shelfCardsEl.querySelectorAll('.sh-card').forEach(card => {
+        // Hapus kartu spesifik
+        const delBtn = card.querySelector('.sh-card-del');
+        if (delBtn) {
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const delIdx = parseInt(delBtn.getAttribute('data-del-idx'), 10);
+                if (!isNaN(delIdx) && shelfItems[delIdx]) {
+                    shelfItems.splice(delIdx, 1);
+                    renderShelf();
+                }
+            });
+        }
+
+        // Buka file saat kartu diklik
         card.addEventListener('click', () => {
             const item = shelfItems[parseInt(card.getAttribute('data-idx'), 10)];
             if (item && item.path) shell.openPath(item.path);
@@ -135,7 +160,8 @@ function renderShelf() {
 
         // Native Drag-Out ke Browser / WhatsApp / File Explorer (Todo 6)
         card.addEventListener('dragstart', (e) => {
-            const item = shelfItems[parseInt(card.getAttribute('data-idx'), 10)];
+            const idx = parseInt(card.getAttribute('data-idx'), 10);
+            const item = shelfItems[idx];
             if (!item || !item.path) {
                 console.warn('[Ukikura] Path file tidak ditemukan untuk di-drag:', item);
                 return;
@@ -143,7 +169,7 @@ function renderShelf() {
             e.preventDefault();
             isDraggingOut = true;
             card.style.opacity = '0.45';
-            ipcRenderer.send('island-start-drag', item.path);
+            ipcRenderer.send('island-start-drag', { path: item.path, idx: idx });
             setTimeout(() => {
                 isDraggingOut = false;
                 card.style.opacity = '';
@@ -244,6 +270,17 @@ if (btnClearClipEl) {
         ipcRenderer.send('clipboard-clear');
     });
 }
+
+ipcRenderer.on('island-drag-completed', (event, data) => {
+    isDraggingOut = false;
+    if (data && typeof data.idx === 'number' && shelfItems[data.idx]) {
+        shelfItems.splice(data.idx, 1);
+        renderShelf();
+    } else if (data && data.path) {
+        shelfItems = shelfItems.filter(item => item.path !== data.path);
+        renderShelf();
+    }
+});
 
 ipcRenderer.on('clipboard-history-update', (event, history) => {
     clipHistoryList = Array.isArray(history) ? history : [];

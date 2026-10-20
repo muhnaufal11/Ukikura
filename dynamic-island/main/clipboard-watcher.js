@@ -131,7 +131,9 @@ function initClipboardWatcher(win) {
     });
 
     // Drag-out file native OS (Todo 6)
-    ipcMain.on("island-start-drag", (event, filePath) => {
+    ipcMain.on("island-start-drag", (event, data) => {
+        const filePath = typeof data === "object" && data !== null ? data.path : data;
+        const fileIdx = typeof data === "object" && data !== null ? data.idx : null;
         if (!filePath) return;
         const absPath = path.resolve(filePath);
         if (!fs.existsSync(absPath)) {
@@ -159,6 +161,7 @@ function initClipboardWatcher(win) {
                 icon: dragIcon
             });
             isDraggingFile = false;
+            event.sender.send("island-drag-completed", { path: absPath, idx: fileIdx });
         } catch (err) {
             isDraggingFile = false;
             console.error("[Ukikura] Error saat startDrag:", err);
