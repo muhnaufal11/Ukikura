@@ -34,26 +34,21 @@ if (-not $cert) {
     $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject $certSubject -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -CertStoreLocation "Cert:\CurrentUser\My" -NotAfter (Get-Date).AddYears(5)
 }
 
-$outputFile = "Ukikura-Setup-v1.0.0.exe"
+$versionJsonPath = Join-Path $rootDir "version.json"
+$verObj = if (Test-Path $versionJsonPath) { Get-Content $versionJsonPath -Raw | ConvertFrom-Json } else { $null }
+$appVersion = if ($verObj -and $verObj.version) { $verObj.version } else { "1.0.1" }
+$outputFile = "Ukikura-Setup-v${appVersion}.exe"
 $targetPath = Join-Path $PSScriptRoot $outputFile
 
-Write-Host "[Ukikura Builder] Memulai kompilasi installer terpadu Ukikura v1.0.0 menggunakan: $iscc" -ForegroundColor Cyan
+Write-Host "[Ukikura Builder] Memulai kompilasi installer terpadu Ukikura v${appVersion} menggunakan: $iscc" -ForegroundColor Cyan
 & $iscc $issFile
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Gagal mengompilasi installer Ukikura"
 }
 
 if (Test-Path $targetPath) {
-    Start-Sleep -Milliseconds 1200
     Write-Host "[Ukikura Builder] Menandatangani digital (SHA-256)..." -ForegroundColor Yellow
-    for ($i = 0; $i -lt 5; $i++) {
-        try {
-            Set-AuthenticodeSignature -FilePath $targetPath -Certificate $cert -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com" | Out-Null
-            break
-        } catch {
-            Start-Sleep -Milliseconds 800
-        }
-    }
+    Set-AuthenticodeSignature -FilePath $targetPath -Certificate $cert -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com" | Out-Null
     Copy-Item $targetPath (Join-Path $distDir $outputFile) -Force
     
     $ukikuraInstallerDir = Join-Path $rootDir "Ukikura\installer"

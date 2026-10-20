@@ -9,8 +9,8 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.0-10b981.svg?style=flat-square)](./version.json)
-[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.0.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.0/Ukikura-Setup-v1.0.0.exe)
+[![Version](https://img.shields.io/badge/Version-1.0.1-10b981.svg?style=flat-square)](./version.json)
+[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.1.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.1/Ukikura-Setup-v1.0.1.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
 [Instalasi Langsung (Tanpa Compile)](#instalasi-langsung-tanpa-compile) · [Pratinjau Antarmuka](#pratinjau-antarmuka-100-identik) · [Integrasi AI LMS Assistant](#integrasi-dengan-telu-lms-quiz-assistant-ai--seb-proxy) · [Mesin Lirik & Forced Alignment](#mesin-lirik-multi-sumber--forced-alignment) · [Arsitektur Modular](#arsitektur-modular) · [Fitur Mendatang (Roadmap)](#rencana-pengembangan-fitur-mendatang-roadmap) · [Auto-Updater GitHub](#sistem-deteksi-pembaruan-github-auto-updater)
@@ -24,8 +24,8 @@
 File installer resmi hasil kompilasi **Inno Setup 6** tersedia langsung di repositori ini dan halaman **GitHub Releases** sehingga pengguna baru dapat langsung menginstal tanpa perlu memasang Node.js atau melakukan kompilasi ulang:
 
 ### Cara 1 — Unduh & Jalankan File `.exe` Langsung (Paling Umum)
-1. Unduh file installer **[`Ukikura-Setup-v1.0.0.exe` (GitHub Release Resmi)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.0/Ukikura-Setup-v1.0.0.exe)** (atau melalui folder [`installer/Ukikura-Setup-v1.0.0.exe`](./installer/Ukikura-Setup-v1.0.0.exe)).
-2. Klik dua kali file **`Ukikura-Setup-v1.0.0.exe`**.
+1. Unduh file installer **[`Ukikura-Setup-v1.0.1.exe` (GitHub Release Resmi)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.1/Ukikura-Setup-v1.0.1.exe)** (atau melalui folder [`installer/Ukikura-Setup-v1.0.1.exe`](./installer/Ukikura-Setup-v1.0.1.exe)).
+2. Klik dua kali file **`Ukikura-Setup-v1.0.1.exe`**.
    > [!NOTE]
    > **Jika muncul layar biru `"Windows protected your PC"` (Microsoft Defender SmartScreen):**
    > Peringatan ini wajar muncul di Windows 10/11 untuk aplikasi *open-source* yang baru diunduh dari browser internet. Cara melewatinya:
@@ -41,7 +41,7 @@ Jika Anda ingin menginstal langsung tanpa memunculkan jendela biru *Windows Smar
 irm https://raw.githubusercontent.com/muhnaufal11/Ukikura/main/installer/install.ps1 | iex
 ```
 
-Skrip [`installer/install.ps1`](./installer/install.ps1) akan mengunduh `Ukikura-Setup-v1.0.0.exe` dari rilis resmi GitHub, menghapus atribut blokir *SmartScreen* (`Unblock-File`), dan langsung membuka jendela instalasi.
+Skrip [`installer/install.ps1`](./installer/install.ps1) akan mengunduh `Ukikura-Setup-v1.0.1.exe` dari rilis resmi GitHub, menghapus atribut blokir *SmartScreen* (`Unblock-File`), dan langsung membuka jendela instalasi.
 
 ---
 
@@ -228,7 +228,7 @@ Ukikura memiliki modul pendeteksi versi baru otomatis di [`dynamic-island/main/u
 
 1. **Pemeriksaan Otomatis & Manual**:
    - Otomatis memeriksa pembaruan **12 detik** setelah aplikasi berjalan dan setiap **4 jam** di latar belakang.
-   - Pengguna juga dapat menekan tombol **`v1.0.0 · Cek Update`** pada halaman **Pengaturan (Halaman 7)** di dalam kapsul Dynamic Island.
+   - Pengguna juga dapat menekan tombol **`v1.0.1 · Cek Update`** pada halaman **Pengaturan (Halaman 7)** di dalam kapsul Dynamic Island.
 2. **Mekanisme Deteksi Dual-Endpoint**:
    - Memeriksa **GitHub Releases API** (`/repos/<owner>/<repo>/releases/latest`) untuk mencari paket `Ukikura-Setup-vX.Y.Z.exe`.
    - Jika belum ada *GitHub Release*, otomatis memeriksa file [`version.json`](./version.json) pada cabang utama (`main`/`master`) di GitHub dan mengarahkan unduhan langsung ke `installer/Ukikura-Setup-vX.Y.Z.exe`.
@@ -241,7 +241,7 @@ Berikut daftar rencana fitur baru yang sedang disiapkan untuk pembaruan **Ukikur
 
 ### 1. Modul Musik, Audio, & Lirik (`music-lyrics.js` & `lyrics/`)
 - [x] **1. Interactive Seek Bar & Volume Wheel**: Klik atau geser (*drag*) langsung pada garis durasi lagu (`#music-prog-1` / `#music-prog-2`) untuk melompat ke menit tertentu via perintah WinRT `TryChangePlaybackPositionAsync`, serta *scroll* roda mouse di atas sampul album untuk mengatur volume aplikasi pemutar musik secara langsung.
-- [ ] **2. Real-Time Audio Spectrum Visualizer (WASAPI Loopback)**: Lima bar gelombang suara di kapsul tertutup (`.eq`) dan latar belakang halaman lirik bergerak mengikuti frekuensi bass dan vokal asli dari output audio Windows secara *real-time*, bukan sekadar animasi CSS berulang.
+- [x] **2. Real-Time Audio Ambient Visualizer (WASAPI Loopback)**: Mesin visualisasi Canvas 2D audio-reaktif (*3 fluid morphing color orbs* + undulasi pita gelombang audio di dasar notch) yang bergerak dinamis mengikuti frekuensi bass dan vokal asli dari output audio Windows secara *real-time*.
 - [ ] **3. Dual-Sub Lirik (Romaji + Kanji + Terjemahan Indonesia)**: Menambahkan opsi baris ke-3 opsional berisi arti Bahasa Indonesia (dari `tlyric` NetEase atau terjemahan subtitle YouTube `&tlang=id`) tepat di bawah baris Kanji.
 - [ ] **4. Mini Floating Karaoke Overlay (Mode Pin Transparan)**: Mode khusus yang hanya menampilkan 2 baris lirik aktif dengan latar belakang transparan penuh di atas layar sehingga bisa tetap membaca lirik sambil mengerjakan tugas atau bermain game tanpa tertutup kotak hitam kapsul.
 
@@ -266,7 +266,7 @@ Berikut daftar rencana fitur baru yang sedang disiapkan untuk pembaruan **Ukikur
 
 ### 5. Interaksi Kapsul, Maskot, & Kustomisasi (`core-state.js` & `mascot-engine.js`)
 - [ ] **15. Global Keyboard Hotkeys**: Pintasan keyboard dari aplikasi mana saja (`Alt + Space` untuk buka/tutup kapsul Ukikura, `Alt + L` untuk halaman **Synced Lyrics (`520px`)**, `Alt + S` untuk halaman **File Shelf & Clipboard**, dan `Alt + M` untuk *Play/Pause* musik instan).
-- [ ] **16. Dynamic Album Art Ambient Theme**: Menyesuaikan warna pendaran (*ambient glow*) dan aksen tombol di halaman Musik/Lirik mengikuti warna dominan sampul lagu yang sedang diputar.
+- [x] **16. Dynamic Album Art Ambient Theme**: Menyesuaikan palet 3 warna pendaran (*ambient glow*) di halaman Musik & Lirik yang diekstrak langsung dari sampul lagu yang sedang diputar.
 - [ ] **17. Reaksi Maskot terhadap Beat Musik & Cuaca/Waktu**: Mata maskot di mode `pet` ikut mengangguk mengikuti ketukan musik saat lagu diputar, atau menampilkan animasi mengantuk otomatis saat lewat pukul 00:00 malam.
 - [ ] **18. Integrasi Lockscreen & Animasi Penyambutan Saat Unlock (`Welcome Back Peek`)**:
   - Mendeteksi otomatis saat layar Windows dikunci (*Lockscreen*) dan saat baru dibuka kembali (`powerMonitor` `lock-screen` / `unlock-screen` & event WinRT `SessionSwitch`).

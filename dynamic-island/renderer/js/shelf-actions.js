@@ -218,8 +218,8 @@ let latestUpdateAvailable = false;
 
 function updateVersionUI(info) {
     if (!info) return;
-    const vCode = info.versionCode || 7;
-    const vName = info.versionName || info.version || '1.0.0';
+    const vCode = info.versionCode || 11;
+    const vName = info.versionName || info.version || '1.0.1';
     if (versionNameLabelEl) versionNameLabelEl.textContent = vName;
     if (versionCodeLabelEl) versionCodeLabelEl.textContent = vCode;
 }
@@ -254,11 +254,11 @@ ipcRenderer.on('update-status', (event, status) => {
         return;
     }
     latestUpdateAvailable = Boolean(status.hasUpdate);
-    const vName = status.currentVersionName || status.currentVersion || '1.0.0';
-    const vCode = status.currentVersionCode || 7;
+    const vName = status.currentVersionName || status.currentVersion || '1.0.1';
+    const vCode = status.currentVersionCode || 11;
 
     if (status.hasUpdate) {
-        const latestVName = status.latestVersionName || status.latestVersion || '1.0.0';
+        const latestVName = status.latestVersionName || status.latestVersion || '1.0.1';
         const latestVCode = status.latestVersionCode || (vCode + 1);
         updateLabelEl.textContent = `Update ${latestVName} (Kode: ${latestVCode}) Ada!`;
         btnCheckUpdateEl.style.color = '#38d36f';

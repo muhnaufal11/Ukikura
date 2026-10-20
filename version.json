@@ -1,11 +1,11 @@
 {
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
-  "versionName": "1.0.0",
-  "versionCode": 10,
-  "version": "1.0.0",
-  "fixCount": 10,
-  "displayVersion": "1.0.0 (Kode: 10)",
+  "versionName": "1.0.1",
+  "versionCode": 11,
+  "version": "1.0.1",
+  "fixCount": 11,
+  "displayVersion": "1.0.1 (Kode: 11)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -13,8 +13,8 @@
     "Nauflix/Ukikura"
   ],
   "branch": "main",
-  "installerFile": "installer/Ukikura-Setup-v1.0.0.exe",
+  "installerFile": "installer/Ukikura-Setup-v1.0.1.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.0 (Fix #10): Perbaikan total tata letak Synced Lyrics mode melebar (520px). Menghilangkan syntax CSS error pada .lyr, memisahkan kolom kiri (sampul + judul + badge SYNC) dan kolom kanan (lirik bergulir tersinkronisasi), serta mengeliminasi tabrakan badge SYNC pada header baterai HP."
+  "changelog": "Ukikura v1.0.1: Fluid Audio-Reactive Canvas Ambient Engine (3 morphing fluid color orbs + real-time WASAPI audio wave ribbon), perbaikan total layout mode Synced Lyrics 520px (dua kolom terpisah tanpa tumpang tindih), eliminasi tabrakan badge SYNC pada header persentase baterai HP, dan pembaruan installer tunggal terpadu v1.0.1."
 }
