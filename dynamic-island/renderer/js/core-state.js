@@ -1,4 +1,4 @@
-const { ipcRenderer, shell } = require('electron');
+const { ipcRenderer, shell, webUtils } = require('electron');
 
 const SERVER_URL = 'http://127.0.0.1:8089';
 const PAGES = ['music', 'notif', 'todo', 'cal', 'pomo', 'shelf', 'config'];

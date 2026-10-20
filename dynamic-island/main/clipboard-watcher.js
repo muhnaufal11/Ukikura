@@ -91,6 +91,12 @@ function broadcastUpdate() {
     }
 }
 
+let isDraggingFile = false;
+
+function getIsDraggingFile() {
+    return isDraggingFile;
+}
+
 function initClipboardWatcher(win) {
     targetWindow = win;
     if (watcherTimer) clearInterval(watcherTimer);
@@ -126,14 +132,37 @@ function initClipboardWatcher(win) {
 
     // Drag-out file native OS (Todo 6)
     ipcMain.on("island-start-drag", (event, filePath) => {
-        if (!filePath || !fs.existsSync(filePath)) return;
-        const iconPath = path.join(__dirname, "../renderer/icon.ico");
+        if (!filePath) return;
+        const absPath = path.resolve(filePath);
+        if (!fs.existsSync(absPath)) {
+            console.warn("[Ukikura] File tidak ditemukan di path:", absPath);
+            return;
+        }
+
+        let dragIcon;
+        const iconPng = path.join(__dirname, "../renderer/icon.png");
         try {
+            if (fs.existsSync(iconPng)) {
+                dragIcon = nativeImage.createFromPath(iconPng).resize({ width: 32, height: 32 });
+            } else {
+                dragIcon = nativeImage.createEmpty();
+            }
+        } catch (_) {
+            dragIcon = nativeImage.createEmpty();
+        }
+
+        try {
+            isDraggingFile = true;
             event.sender.startDrag({
-                file: filePath,
-                icon: iconPath
+                file: absPath,
+                files: [absPath],
+                icon: dragIcon
             });
-        } catch (_) {}
+            isDraggingFile = false;
+        } catch (err) {
+            isDraggingFile = false;
+            console.error("[Ukikura] Error saat startDrag:", err);
+        }
     });
 }
 
@@ -143,5 +172,6 @@ function getClipboardHistory() {
 
 module.exports = {
     initClipboardWatcher,
-    getClipboardHistory
+    getClipboardHistory,
+    getIsDraggingFile
 };

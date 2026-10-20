@@ -9,7 +9,7 @@ const { initWhatsAppCompanion, ensureWhatsAppWindow, pollWhatsAppUnread, resetWa
 const { initAutoStart, isWindowsAutoStartEnabled, setWindowsAutoStart } = require("./main/autostart");
 const { startKuraServer } = require("./main/kura-server");
 const { initAutoUpdater, checkGitHubForUpdates, getLastUpdateStatus, openUpdateDownloadPage, getLocalVersionInfo, setUpdateChannel } = require("./main/updater");
-const { initClipboardWatcher } = require("./main/clipboard-watcher");
+const { initClipboardWatcher, getIsDraggingFile } = require("./main/clipboard-watcher");
 
 let mainWindow = null;
 let loginWindow = null;
@@ -197,7 +197,8 @@ function startNusaHoverLoop() {
                 pt.y >= 0 &&
                 pt.y <= (OPEN_NOTCH_H + 16);
 
-            if (insideOpen || isPinnedOpen) {
+            const isDragging = typeof getIsDraggingFile === 'function' && getIsDraggingFile();
+            if (insideOpen || isPinnedOpen || isDragging) {
                 if (leaveCloseTimer) {
                     clearTimeout(leaveCloseTimer);
                     leaveCloseTimer = null;

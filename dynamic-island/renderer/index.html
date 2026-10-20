@@ -442,7 +442,8 @@
             <div class="shelf-view" id="view-shelf-files">
                 <canvas class="a" id="shCv" width="960" height="372" style="left:0;top:0;width:480px;height:186px;pointer-events:none" aria-hidden="true"></canvas>
                 <div class="shelf-cards" id="shelf-cards"></div>
-                <div class="a sh-zone" id="sh-zone">
+                <div class="a sh-zone" id="sh-zone" title="Klik untuk pilih file atau drop file ke sini" style="cursor:pointer">
+                    <input type="file" id="sh-file-input" multiple style="display:none" />
                     <span class="a zone"></span>
                     <svg class="a c sh-icon" style="left:192px;top:28px;width:28px;height:28px" viewBox="-15 -22 30 32">
                         <path d="M-10.2-8h20.4l3.2 7.8h-26.8z" fill="rgba(255,255,255,.28)"/>

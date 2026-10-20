@@ -135,15 +135,23 @@ function renderShelf() {
 
         // Native Drag-Out ke Browser / WhatsApp / File Explorer (Todo 6)
         card.addEventListener('dragstart', (e) => {
+            const item = shelfItems[parseInt(card.getAttribute('data-idx'), 10)];
+            if (!item || !item.path) {
+                console.warn('[Ukikura] Path file tidak ditemukan untuk di-drag:', item);
+                return;
+            }
             e.preventDefault();
             isDraggingOut = true;
-            const item = shelfItems[parseInt(card.getAttribute('data-idx'), 10)];
-            if (item && item.path) {
-                ipcRenderer.send('island-start-drag', item.path);
-            }
+            card.style.opacity = '0.45';
+            ipcRenderer.send('island-start-drag', item.path);
+            setTimeout(() => {
+                isDraggingOut = false;
+                card.style.opacity = '';
+            }, 1200);
         });
         card.addEventListener('dragend', () => {
             isDraggingOut = false;
+            card.style.opacity = '';
         });
     });
 }
@@ -289,12 +297,51 @@ window.addEventListener('drop', (e) => {
 
     const files = Array.from(e.dataTransfer.files || []);
     for (const f of files) {
+        let fPath = f.path;
+        if (!fPath) {
+            try {
+                if (typeof webUtils !== 'undefined' && webUtils && typeof webUtils.getPathForFile === 'function') {
+                    fPath = webUtils.getPathForFile(f);
+                } else {
+                    const { webUtils: wu } = require('electron');
+                    if (wu && typeof wu.getPathForFile === 'function') fPath = wu.getPathForFile(f);
+                }
+            } catch (_) {}
+        }
         const kb = Math.max(1, Math.round((f.size || 0) / 1024));
         const sizeStr = kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`;
-        shelfItems.push({ name: f.name, path: f.path, size: sizeStr });
+        shelfItems.push({ name: f.name, path: fPath, size: sizeStr });
     }
     renderShelf();
 });
+
+const shZoneEl = document.getElementById('sh-zone');
+const shFileInputEl = document.getElementById('sh-file-input');
+if (shZoneEl && shFileInputEl) {
+    shZoneEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        shFileInputEl.click();
+    });
+    shFileInputEl.addEventListener('change', () => {
+        const files = Array.from(shFileInputEl.files || []);
+        for (const f of files) {
+            let fPath = f.path;
+            try {
+                if (typeof webUtils !== 'undefined' && webUtils && typeof webUtils.getPathForFile === 'function') {
+                    fPath = webUtils.getPathForFile(f);
+                } else {
+                    const { webUtils: wu } = require('electron');
+                    if (wu && typeof wu.getPathForFile === 'function') fPath = wu.getPathForFile(f);
+                }
+            } catch (_) {}
+            const kb = Math.max(1, Math.round((f.size || 0) / 1024));
+            const sizeStr = kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`;
+            shelfItems.push({ name: f.name, path: fPath, size: sizeStr });
+        }
+        shFileInputEl.value = '';
+        renderShelf();
+    });
+}
 
 // ================= TOMBOL AKSI GLOBAL =================
 btnSyncEl.addEventListener('click', (e) => {
