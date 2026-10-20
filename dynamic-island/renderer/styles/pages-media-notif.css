@@ -515,204 +515,67 @@
     .karaoke-actions .hdr-icon-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; }
 
     /* ================= HALAMAN 2: NOTIFIKASI HP & WHATSAPP ================= */
-    .notif-left {
-        position: absolute;
-        left: 44px;
-        top: 38px;
-        width: 132px;
-        bottom: 22px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-
-    .notif-list-wrap {
-        position: absolute;
-        left: 184px;
-        right: 42px;
-        top: 36px;
-        bottom: 22px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-        padding-right: 4px;
-    }
-
-    .notif-list-wrap::-webkit-scrollbar {
-        width: 3px;
-    }
-
-    .notif-list-wrap::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.35);
-        border-radius: 2px;
-    }
+    .notif-left { position: absolute; left: 44px; top: 38px; width: 132px; bottom: 22px; display: flex; flex-direction: column; justify-content: space-between; }
+    .notif-list-wrap { position: absolute; left: 184px; right: 36px; top: 36px; bottom: 22px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
+    .notif-list-wrap::-webkit-scrollbar { width: 3px; }
+    .notif-list-wrap::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.35); border-radius: 2px; }
 
     .nrow {
-        min-height: 36px;
-        border-radius: 9px;
-        background: rgba(255, 255, 255, 0.08);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 5px 9px;
-        font-size: 11.2px;
-        cursor: pointer;
-        transition: background 0.15s ease;
-    }
-
-    .nrow:hover {
-        background: rgba(255, 255, 255, 0.15);
-    }
-
-    .nrow.wa {
-        border-left: 2.5px solid var(--wa-green);
-    }
-
-    .nrow.phone {
-        border-left: 2.5px solid var(--cyan);
-    }
-
-    .nrow-sticker {
-        width: 34px;
-        height: 34px;
-        object-fit: contain;
-        border-radius: 6px;
-        flex-shrink: 0;
-        filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
-        transition: transform 0.22s var(--spring);
-    }
-
-    .nrow:hover .nrow-sticker {
-        transform: scale(1.22);
-    }
-
-    .pk-sticker {
-        right: 48px;
-        top: 32px;
-        width: 40px;
-        height: 40px;
-        object-fit: contain;
-        border-radius: 6px;
-        display: none;
-        filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
-    }
-
-    /* Pratinjau Foto WhatsApp di Notifikasi */
-    .nrow-photo-wrap {
-        position: relative;
-        width: 36px;
-        height: 36px;
-        border-radius: 7px;
-        overflow: hidden;
-        flex-shrink: 0;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-    }
-    .nrow-photo {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-        transition: transform 0.22s var(--spring);
-    }
-    .nrow:hover .nrow-photo {
-        transform: scale(1.15);
-    }
-    .nrow-photo-tag {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: rgba(0, 0, 0, 0.65);
-        font-size: 7.5px;
-        text-align: center;
-        color: #fff;
-        line-height: 10px;
-        font-weight: 600;
-    }
-
-    /* Indikator Voice Note WhatsApp */
-    .nrow-vn-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        background: rgba(37, 211, 102, 0.16);
-        border: 1px solid rgba(37, 211, 102, 0.32);
+        min-height: 44px;
         border-radius: 10px;
-        padding: 1px 7px;
-        font-size: 9.5px;
-        font-weight: 600;
-        color: #5ef296;
-        margin-top: 3px;
-    }
-    .vn-live-bars {
-        display: inline-flex;
-        align-items: center;
-        gap: 1.5px;
-        height: 10px;
-        margin-left: 2px;
-    }
-    .vn-live-bars b {
-        display: inline-block;
-        width: 2px;
-        background: #25d366;
-        border-radius: 1px;
-        animation: vnbars 0.75s ease-in-out infinite alternate;
-    }
-    .vn-live-bars b:nth-child(1) { height: 4px; animation-delay: 0.1s; }
-    .vn-live-bars b:nth-child(2) { height: 9px; animation-delay: 0.2s; }
-    .vn-live-bars b:nth-child(3) { height: 6px; animation-delay: 0.35s; }
-    .vn-live-bars b:nth-child(4) { height: 10px; animation-delay: 0.15s; }
-    @keyframes vnbars {
-        0% { transform: scaleY(0.4); opacity: 0.5; }
-        100% { transform: scaleY(1); opacity: 1; }
-    }
-
-    /* Quick Reply di Kartu Notifikasi */
-    .nrow-reply-row {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.07);
         display: flex;
-        align-items: center;
+        flex-direction: column;
         gap: 4px;
-        margin-top: 4px;
-    }
-    .nrow-reply-input {
-        flex: 1;
-        height: 22px;
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        border-radius: 11px;
-        padding: 0 8px;
-        color: #fff;
-        font-size: 10px;
-        font-family: inherit;
-        outline: none;
-        transition: all 0.18s ease;
-    }
-    .nrow-reply-input:focus {
-        background: rgba(37, 211, 102, 0.12);
-        border-color: #25d366;
-    }
-    .nrow-reply-input::placeholder {
-        color: rgba(255, 255, 255, 0.4);
-    }
-    .nrow-reply-send {
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        border: none;
-        background: #25d366;
-        color: #0b1d12;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        padding: 7px 9px;
+        font-size: 11px;
         cursor: pointer;
+        transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
         flex-shrink: 0;
-        transition: transform 0.15s ease;
     }
-    .nrow-reply-send:hover {
-        transform: scale(1.1);
-        filter: brightness(1.15);
+    .nrow:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.15); }
+    .nrow.wa { border-left: 3px solid #25d366; }
+    .nrow.phone { border-left: 3px solid #19b8ff; }
+    .nrow.replying { background: rgba(37, 211, 102, 0.08); border-color: rgba(37, 211, 102, 0.35); box-shadow: 0 0 12px rgba(37, 211, 102, 0.18); }
+
+    .nrow-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+    .nrow-title-row { display: flex; align-items: center; gap: 5px; min-width: 0; flex: 1; }
+    .nrow-title-row .trow-title { font-size: 11px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nrow-header-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .nrow-header-actions .trow-timer { font-size: 8.5px; color: rgba(255, 255, 255, 0.45); font-family: var(--mono, monospace); }
+
+    .nrow-reply-toggle {
+        display: inline-flex; align-items: center; gap: 3px;
+        background: rgba(37, 211, 102, 0.16); border: 1px solid rgba(37, 211, 102, 0.3);
+        border-radius: 10px; padding: 1.5px 6px; color: #5ef296; font-size: 8.5px; font-weight: 600; cursor: pointer; transition: all 0.15s ease;
     }
+    .nrow-reply-toggle:hover { background: rgba(37, 211, 102, 0.3); color: #fff; transform: scale(1.05); }
+
+    .nrow-content { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+    .nrow-text-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .nrow-text-wrap .trow-sub { font-size: 10px; color: rgba(255, 255, 255, 0.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; }
+
+    .nrow-sticker { width: 32px; height: 32px; object-fit: contain; border-radius: 6px; flex-shrink: 0; filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5)); background: rgba(0, 0, 0, 0.2); }
+    .nrow-photo-wrap { position: relative; width: 32px; height: 32px; border-radius: 6px; overflow: hidden; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.18); }
+    .nrow-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .nrow-photo-tag { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.65); font-size: 7px; text-align: center; color: #fff; line-height: 9px; font-weight: 600; }
+
+    .nrow-vn-pill { display: inline-flex; align-items: center; gap: 4px; background: rgba(37, 211, 102, 0.16); border: 1px solid rgba(37, 211, 102, 0.32); border-radius: 10px; padding: 1px 6px; font-size: 8.5px; font-weight: 600; color: #5ef296; width: fit-content; }
+    .vn-live-bars { display: inline-flex; align-items: center; gap: 1.5px; height: 9px; margin-left: 2px; }
+    .vn-live-bars b { display: inline-block; width: 2px; background: #25d366; border-radius: 1px; animation: vnbars 0.75s ease-in-out infinite alternate; }
+    .vn-live-bars b:nth-child(1) { height: 3px; animation-delay: 0.1s; }
+    .vn-live-bars b:nth-child(2) { height: 8px; animation-delay: 0.2s; }
+    .vn-live-bars b:nth-child(3) { height: 5px; animation-delay: 0.35s; }
+    .vn-live-bars b:nth-child(4) { height: 9px; animation-delay: 0.15s; }
+    @keyframes vnbars { 0% { transform: scaleY(0.4); opacity: 0.5; } 100% { transform: scaleY(1); opacity: 1; } }
+
+    .nrow-reply-row { display: flex; align-items: center; gap: 5px; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.08); animation: nrowslide 0.18s ease-out; }
+    @keyframes nrowslide { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .nrow-reply-input { flex: 1; height: 24px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 0 9px; color: #fff; font-size: 10px; font-family: inherit; outline: none; transition: all 0.18s ease; }
+    .nrow-reply-input:focus { background: rgba(37, 211, 102, 0.12); border-color: #25d366; box-shadow: 0 0 8px rgba(37, 211, 102, 0.25); }
+    .nrow-reply-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+    .nrow-reply-send { width: 24px; height: 24px; border-radius: 50%; border: none; background: #25d366; color: #0b1d12; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: transform 0.15s ease; }
+    .nrow-reply-send:hover { transform: scale(1.1); filter: brightness(1.15); }
+    .pk-sticker { right: 48px; top: 32px; width: 40px; height: 40px; object-fit: contain; border-radius: 6px; display: none; filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6)); }
 

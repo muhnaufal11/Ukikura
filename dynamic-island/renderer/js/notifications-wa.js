@@ -2,6 +2,13 @@
 let lastAlertedNotifKey = '';
 let lastAlertedNotifTime = 0;
 
+function cleanText(s) {
+    return String(s || '')
+        .replace(/^[\s*"'~_`]+|[\s*"'~_`]+$/g, '')
+        .replace(/\*+/g, '')
+        .trim();
+}
+
 function triggerPeekPopup(item) {
     window.lastPeekItem = item;
     const appStr = String(item.app || '');
@@ -15,11 +22,14 @@ function triggerPeekPopup(item) {
     const pkReplyInput = document.getElementById('pk-reply-input');
     const pkReplySend = document.getElementById('pk-reply-send');
 
+    const cleanTitle = cleanText(item.sender || item.title || 'Pesan Baru');
+    const cleanMsg = cleanText(item.message || item.text || 'Ketuk untuk melihat detail');
+
     pkAppEl.textContent = isWa ? 'WhatsApp' : (appStr || 'Notifikasi HP');
     pkAppEl.classList.toggle('phone', !isWa && !item.isQuizAlarm && !item.isClassAlarm);
     pkAppEl.classList.toggle('quiz', Boolean(item.isQuizAlarm));
     pkAppEl.classList.toggle('class-bell', Boolean(item.isClassAlarm));
-    pkTitleEl.textContent = item.sender || item.title || 'Pesan Baru';
+    pkTitleEl.textContent = cleanTitle;
 
     // Voice Note vs Teks Biasa
     if (item.isVoiceNote) {
@@ -31,7 +41,7 @@ function triggerPeekPopup(item) {
             </span>
         `;
     } else {
-        pkSubEl.textContent = item.message || item.text || 'Ketuk untuk melihat detail';
+        pkSubEl.textContent = cleanMsg;
     }
 
     if (item.isQuizAlarm) {
@@ -66,7 +76,7 @@ function triggerPeekPopup(item) {
         pkReplyBar.style.display = 'flex';
         pkReplyInput.value = '';
         pkReplyInput.disabled = false;
-        pkReplyInput.placeholder = `Balas cepat ke ${item.sender || 'WhatsApp'}... (tekan Enter)`;
+        pkReplyInput.placeholder = `Balas cepat ke ${cleanTitle}... (tekan Enter)`;
         pkReplySend.disabled = false;
         pkReplySend.style.background = '#25d366';
         pkReplySend.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`;
@@ -82,7 +92,7 @@ function triggerPeekPopup(item) {
         setPeekMode('peek', isWa ? 8500 : 6000);
     }
 
-    const notifKey = `${String(item.sender || '').trim()}::${String(item.message || '').trim()}`.toLowerCase();
+    const notifKey = `${cleanTitle}::${cleanMsg}`.toLowerCase();
     const now = Date.now();
     const isDuplicateAlert = Boolean(notifKey && notifKey === lastAlertedNotifKey && (now - lastAlertedNotifTime) < 4000);
     if (!isDuplicateAlert) {
@@ -189,8 +199,10 @@ function renderNotifications() {
 
     notifListEl.innerHTML = notificationsList.map((n, idx) => {
         const isWa = Boolean(n.isWhatsApp) || String(n.app || '').toLowerCase().includes('whatsapp');
-        const title = n.sender || n.title || 'Notifikasi';
-        const body = n.message || n.text || '';
+        const rawTitle = n.sender || n.title || 'Notifikasi';
+        const cleanTitle = cleanText(rawTitle);
+        const rawBody = n.message || n.text || '';
+        const cleanBody = cleanText(rawBody);
         const tStr = typeof n.time === 'number'
             ? new Date(n.time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
             : (n.time || '');
@@ -213,47 +225,51 @@ function renderNotifications() {
         if (n.isVoiceNote) {
             vnHtml = `
                 <div class="nrow-vn-pill">
-                    <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                    <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                     <span>Pesan Suara (${escapeHtml(n.vnDuration || '0:15')})</span>
                     <span class="vn-live-bars"><b></b><b></b><b></b><b></b></span>
                 </div>
             `;
         }
 
-        // Baris Quick Reply WhatsApp di dalam kartu notifikasi
-        let replyHtml = '';
-        if (isWa) {
-            replyHtml = `
-                <div class="nrow-reply-row" data-sender="${escapeHtml(title)}">
-                    <input type="text" class="nrow-reply-input" placeholder="Balas ke ${escapeHtml(title)}..." />
-                    <button type="button" class="nrow-reply-send" title="Kirim Balasan Cepat">
-                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                    </button>
-                </div>
-            `;
-        }
+        // Formulir Balas Cepat (Kolapsibel / Tersembunyi rapi secara default)
+        const replyFormHtml = isWa ? `
+            <div class="nrow-reply-row" style="display:none" data-sender="${escapeHtml(cleanTitle)}">
+                <input type="text" class="nrow-reply-input" placeholder="Balas ke ${escapeHtml(cleanTitle)}... (tekan Enter)" />
+                <button type="button" class="nrow-reply-send" title="Kirim Balasan Cepat">
+                    <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                </button>
+            </div>
+        ` : '';
 
         return `
             <div class="nrow ${isWa ? 'wa' : 'phone'}" data-napp="${escapeHtml(n.app || '')}">
-                <div style="min-width:0;flex:1">
-                    <div style="display:flex;align-items:center;gap:5px">
+                <div class="nrow-header">
+                    <div class="nrow-title-row">
                         <span class="trow-badge" style="background:${isWa ? 'rgba(37,211,102,.22)' : 'rgba(25,184,255,.22)'};color:${isWa ? '#5ef296' : '#8ce0ff'}">${escapeHtml(isWa ? 'WhatsApp' : (n.app || 'HP'))}</span>
-                        <span class="trow-title">${escapeHtml(title)}</span>
+                        <span class="trow-title" title="${escapeHtml(cleanTitle)}">${escapeHtml(cleanTitle)}</span>
                     </div>
-                    ${vnHtml}
-                    <div class="trow-sub" style="margin-top:2px">${escapeHtml(body)}</div>
-                    ${replyHtml}
+                    <div class="nrow-header-actions">
+                        <span class="trow-timer">${escapeHtml(tStr)}</span>
+                        ${isWa ? `<button type="button" class="nrow-reply-toggle" title="Balas Cepat"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v2.5"/></svg><span>Balas</span></button>` : ''}
+                    </div>
                 </div>
-                ${mediaHtml}
-                <span class="trow-timer" style="font-size:9px;color:rgba(255,255,255,.5)">${escapeHtml(tStr)}</span>
+                <div class="nrow-content">
+                    <div class="nrow-text-wrap">
+                        ${vnHtml}
+                        <div class="trow-sub">${escapeHtml(cleanBody)}</div>
+                    </div>
+                    ${mediaHtml}
+                </div>
+                ${replyFormHtml}
             </div>
         `;
     }).join('');
 
-    // Listener klik untuk membuka WhatsApp Companion / HP
+    // Listener klik pada kartu untuk membuka WhatsApp Companion / HP
     notifListEl.querySelectorAll('.nrow').forEach(row => {
         row.addEventListener('click', (e) => {
-            if (e.target.closest('.nrow-reply-row')) return;
+            if (e.target.closest('.nrow-reply-row') || e.target.closest('.nrow-reply-toggle')) return;
             const app = String(row.getAttribute('data-napp') || '').toLowerCase();
             if (app.includes('whatsapp') || app.includes('electron')) {
                 ipcRenderer.send('island-open-wa');
@@ -263,56 +279,77 @@ function renderNotifications() {
         });
     });
 
-    // Listener pengiriman Quick Reply langsung dari kartu notifikasi
-    notifListEl.querySelectorAll('.nrow-reply-row').forEach(rowEl => {
-        const inputEl = rowEl.querySelector('.nrow-reply-input');
-        const sendBtn = rowEl.querySelector('.nrow-reply-send');
-        const sender = rowEl.getAttribute('data-sender') || '';
+    // Listener toggle tombol "Balas" pada kartu notifikasi
+    notifListEl.querySelectorAll('.nrow').forEach(card => {
+        const toggleBtn = card.querySelector('.nrow-reply-toggle');
+        const replyRow = card.querySelector('.nrow-reply-row');
+        const inputEl = card.querySelector('.nrow-reply-input');
+        const sendBtn = card.querySelector('.nrow-reply-send');
+        const sender = replyRow ? (replyRow.getAttribute('data-sender') || '') : '';
 
-        const submitRowReply = async () => {
-            const text = inputEl.value.trim();
-            if (!text || !sender) return;
-            inputEl.disabled = true;
-            sendBtn.disabled = true;
-            sendBtn.innerHTML = `...`;
-            try {
-                const res = await ipcRenderer.invoke('send-wa-reply', { sender, text });
-                if (res && res.success) {
-                    inputEl.value = '';
-                    inputEl.placeholder = '✓ Terkirim!';
-                    sendBtn.innerHTML = `✓`;
-                    setTimeout(() => {
-                        inputEl.disabled = false;
-                        sendBtn.disabled = false;
-                        inputEl.placeholder = `Balas ke ${sender}...`;
-                        sendBtn.innerHTML = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`;
-                    }, 2000);
-                } else {
-                    inputEl.placeholder = res && res.reason ? res.reason : 'Gagal mengirim.';
-                    setTimeout(() => {
-                        inputEl.disabled = false;
-                        sendBtn.disabled = false;
-                        inputEl.placeholder = `Balas ke ${sender}...`;
-                    }, 2000);
+        if (toggleBtn && replyRow && inputEl) {
+            toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = replyRow.style.display === 'flex';
+                // Tutup form reply lain agar tampilan tetap rapi & bersih
+                notifListEl.querySelectorAll('.nrow-reply-row').forEach(r => r.style.display = 'none');
+                notifListEl.querySelectorAll('.nrow').forEach(c => c.classList.remove('replying'));
+
+                if (!isOpen) {
+                    replyRow.style.display = 'flex';
+                    card.classList.add('replying');
+                    inputEl.focus();
                 }
-            } catch (err) {
-                inputEl.placeholder = 'Error: ' + err.message;
-                inputEl.disabled = false;
-                sendBtn.disabled = false;
-            }
-        };
+            });
+        }
 
-        if (inputEl) {
+        if (inputEl && sendBtn && sender) {
+            const submitRowReply = async () => {
+                const text = inputEl.value.trim();
+                if (!text) return;
+                inputEl.disabled = true;
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = `...`;
+                try {
+                    const res = await ipcRenderer.invoke('send-wa-reply', { sender, text });
+                    if (res && res.success) {
+                        inputEl.value = '';
+                        inputEl.placeholder = '✓ Terkirim!';
+                        sendBtn.innerHTML = `✓`;
+                        setTimeout(() => {
+                            replyRow.style.display = 'none';
+                            card.classList.remove('replying');
+                            inputEl.disabled = false;
+                            sendBtn.disabled = false;
+                            inputEl.placeholder = `Balas ke ${sender}... (tekan Enter)`;
+                            sendBtn.innerHTML = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`;
+                        }, 1200);
+                    } else {
+                        inputEl.placeholder = res && res.reason ? res.reason : 'Gagal mengirim.';
+                        setTimeout(() => {
+                            inputEl.disabled = false;
+                            sendBtn.disabled = false;
+                            inputEl.placeholder = `Balas ke ${sender}... (tekan Enter)`;
+                        }, 2000);
+                    }
+                } catch (err) {
+                    inputEl.placeholder = 'Error: ' + err.message;
+                    inputEl.disabled = false;
+                    sendBtn.disabled = false;
+                }
+            };
+
             inputEl.addEventListener('click', (e) => e.stopPropagation());
             inputEl.addEventListener('keydown', (e) => {
                 e.stopPropagation();
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     submitRowReply();
+                } else if (e.key === 'Escape') {
+                    replyRow.style.display = 'none';
+                    card.classList.remove('replying');
                 }
             });
-        }
-        if (sendBtn) {
             sendBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 submitRowReply();
@@ -345,9 +382,9 @@ ipcRenderer.on('notif-update', (event, payload) => {
             });
 
             // Deduplikasi hanya berdasarkan nama pengirim/grup yang sama agar chat dari grup yang sudah ada tetap memicu Peek baru
-            const normSender = item.sender.replace(/[^\w\s]/g, '').trim().toLowerCase();
+            const normSender = cleanText(item.sender).replace(/[^\w\s]/g, '').trim().toLowerCase();
             const dupIdx = notificationsList.findIndex(existing => {
-                const exSender = String(existing.sender || '').replace(/[^\w\s]/g, '').trim().toLowerCase();
+                const exSender = cleanText(existing.sender || '').replace(/[^\w\s]/g, '').trim().toLowerCase();
                 return Boolean(exSender && normSender && exSender === normSender);
             });
 
@@ -356,8 +393,8 @@ ipcRenderer.on('notif-update', (event, payload) => {
                 const isGenericNew = !item.message || item.message === 'Pesan WhatsApp' || item.message === 'Pesan baru masuk';
                 const nextMessage = (!isGenericNew || !prev.message) ? item.message : prev.message;
                 const sameMsg = String(prev.message || '').trim() === String(nextMessage || '').trim();
-                const mergedSticker = item.sticker || (sameMsg ? (prev.sticker || '') : '');
-                const mergedImage = item.image || (sameMsg ? (prev.image || '') : '');
+                const mergedSticker = item.sticker || prev.sticker || '';
+                const mergedImage = item.image || prev.image || '';
                 const updatedItem = Object.assign({}, prev, item, {
                     message: nextMessage,
                     sticker: mergedSticker,

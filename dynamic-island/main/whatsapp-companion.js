@@ -213,14 +213,20 @@ async function pollWhatsAppUnread() {
 
                 const extractMediaFromChatModel = async (chat) => {
                     try {
-                        if (!chat || !chat.msgs) return null;
-                        const msgs = typeof chat.msgs.getModelsArray === 'function'
-                            ? chat.msgs.getModelsArray()
-                            : (Array.isArray(chat.msgs._models) ? chat.msgs._models : []);
-                        for (let i = msgs.length - 1; i >= Math.max(0, msgs.length - 10); i--) {
-                            const m = msgs[i];
+                        if (!chat) return null;
+                        const candidates = [];
+                        if (chat.previewMessage) candidates.push(chat.previewMessage);
+                        if (chat.lastReceivedKey && typeof chat.lastReceivedKey === 'object') candidates.push(chat.lastReceivedKey);
+                        if (chat.msgs) {
+                            const ms = typeof chat.msgs.getModelsArray === 'function'
+                                ? chat.msgs.getModelsArray()
+                                : (Array.isArray(chat.msgs._models) ? chat.msgs._models : []);
+                            candidates.push(...ms);
+                        }
+                        for (let i = candidates.length - 1; i >= Math.max(0, candidates.length - 12); i--) {
+                            const m = candidates[i];
                             if (!m) continue;
-                            const mType = m.type || (m._data && m._data.type) || '';
+                            const mType = m.type || m.__x_type || (m._data && m._data.type) || '';
 
                             if (mType === 'ptt' || mType === 'audio') {
                                 let durSec = m.duration || (m._data && m._data.duration) || (m.mediaData && m.mediaData.duration) || 0;
@@ -249,9 +255,20 @@ async function pollWhatsAppUnread() {
                                         const dUrl = await blobToDataUrl(m.mediaData.preview);
                                         if (dUrl) return { type: isStk ? 'sticker' : 'image', dataUrl: dUrl };
                                     }
+                                    if (typeof m.mediaData.preview === 'string' && m.mediaData.preview.length > 20) {
+                                        const p = m.mediaData.preview;
+                                        return { type: isStk ? 'sticker' : 'image', dataUrl: p.startsWith('data:') ? p : 'data:image/webp;base64,' + p };
+                                    }
                                     if (typeof m.mediaData.preview._b64 === 'string' && m.mediaData.preview._b64.length > 20) {
                                         return { type: isStk ? 'sticker' : 'image', dataUrl: 'data:image/webp;base64,' + m.mediaData.preview._b64 };
                                     }
+                                }
+                                if (m.mediaData && typeof m.mediaData._preview === 'string' && m.mediaData._preview.length > 20) {
+                                    return { type: isStk ? 'sticker' : 'image', dataUrl: 'data:image/webp;base64,' + m.mediaData._preview };
+                                }
+                                if (m.mediaData && typeof m.mediaData.renderableUrl === 'string' && m.mediaData.renderableUrl.startsWith('blob:')) {
+                                    const dUrl = window.__nusaBlobMap && window.__nusaBlobMap[m.mediaData.renderableUrl];
+                                    if (dUrl) return { type: isStk ? 'sticker' : 'image', dataUrl: dUrl };
                                 }
                                 const rawBody = (typeof m.body === 'string' && m.body.length > 30)
                                     ? m.body
@@ -293,16 +310,12 @@ async function pollWhatsAppUnread() {
                             if (img.classList.contains('emoji')) return false;
                             if (img.src.startsWith('data:image/gif')) return false;
                             if (/pps\\.whatsapp\\.net/i.test(img.src)) return false;
-                            const rect = img.getBoundingClientRect();
-                            const w = img.naturalWidth || rect.width || img.width || 0;
-                            const h = img.naturalHeight || rect.height || img.height || 0;
-                            if (w > 0 && w <= 44 && h > 0 && h <= 44) return false;
                             return img.src.startsWith('blob:') || img.src.startsWith('data:image/');
                         });
-                        for (let i = allImgs.length - 1; i >= Math.max(0, allImgs.length - 4); i--) {
+                        for (let i = allImgs.length - 1; i >= Math.max(0, allImgs.length - 6); i--) {
                             const img = allImgs[i];
                             const dUrl = await imgElementToDataUrl(img);
-                            if (dUrl && dUrl.length > 120) {
+                            if (dUrl && dUrl.length > 80) {
                                 const shortId = String(img.src || dUrl).slice(-14).replace(/[^a-zA-Z0-9]/g, '');
                                 return { dataUrl: dUrl, id: shortId || 'stk' };
                             }
@@ -408,15 +421,32 @@ async function pollWhatsAppUnread() {
                     let clickCoords = null;
                     const cacheKey = sender + '|' + cleanMsg;
 
+                    // Cek apakah row memiliki elemen <img> langsung (thumbnail stiker/foto yang sudah dirender di panel samping)
+                    const rowImgs = Array.from(row.querySelectorAll('img')).filter(img => {
+                        if (!img || !img.src) return false;
+                        if (img.classList.contains('emoji')) return false;
+                        if (/pps\\.whatsapp\\.net/i.test(img.src)) return false;
+                        return true;
+                    });
+                    for (const rImg of rowImgs) {
+                        const dUrl = await imgElementToDataUrl(rImg);
+                        if (dUrl && dUrl.length > 50) {
+                            if (isPhotoMsg) imageData = dUrl;
+                            else stickerData = dUrl;
+                            stickerId = String(rImg.src || dUrl).slice(-14).replace(/[^a-zA-Z0-9]/g, '');
+                            break;
+                        }
+                    }
+
                     if (chatModel) {
                         const mData = await extractMediaFromChatModel(chatModel);
                         if (mData) {
                             if (mData.type === 'voice') {
                                 isVoiceNote = true;
                                 if (mData.duration) vnDuration = mData.duration;
-                            } else if (mData.type === 'image') {
+                            } else if (mData.type === 'image' && !imageData) {
                                 imageData = mData.dataUrl;
-                            } else if (mData.type === 'sticker') {
+                            } else if (mData.type === 'sticker' && !stickerData) {
                                 stickerData = mData.dataUrl;
                             }
                         }
@@ -456,8 +486,8 @@ async function pollWhatsAppUnread() {
                             stickerId = cached.id;
                         }
 
-                        // Jika media belum terambil pada chat teratas/unread, buka otomatis baris tersebut di #main
-                        if (!stickerData && !imageData && !isVoiceNote && (rowIdx <= 1 || isUnread)) {
+                        // Jika media belum terambil pada 6 chat teratas, buka otomatis baris tersebut di #main
+                        if (!stickerData && !imageData && (isStickerMsg || isPhotoMsg) && rowIdx <= 5) {
                             const targetEl = row.querySelector('[role="gridcell"]') || row.querySelector('div[tabindex="-1"]') || row.firstElementChild || row;
                             const rect = targetEl.getBoundingClientRect();
                             if (rect && rect.width > 20 && rect.height > 20) {
@@ -514,15 +544,18 @@ async function pollWhatsAppUnread() {
                     }
                 }
 
-                const sig = `wa_${c.sender}_${c.message}_${c.stickerId || (c.sticker ? 'stk' : (c.image ? 'img' : 'txt'))}`;
-                const baseSig = `wa_${c.sender}_${c.message}`;
-                const isAlreadySeen = seenWaSignatures.has(sig) || seenWaSignatures.has(baseSig) || seenWaSignatures.has(`${baseSig}_txt`) || seenWaSignatures.has(`${baseSig}_stk`) || seenWaSignatures.has(`${baseSig}_img`);
-                if (!isAlreadySeen) {
+                const mediaSig = c.sticker ? `stk_${c.stickerId || 's'}` : (c.image ? `img_${c.stickerId || 'i'}` : 'none');
+                const sig = `wa_${c.sender}_${c.message}_${mediaSig}`;
+                const textOnlySig = `wa_${c.sender}_${c.message}_none`;
+                const hasMedia = Boolean(c.sticker || c.image);
+
+                const alreadySentWithThisMedia = seenWaSignatures.has(sig);
+                const alreadySentTextOnly = seenWaSignatures.has(textOnlySig);
+
+                // Kirim jika belum pernah dikirim dengan media ini, DAN (belum pernah dikirim sama sekali ATAU sekarang medianya berhasil didapat susulan)
+                if (!alreadySentWithThisMedia && (!alreadySentTextOnly || hasMedia)) {
                     seenWaSignatures.add(sig);
-                    seenWaSignatures.add(baseSig);
-                    seenWaSignatures.add(`${baseSig}_txt`);
-                    seenWaSignatures.add(`${baseSig}_stk`);
-                    seenWaSignatures.add(`${baseSig}_img`);
+                    seenWaSignatures.add(textOnlySig);
                     newNotifs.push({
                         id: sig,
                         app: 'WhatsApp',
