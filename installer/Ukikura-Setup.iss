@@ -1,14 +1,14 @@
 ; ==============================================================================
 ; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT
 ; Uki (Terapung / Floating Island) + Kura (Gudang Penyimpanan Data & Tugas)
-; Versi: 1.0.6 (Kode Versi: 33)
+; Versi: 1.0.6 (Kode Versi: 34)
 ; License: GNU General Public License v3.0 (GPLv3)
 ; ==============================================================================
 
 #define MyAppName "Ukikura"
 #define MyAppFullTitle "Ukikura (浮倉) — Floating Island & Task Vault"
 #define MyAppVersion "1.0.6"
-#define MyAppVersionCode "33"
+#define MyAppVersionCode "34"
 #define MyAppPublisher "Nauflix (muhnaufal11)"
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
 #define MyAppExeName "electron.exe"

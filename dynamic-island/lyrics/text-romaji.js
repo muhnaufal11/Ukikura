@@ -524,22 +524,27 @@ function attachTranslationLines(baseLines, transLines) {
         }));
     }
     return baseLines.map(bl => {
+        // Jangan timpa jika base line sudah memiliki transText valid
+        if (bl.transText && bl.transText.trim().length > 0) {
+            return bl;
+        }
+
         let bestTrans = null;
         let minDiff = 999;
         const blNorm = (bl.rawText || bl.text || '').toLowerCase().trim();
         for (const tl of transLines) {
-            const tlNorm = (tl.rawText || tl.text || '').toLowerCase().trim();
-            // Lewati jika teks terjemahan sama persis dengan teks lirik utama (misal baris lirik asli di dalam track subtitle bilingual)
-            if (tlNorm === blNorm) continue;
-            if (!tl.text || tl.text.trim().length === 0) continue;
+            const candText = (tl.transText || tl.text || '').trim();
+            const candNorm = candText.toLowerCase();
+            // Lewati jika teks terjemahan sama persis dengan teks lirik utama
+            if (!candText || candNorm === blNorm) continue;
 
             const diff = Math.abs(tl.time - bl.time);
             if (diff < minDiff) {
                 minDiff = diff;
-                bestTrans = tl;
+                bestTrans = candText;
             }
         }
-        const transStr = (bestTrans && minDiff <= 3.5) ? bestTrans.text.trim() : '';
+        const transStr = (bestTrans && minDiff <= 2.2) ? bestTrans : '';
         return {
             ...bl,
             transText: (transStr && transStr.toLowerCase() !== blNorm) ? transStr : (bl.transText || '')
