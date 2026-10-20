@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.5",
-  "versionCode": 17,
+  "versionCode": 18,
   "version": "1.0.5",
-  "fixCount": 17,
-  "displayVersion": "1.0.5 (Kode: 17)",
+  "fixCount": 18,
+  "displayVersion": "1.0.5 (Kode: 18)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.5.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.5 (Patch 17): Perbaikan tampilan Kalender Pintar (Smart Calendar) agar saat mengklik tanggal yang tidak memiliki agenda/tugas, panel kanan menampilkan kotak status kosong 'Tidak ada agenda' yang bersih dan tidak lagi menarik tugas dari bulan/hari lain."
+  "changelog": "Ukikura v1.0.5 (Patch 18): Filter cerdas sub-lirik terjemahan NetEase agar lagu bahasa Inggris, Barat, dan Indonesia tidak lagi menampilkan terjemahan bahasa Mandarin, serta mempertahankan Romaji alfabet Latin untuk lagu Jepang."
 }

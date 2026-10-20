@@ -57,10 +57,13 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             top.score += 25;
         }
         if (top && top.source !== 'NetEase' && ne && ne.lines.some(l => l.transText)) {
+            const isOrigChinese = /[\u4e00-\u9fa5]/.test(`${meta.origTitle} ${meta.origArtist}`);
             const transPool = ne.lines
-                .filter(l => l.transText)
+                .filter(l => l.transText && (!/[\u4e00-\u9fa5]/.test(l.transText) || isOrigChinese))
                 .map(l => ({ time: l.time, text: l.transText }));
-            top.lines = attachTranslationLines(top.lines, transPool);
+            if (transPool.length > 0) {
+                top.lines = attachTranslationLines(top.lines, transPool);
+            }
         }
         if (top) maybeEmitFast(top, true);
         return { neRes: ne, lrcRes: lrc, kgRes: kg, bestDb: top };

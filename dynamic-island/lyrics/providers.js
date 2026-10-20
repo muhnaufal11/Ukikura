@@ -120,7 +120,10 @@ async function searchNetEaseLyrics(meta, mediaDur) {
             }));
         }
 
-        if (transLines.length > 0 && finalLines.length > 0) {
+        const isOrigChinese = /[\u4e00-\u9fa5]/.test(`${meta.origTitle} ${meta.origArtist}`);
+        const isTransChinese = transLines.some(l => /[\u4e00-\u9fa5]/.test(l.text));
+
+        if (transLines.length > 0 && finalLines.length > 0 && (!isTransChinese || isOrigChinese)) {
             finalLines = attachTranslationLines(finalLines, transLines);
         }
 

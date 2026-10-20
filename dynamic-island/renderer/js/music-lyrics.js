@@ -149,6 +149,14 @@ function renderLyricItemHtml(l, i) {
         transText = '';
     }
 
+    // Sembunyikan terjemahan Mandarin (tlyric NetEase) jika lagu aslinya bukan lagu berbahasa Mandarin
+    if (transText && /[\u4e00-\u9fa5]/.test(transText)) {
+        const titleArtist = typeof mediaState !== 'undefined' ? `${mediaState.title || ''} ${mediaState.artist || ''}` : '';
+        if (!/[\u4e00-\u9fa5]/.test(titleArtist)) {
+            transText = '';
+        }
+    }
+
     let html = `<li data-lidx="${i}" style="cursor:pointer">`;
     html += `<div class="lyr-main">${escapeHtml(mainText)}</div>`;
     if (romaText) {
@@ -313,6 +321,13 @@ function updateKaraokeOverlay() {
         } else {
             curMain = curLine.text || '';
             curSub = curLine.transText || curLine.romaText || '';
+        }
+
+        if (curSub && /[\u4e00-\u9fa5]/.test(curSub)) {
+            const titleArtist = typeof mediaState !== 'undefined' ? `${mediaState.title || ''} ${mediaState.artist || ''}` : '';
+            if (!/[\u4e00-\u9fa5]/.test(titleArtist)) {
+                curSub = curLine.romaText || '';
+            }
         }
     }
 
