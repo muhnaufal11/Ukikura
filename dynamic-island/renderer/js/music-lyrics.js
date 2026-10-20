@@ -27,9 +27,13 @@ function renderMediaUI() {
 
     document.getElementById('music-app-1').textContent = appLabel;
     document.getElementById('music-title-1').textContent = title;
+    document.getElementById('music-title-1').title = title;
     document.getElementById('music-artist-1').textContent = artist;
+    document.getElementById('music-artist-1').title = artist;
     document.getElementById('music-title-2').textContent = title;
+    document.getElementById('music-title-2').title = title;
     document.getElementById('music-artist-2').textContent = artist;
+    document.getElementById('music-artist-2').title = artist;
 
     document.getElementById('play-icon-1').innerHTML = isPlaying ? PAUSE_SVG_PATH : PLAY_SVG_PATH;
     document.getElementById('play-icon-2').innerHTML = isPlaying ? PAUSE_SVG_PATH : PLAY_SVG_PATH;
@@ -430,7 +434,14 @@ ipcRenderer.on('media-update', (event, msg) => {
         lyricTimeOffset = 0;
         lyricCoverUrl = '';
         activeLyricIndex = 0;
-        lyrListEl.innerHTML = `<li class="on">${escapeHtml(mediaState.title)}</li><li>${escapeHtml(mediaState.artist || 'Memuat lirik & forced alignment...')}</li>`;
+        const initArtist = mediaState.artist || (mediaState.app ? `Aplikasi: ${cleanAppName(mediaState.app)}` : 'Memuat lirik...');
+        lyrListEl.innerHTML = `
+            <li class="on">
+                <div class="lyr-main" style="max-height:46px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeHtml(mediaState.title)}</div>
+                <div class="lyr-sub" style="margin-top:3px">${escapeHtml(initArtist)}</div>
+            </li>
+            <li style="font-size:11px;opacity:0.45;margin-top:6px">🎵 Memuat lirik &amp; sinkronisasi...</li>
+        `;
         lyrListEl.style.transform = 'translateY(0px)';
         ipcRenderer.send('island-request-lyrics', { title: mediaState.title, artist: mediaState.artist, dur: mediaState.dur });
     }
@@ -476,10 +487,13 @@ ipcRenderer.on('lyrics-update', (event, payload) => {
     } else {
         syncedLyrics = [];
         lyricTrackDuration = 0;
+        const noLyrArtist = mediaState.artist || (mediaState.app ? `Aplikasi: ${cleanAppName(mediaState.app)}` : 'Live Audio Stream');
         lyrListEl.innerHTML = `
-            <li class="on">${escapeHtml(mediaState.title)}</li>
-            <li>${escapeHtml(mediaState.artist)}</li>
-            <li>Audio Live Aktif</li>
+            <li class="on">
+                <div class="lyr-main" style="max-height:46px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeHtml(mediaState.title || 'Musik Sedang Diputar')}</div>
+                <div class="lyr-sub" style="margin-top:3px">${escapeHtml(noLyrArtist)}</div>
+            </li>
+            <li style="font-size:11px;opacity:0.45;margin-top:6px">🎵 Audio Live Aktif</li>
         `;
     }
 });

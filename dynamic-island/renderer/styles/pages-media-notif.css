@@ -210,9 +210,9 @@
     }
 
     .vol-group.mini {
-        height: 24px;
-        padding: 0 6px 0 3px;
-        gap: 4px;
+        height: 22px;
+        padding: 0 4px 0 2px;
+        gap: 3px;
     }
 
     .vol-btn {
@@ -258,7 +258,7 @@
     }
 
     .vol-group.mini .vol-track {
-        width: 34px;
+        width: 22px;
     }
 
     .vol-group:hover .vol-track,
@@ -356,6 +356,42 @@
         height: 15px;
     }
 
+    /* Baris Kontrol Pemutar Lirik Melebar (Flexbox Rapi Bebas Overlap) */
+    .lyrics-ctl-row {
+        position: absolute;
+        left: 32px;
+        width: 208px;
+        top: 130px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 4;
+    }
+
+    .lyrics-ctl-row .ctl-btn,
+    .lyrics-ctl-row .bub-btn {
+        position: relative;
+        transform: none !important;
+        width: 24px;
+        height: 24px;
+    }
+
+    .lyrics-ctl-row .ctl-btn:hover,
+    .lyrics-ctl-row .bub-btn:hover {
+        transform: scale(1.12) !important;
+    }
+
+    .lyrics-ctl-row .ctl-btn.play-main {
+        width: 30px;
+        height: 30px;
+    }
+
+    .lyrics-ctl-row .vol-group.mini {
+        position: relative;
+        transform: none !important;
+    }
+
     /* Canvas Ambient Audio-Reaktif Mengikuti Warna Video & Frekuensi Suara */
     .ambient-canvas {
         position: absolute;
@@ -413,13 +449,13 @@
 
     .lyr {
         position: absolute;
-        left: 262px;
-        width: 220px;
-        top: 36px;
+        left: 258px;
+        width: 238px;
+        top: 34px;
         bottom: 22px;
         overflow: hidden;
-        -webkit-mask: linear-gradient(transparent, #000 18%, #000 82%, transparent);
-                mask: linear-gradient(transparent, #000 18%, #000 82%, transparent);
+        -webkit-mask: linear-gradient(transparent, #000 16%, #000 84%, transparent);
+                mask: linear-gradient(transparent, #000 16%, #000 84%, transparent);
     }
 
     .lyr ol {

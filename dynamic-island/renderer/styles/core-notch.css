@@ -965,13 +965,16 @@
 
     .hdr-badge-dot {
         position: absolute;
-        top: -1px;
-        right: -1px;
-        width: 6px;
-        height: 6px;
+        top: 1px;
+        right: 1px;
+        width: 6.5px;
+        height: 6.5px;
         border-radius: 50%;
         background: var(--wa-green);
+        border: 1.5px solid #000;
+        box-shadow: 0 0 6px var(--wa-green);
         display: none;
+        pointer-events: none;
     }
 
     .mn.has-wa .hdr-badge-dot {
