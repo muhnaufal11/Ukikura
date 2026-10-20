@@ -27,10 +27,10 @@ function initAutoUpdater(mainWinGetter) {
 function getLocalVersionInfo() {
     let info = {
         name: 'Ukikura',
-        versionName: '1.0.1',
-        versionCode: 11,
-        version: '1.0.1',
-        fixCount: 11,
+        versionName: '1.0.4',
+        versionCode: 14,
+        version: '1.0.4',
+        fixCount: 14,
         githubRepo: 'muhnaufal11/Ukikura',
         fallbackRepos: ['muhnaufal11/Ukikura', 'Nauflix/Ukikura'],
         branch: 'main'
@@ -46,8 +46,8 @@ function getLocalVersionInfo() {
         }
     } catch (_) {}
 
-    const vCode = Number(info.versionCode) || Number(info.fixCount) || 11;
-    const vName = String(info.versionName || info.version || '1.0.1').trim().replace(/^[vV]/, '');
+    const vCode = Number(info.versionCode) || Number(info.fixCount) || 14;
+    const vName = String(info.versionName || info.version || '1.0.4').trim().replace(/^[vV]/, '');
 
     info.versionCode = vCode;
     info.versionName = vName;

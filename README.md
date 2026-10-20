@@ -9,8 +9,8 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.3-10b981.svg?style=flat-square)](./version.json)
-[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.3.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.3/Ukikura-Setup-v1.0.3.exe)
+[![Version](https://img.shields.io/badge/Version-1.0.4-10b981.svg?style=flat-square)](./version.json)
+[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.4.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.4/Ukikura-Setup-v1.0.4.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
 [Instalasi Langsung (Tanpa Compile)](#instalasi-langsung-tanpa-compile) · [Pratinjau Antarmuka](#pratinjau-antarmuka-100-identik) · [Integrasi AI LMS Assistant](#integrasi-dengan-telu-lms-quiz-assistant-ai--seb-proxy) · [Mesin Lirik & Forced Alignment](#mesin-lirik-multi-sumber--forced-alignment) · [Arsitektur Modular](#arsitektur-modular) · [Fitur Mendatang (Roadmap)](#rencana-pengembangan-fitur-mendatang-roadmap) · [Auto-Updater GitHub](#sistem-deteksi-pembaruan-github-auto-updater)
@@ -24,8 +24,8 @@
 File installer resmi hasil kompilasi **Inno Setup 6** tersedia langsung di repositori ini dan halaman **GitHub Releases** sehingga pengguna baru dapat langsung menginstal tanpa perlu memasang Node.js atau melakukan kompilasi ulang:
 
 ### Cara 1 — Unduh & Jalankan File `.exe` Langsung (Paling Umum)
-1. Unduh file installer **[`Ukikura-Setup-v1.0.1.exe` (GitHub Release Resmi)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.1/Ukikura-Setup-v1.0.1.exe)** (atau melalui folder [`installer/Ukikura-Setup-v1.0.1.exe`](./installer/Ukikura-Setup-v1.0.1.exe)).
-2. Klik dua kali file **`Ukikura-Setup-v1.0.1.exe`**.
+1. Unduh file installer **[`Ukikura-Setup-v1.0.4.exe` (GitHub Release Resmi)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.4/Ukikura-Setup-v1.0.4.exe)** (atau melalui folder [`installer/Ukikura-Setup-v1.0.4.exe`](./installer/Ukikura-Setup-v1.0.4.exe)).
+2. Klik dua kali file **`Ukikura-Setup-v1.0.4.exe`**.
    > [!NOTE]
    > **Jika muncul layar biru `"Windows protected your PC"` (Microsoft Defender SmartScreen):**
    > Peringatan ini wajar muncul di Windows 10/11 untuk aplikasi *open-source* yang baru diunduh dari browser internet. Cara melewatinya:
@@ -41,7 +41,7 @@ Jika Anda ingin menginstal langsung tanpa memunculkan jendela biru *Windows Smar
 irm https://raw.githubusercontent.com/muhnaufal11/Ukikura/main/installer/install.ps1 | iex
 ```
 
-Skrip [`installer/install.ps1`](./installer/install.ps1) akan mengunduh `Ukikura-Setup-v1.0.1.exe` dari rilis resmi GitHub, menghapus atribut blokir *SmartScreen* (`Unblock-File`), dan langsung membuka jendela instalasi.
+Skrip [`installer/install.ps1`](./installer/install.ps1) akan mengunduh `Ukikura-Setup-v1.0.4.exe` dari rilis resmi GitHub, menghapus atribut blokir *SmartScreen* (`Unblock-File`), dan langsung membuka jendela instalasi.
 
 ---
 
