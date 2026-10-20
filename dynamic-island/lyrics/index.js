@@ -80,23 +80,9 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     let syncMethod = '';
     let trackDuration = mediaDur || (bestDb && bestDb.duration) || (ytCaptions && ytCaptions.videoDur) || 0;
 
-    // KASUS 1: Kita punya Lirik Standar Akurat (LRCLIB / NetEase / KuGou) + Stream Vokal/Caption YouTube (.srv3)
-    // -> Jalankan Audio-to-Text Forced Alignment agar ejaan 100% akurat & timestamp mengikuti vokal video milidetik demi milidetik!
-    if (bestDb && ytCaptions && ytCaptions.tokens.length >= 6) {
-        finalLines = forceAlignLyricsToAudioStream(
-            bestDb.lines,
-            ytCaptions,
-            bestDb.hasSyncedTimestamps,
-            trackDuration,
-            Number(bestDb.duration) || 0
-        );
-        const anchoredCount = finalLines.filter(l => l.anchored).length;
-        syncMethod = anchoredCount >= 3
-            ? `${bestDb.source} + YouTube Forced Alignment`
-            : `${bestDb.source} Synced`;
-    }
-    // KASUS 2: Video YouTube punya Subtitle Resmi / Manual CC dari kreator (misal cover utattemita unik)
-    else if (ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4) {
+    // KASUS 1: Video YouTube memiliki Subtitle Resmi / Manual CC dari kreator video itu sendiri!
+    // (Sangat akurat untuk video musik resmi, cover utattemita dengan intro/skit dialog unik, dan video animasi)
+    if (ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4) {
         finalLines = ytCaptions.lines.map(l => {
             const isPureKana = !hasKanji(l.text) && hasHiraganaOrKatakana(l.text);
             const roma = isPureKana ? kanaToRomaji(l.text) : '';
@@ -108,6 +94,21 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             };
         });
         syncMethod = 'YouTube Official CC (.srv3)';
+    }
+    // KASUS 2: Kita punya Lirik Standar Akurat dari Database + Gelombang Vokal Auto-ASR YouTube
+    // -> Jalankan Audio-to-Text Forced Alignment agar ejaan 100% akurat & timestamp mengikuti vokal video!
+    else if (bestDb && ytCaptions && ytCaptions.tokens.length >= 6) {
+        finalLines = forceAlignLyricsToAudioStream(
+            bestDb.lines,
+            ytCaptions,
+            bestDb.hasSyncedTimestamps,
+            trackDuration,
+            Number(bestDb.duration) || 0
+        );
+        const anchoredCount = finalLines.filter(l => l.anchored).length;
+        syncMethod = anchoredCount >= 3
+            ? `${bestDb.source} + YouTube Forced Alignment`
+            : `${bestDb.source} Synced`;
     }
     // KASUS 3: Lirik Tersinkronisasi dari Database Multi-Source (NetEase / LRCLIB / KuGou)
     else if (bestDb && bestDb.lines.length > 0) {
@@ -128,7 +129,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             syncMethod = `${bestDb.source} Synced (+${introShift}s MV Intro)`;
         }
     }
-    // KASUS 4: Fallback ke aliran TimedText YouTube (.srv3) jika lagu cover indie belum terdaftar di database mana pun
+    // KASUS 4: Fallback ke aliran Auto-ASR YouTube (.srv3) jika lagu belum terdaftar di database mana pun
     else if (ytCaptions && ytCaptions.lines.length >= 3) {
         finalLines = ytCaptions.lines.map(l => {
             const isPureKana = !hasKanji(l.text) && hasHiraganaOrKatakana(l.text);
@@ -144,13 +145,15 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     }
 
     // 1. Lampirkan sub-lirik terjemahan Bahasa Indonesia resmi jika tersedia dari YouTube TimedText!
-    if (ytCaptions && Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 3 && finalLines.length > 0) {
+    // (Hanya jika lirik utama BUKAN bahasa Indonesia, agar tidak menduplikasi teks)
+    const isAlreadyIndonesian = ytCaptions && ytCaptions.languageCode && ytCaptions.languageCode.toLowerCase().startsWith('id');
+    if (!isAlreadyIndonesian && ytCaptions && Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 3 && finalLines.length > 0) {
         finalLines = attachTranslationLines(finalLines, ytCaptions.indonesianLines);
     }
 
     // 2. Terjemahan cerdas ke Bahasa Indonesia jika belum ada sub-lirik Indonesia
     const hasAnyIndoTrans = finalLines.some(l => l.transText && !/[\u4e00-\u9fa5]/.test(l.transText));
-    if (!hasAnyIndoTrans && finalLines.length > 0) {
+    if (!isAlreadyIndonesian && !hasAnyIndoTrans && finalLines.length > 0) {
         const toTranslate = finalLines.slice(0, 45);
         try {
             await Promise.all(toTranslate.map(async (l) => {
@@ -169,9 +172,16 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
         ? `https://i.ytimg.com/vi/${ytCaptions.videoId}/hqdefault.jpg`
         : '';
 
+    let displayTrack = rawTitle;
+    if (syncMethod.startsWith('YouTube')) {
+        displayTrack = rawTitle;
+    } else if (bestDb) {
+        displayTrack = [bestDb.artistName, bestDb.trackName].filter(Boolean).join(' - ') || rawTitle;
+    }
+
     const result = {
         title: rawTitle,
-        track: bestDb ? [bestDb.artistName, bestDb.trackName].filter(Boolean).join(' - ') : rawTitle,
+        track: displayTrack,
         source: syncMethod || 'Multi-Source',
         trackDuration,
         coverUrl,

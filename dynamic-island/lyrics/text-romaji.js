@@ -135,8 +135,6 @@ function cleanArtistName(rawArtist) {
         .replace(/VEVO$/i, '')
         .replace(/\b(?:official\s*youtube\s*channel|youtube\s*channel|official\s*channel)\b/gi, '')
         .replace(/\b(?:ch\.|channel)\s*(?:hololive(?:[-_ ]?[a-z0-9]+)?|nijisanji|vshojo|774inc|kamitsubaki|production\s*kawaii|idol\s*corp|brave\s*group)?(?:\s*[-–—]\s*[a-z0-9]+)?\b/gi, '')
-        .replace(/\s*[-–—]?\s*\bhololive(?:\s*[-–—]\s*|\s*-\s*|-)[a-z0-9]+\b/gi, '')
-        .replace(/\s*[-–—]?\s*\bhololive\b/gi, '')
         .replace(/\b(?:ch\.|channel)\b/gi, '')
         .replace(/\s+/g, ' ')
         .trim();
@@ -371,7 +369,80 @@ function computeMetadataSimilarity(candidateTitle, candidateArtist, meta) {
     const candFull = normalizePhoneticLatin(`${candidateArtist || ''} ${candidateTitle || ''}`);
     const candTitleNorm = normalizePhoneticLatin(candidateTitle || '');
     const candArtistNorm = normalizePhoneticLatin(candidateArtist || '');
-    let score = 0;
+    let titleScore = 0;
+    let artistScore = 0;
+
+    // 1. Cek kecocokan Judul Lagu (WAJIB ADA)
+    // Cek terhadap kutipan judul Jepang 『...』 / 「...」
+    for (const q of meta.jpQuotes) {
+        const qNorm = normalizePhoneticLatin(q);
+        if (!qNorm) continue;
+        if (candTitleNorm === qNorm || String(candidateTitle || '').trim() === q.trim()) {
+            titleScore += 95;
+        } else if (candTitleNorm.includes(qNorm)) {
+            titleScore += 65;
+        }
+    }
+
+    // Cek kecocokan terhadap segmen judul
+    const chNorm = meta.cleanChannel ? normalizePhoneticLatin(meta.cleanChannel) : '';
+    const cleanTitleNorm = normalizePhoneticLatin(meta.cleanedTitle || '');
+
+    for (const seg of meta.segments) {
+        const segNorm = normalizePhoneticLatin(seg);
+        if (!segNorm || segNorm.length < 2) continue;
+
+        // Jika segmen adalah nama channel/artis (misal "hololive ID" atau "Ayunda Risu"), jangan hitung sebagai judul!
+        const isArtistSeg = chNorm && (
+            segNorm === chNorm ||
+            chNorm.includes(segNorm) ||
+            segNorm.includes(chNorm) ||
+            segNorm.split(/\s+/).some(w => w.length >= 3 && chNorm.includes(w))
+        );
+        if (isArtistSeg) {
+            if (candArtistNorm === segNorm || candArtistNorm.includes(segNorm) || segNorm.includes(candArtistNorm)) {
+                artistScore += 60;
+            }
+            continue;
+        }
+
+        if (candTitleNorm === segNorm || String(candidateTitle || '').trim().toLowerCase() === seg.toLowerCase()) {
+            titleScore += 80;
+        } else if (candTitleNorm.includes(segNorm) || segNorm.includes(candTitleNorm)) {
+            titleScore += 55;
+        } else {
+            const words = segNorm.split(/\s+/).filter(w => w.length >= 2);
+            if (words.length > 0) {
+                const hits = words.filter(w => candTitleNorm.includes(w)).length;
+                if (hits > 0) {
+                    titleScore += Math.round((hits / words.length) * 45);
+                }
+            }
+        }
+    }
+
+    if (cleanTitleNorm && cleanTitleNorm !== candTitleNorm) {
+        if (candTitleNorm.includes(cleanTitleNorm) || cleanTitleNorm.includes(candTitleNorm)) {
+            titleScore = Math.max(titleScore, 65);
+        }
+    }
+
+    // SYARAT MUTLAK: Judul lagu HARUS cocok!
+    // Jika skor judul 0, kandidat adalah lagu berbeda dari artis yang sama (misal memutar "Bebas" tapi database mengembalikan "id:entity voices")
+    if (titleScore === 0) {
+        return 0;
+    }
+
+    // 2. Cek kecocokan Artis / Channel
+    if (chNorm && !meta.isLyricChannel) {
+        if (candArtistNorm === chNorm || chNorm.includes(candArtistNorm) || candArtistNorm.includes(chNorm)) {
+            artistScore += 55;
+        } else if (candFull.includes(chNorm)) {
+            artistScore += 30;
+        }
+    }
+
+    let score = titleScore + artistScore;
 
     // Penalti untuk versi remix / DJ / 合唱 (chorus) / live / tv size kecuali diminta di judul asli
     const candMetaRaw = `${candidateTitle || ''} ${candidateArtist || ''}`;
@@ -384,48 +455,7 @@ function computeMetadataSimilarity(candidateTitle, candidateArtist, meta) {
         }
     }
 
-    // Cek kecocokan terhadap kutipan judul Jepang 『...』 / 「...」
-    for (const q of meta.jpQuotes) {
-        const qNorm = normalizePhoneticLatin(q);
-        if (!qNorm) continue;
-        if (candTitleNorm === qNorm || String(candidateTitle || '').trim() === q.trim()) {
-            score += 95;
-        } else if (candTitleNorm.includes(qNorm) || candFull.includes(qNorm)) {
-            score += 65;
-        }
-    }
-
-    // Cek kecocokan segmen judul/artis
-    for (const seg of meta.segments) {
-        const segNorm = normalizePhoneticLatin(seg);
-        if (!segNorm || segNorm.length < 2) continue;
-        if (candTitleNorm === segNorm || String(candidateTitle || '').trim().toLowerCase() === seg.toLowerCase()) {
-            score += 75;
-        } else if (candArtistNorm === segNorm || String(candidateArtist || '').trim().toLowerCase() === seg.toLowerCase()) {
-            score += 65;
-        } else if (candFull.includes(segNorm)) {
-            score += 35;
-        } else {
-            const words = segNorm.split(/\s+/).filter(w => w.length >= 2);
-            if (words.length > 0) {
-                const hits = words.filter(w => candFull.includes(w)).length;
-                score += Math.round((hits / words.length) * 30);
-            }
-        }
-    }
-
-    if (meta.cleanChannel && !meta.isLyricChannel) {
-        const chNorm = normalizePhoneticLatin(meta.cleanChannel);
-        if (chNorm) {
-            if (candArtistNorm === chNorm || chNorm.includes(candArtistNorm) || candArtistNorm.includes(chNorm)) {
-                score += 55;
-            } else if (candFull.includes(chNorm)) {
-                score += 35;
-            }
-        }
-    }
-
-    return score;
+    return Math.max(0, score);
 }
 
 

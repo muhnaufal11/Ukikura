@@ -33,29 +33,35 @@ function parseSrv3Stream(xml) {
 
         const sRegex = /<s\b([^>]*)>([\s\S]*?)<\/s>/g;
         let sm;
-        let hasWordTags = false;
+        let hasRealWordTimestamps = false;
         const pWords = [];
         let firstWordMs = pStartMs;
 
         while ((sm = sRegex.exec(inner)) !== null) {
-            hasWordTags = true;
             const sAttrs = sm[1];
-            const rawWord = decodeXmlEntities(sm[2]).replace(/\s+/g, ' ').trim();
+            const rawWord = decodeXmlEntities(sm[2])
+                .replace(/[\u200b-\u200f\ufeff]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
             if (!rawWord || /^\[.*\]$|^♪+$|^♬+$/.test(rawWord)) continue;
 
             const stm = sAttrs.match(/\bt="(\d+)"/);
-            const wordMs = pStartMs + (stm ? parseInt(stm[1], 10) : 0);
-            if (pWords.length === 0) firstWordMs = wordMs;
-            pWords.push({ timeMs: wordMs, text: rawWord });
-            tokens.push({
-                time: Math.round(wordMs) / 1000,
-                text: rawWord,
-                norm: normalizePhoneticLatin(rawWord)
-            });
+            if (stm) {
+                hasRealWordTimestamps = true;
+                const wordMs = pStartMs + parseInt(stm[1], 10);
+                if (pWords.length === 0) firstWordMs = wordMs;
+                pWords.push({ timeMs: wordMs, text: rawWord });
+                tokens.push({
+                    time: Math.round(wordMs) / 1000,
+                    text: rawWord,
+                    norm: normalizePhoneticLatin(rawWord)
+                });
+            }
         }
 
-        if (!hasWordTags) {
+        if (!hasRealWordTimestamps) {
             const cleanText = decodeXmlEntities(inner.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ''))
+                .replace(/[\u200b-\u200f\ufeff]/g, '')
                 .replace(/[♪♬]+/g, '')
                 .replace(/\s+/g, ' ')
                 .trim();
@@ -64,6 +70,14 @@ function parseSrv3Stream(xml) {
             }
             const tSec = Math.round(pStartMs) / 1000;
             const dSec = Math.round(pDurMs) / 1000;
+
+            // Deduplikasi & perpanjang durasi jika baris teks berulang berturut-turut (efek karaoke YouTube)
+            const last = lines[lines.length - 1];
+            if (last && last.text.toLowerCase() === cleanText.toLowerCase() && (tSec - last.time) < 8.0) {
+                last.endTime = Math.max(last.endTime, Math.round((tSec + dSec) * 1000) / 1000);
+                continue;
+            }
+
             lines.push({
                 time: tSec,
                 endTime: Math.round((tSec + dSec) * 1000) / 1000,
@@ -235,14 +249,10 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     const scoreLang = (t) => {
         const lang = String(t.languageCode || '').toLowerCase();
         let s = 0;
-        if (meta && meta.likelyJapanese) {
-            if (lang.startsWith('ja')) s += 60;
-            else if (lang.startsWith('id') || lang.startsWith('en')) s += 20;
-        } else {
-            if (lang.startsWith('id')) s += 55;
-            else if (lang.startsWith('ja')) s += 45;
-            else if (lang.startsWith('en')) s += 40;
-        }
+        if (lang.startsWith('id')) s += 85;
+        else if (meta && meta.likelyJapanese && lang.startsWith('ja')) s += 65;
+        else if (lang.startsWith('ja')) s += 50;
+        else if (lang.startsWith('en')) s += 40;
         return { track: t, lang, langScore: s };
     };
 
