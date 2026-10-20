@@ -16,7 +16,9 @@ function triggerPeekPopup(item) {
     const pkAppEl = document.getElementById('pk-app');
     const pkTitleEl = document.getElementById('pk-title');
     const pkSubEl = document.getElementById('pk-sub');
-    const pkArcEl = document.getElementById('pk-arc');
+    const pkIconBadge = document.getElementById('pk-icon-badge');
+    const pkIconSvg = document.getElementById('pk-icon-svg');
+    const pkOpenBtn = document.getElementById('pk-open-btn');
     const pkStickerEl = document.getElementById('pk-sticker');
     const pkReplyBar = document.getElementById('pk-reply-bar');
     const pkReplyInput = document.getElementById('pk-reply-input');
@@ -44,29 +46,56 @@ function triggerPeekPopup(item) {
         pkSubEl.textContent = cleanMsg;
     }
 
-    if (item.isQuizAlarm) {
-        pkArcEl.setAttribute('stroke', '#ff4757');
-    } else if (item.isClassAlarm) {
-        pkArcEl.setAttribute('stroke', '#ffd32a');
-    } else {
-        pkArcEl.setAttribute('stroke', isWa ? '#25d366' : '#19b8ff');
+    // Ikon Notifikasi Bersih (Tanpa Cincin Meteran Tebal)
+    if (pkIconBadge) {
+        if (item.isQuizAlarm) {
+            pkIconBadge.style.background = '#ff4757';
+            pkIconBadge.style.boxShadow = '0 2px 10px rgba(255, 71, 87, 0.35)';
+            if (pkIconSvg) {
+                pkIconSvg.setAttribute('viewBox', '0 0 24 24');
+                pkIconSvg.innerHTML = `<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`;
+            }
+        } else if (item.isClassAlarm) {
+            pkIconBadge.style.background = '#fed330';
+            pkIconBadge.style.boxShadow = '0 2px 10px rgba(254, 211, 48, 0.35)';
+            if (pkIconSvg) {
+                pkIconSvg.setAttribute('viewBox', '0 0 24 24');
+                pkIconSvg.innerHTML = `<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+            }
+        } else if (isWa) {
+            pkIconBadge.style.background = '#25d366';
+            pkIconBadge.style.boxShadow = '0 2px 10px rgba(37, 211, 102, 0.35)';
+            if (pkIconSvg) {
+                pkIconSvg.setAttribute('viewBox', '0 0 24 24');
+                pkIconSvg.innerHTML = `<path fill="#fff" d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 1.67c4.54 0 8.24 3.7 8.24 8.24 0 2.2-.86 4.27-2.42 5.82a8.17 8.17 0 0 1-5.82 2.42c-1.47 0-2.91-.4-4.16-1.15l-.3-.18-3.1.81.83-3.02-.19-.31a8.21 8.21 0 0 1-1.26-4.39c0-4.54 3.7-8.24 8.24-8.24zm4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.24-.75-.67-1.25-1.49-1.4-1.74-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.32-.02-.45-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.78 2.71 4.3 3.8 2.53 1.09 2.53.73 2.98.69.46-.04 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.17-.48-.3z"/>`;
+            }
+        } else {
+            pkIconBadge.style.background = '#19b8ff';
+            pkIconBadge.style.boxShadow = '0 2px 10px rgba(25, 184, 255, 0.35)';
+            if (pkIconSvg) {
+                pkIconSvg.setAttribute('viewBox', '0 0 24 24');
+                pkIconSvg.innerHTML = `<rect x="5" y="2" width="14" height="20" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/><line x1="12" y1="18" x2="12.01" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`;
+            }
+        }
     }
-    pkArcEl.style.setProperty('--arc-off', '16');
 
-    // Tampilkan Media: Foto atau Stiker
+    // Tampilkan Media: Foto atau Stiker (sembunyikan tombol panah agar tidak tabrakan)
     if (pkStickerEl) {
         if (item.image) {
             pkStickerEl.src = item.image;
-            pkStickerEl.className = 'a c pk-sticker pk-photo';
+            pkStickerEl.className = 'a pk-sticker pk-photo';
             pkStickerEl.style.display = 'block';
+            if (pkOpenBtn) pkOpenBtn.style.display = 'none';
         } else if (item.sticker) {
             pkStickerEl.src = item.sticker;
-            pkStickerEl.className = 'a c pk-sticker';
+            pkStickerEl.className = 'a pk-sticker';
             pkStickerEl.style.display = 'block';
+            if (pkOpenBtn) pkOpenBtn.style.display = 'none';
         } else {
             pkStickerEl.removeAttribute('src');
-            pkStickerEl.className = 'a c pk-sticker';
+            pkStickerEl.className = 'a pk-sticker';
             pkStickerEl.style.display = 'none';
+            if (pkOpenBtn) pkOpenBtn.style.display = 'grid';
         }
     }
 
@@ -76,7 +105,7 @@ function triggerPeekPopup(item) {
         pkReplyBar.style.display = 'flex';
         pkReplyInput.value = '';
         pkReplyInput.disabled = false;
-        pkReplyInput.placeholder = `Balas cepat ke ${cleanTitle}... (tekan Enter)`;
+        pkReplyInput.placeholder = `Balas ke ${cleanTitle}... (Enter)`;
         pkReplySend.disabled = false;
         pkReplySend.style.background = '#25d366';
         pkReplySend.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`;

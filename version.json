@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 28,
+  "versionCode": 29,
   "version": "1.0.6",
-  "fixCount": 28,
-  "displayVersion": "1.0.6 (Patch 28)",
+  "fixCount": 29,
+  "displayVersion": "1.0.6 (Patch 29)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 28): Pembersihan layout kartu notifikasi dengan tombol balas kolapsibel rapi, pembersihan karakter asteris/tanda kutip judul chat, perbaikan deteksi thumbnail stiker/foto panel samping WhatsApp Web, dan perbaikan anti-duplicate signature saat media susulan diunduh."
+  "changelog": "Ukikura v1.0.6 (Patch 29): Menghilangkan bulatan/cincin hijau meteran pada logo notifikasi chat dan menggantinya dengan badge ikon resmi yang bersih, mencegah tabrakan stiker dan tombol panah di kanan pop-up, serta merapikan tata letak baris balas cepat."
 }
