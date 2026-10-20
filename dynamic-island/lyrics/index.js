@@ -84,15 +84,48 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     // (Sangat akurat untuk video musik resmi, cover utattemita dengan intro/skit dialog unik, dan video animasi)
     if (ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4) {
         finalLines = ytCaptions.lines.map(l => {
-            const isPureKana = !hasKanji(l.text) && hasHiraganaOrKatakana(l.text);
-            const roma = isPureKana ? kanaToRomaji(l.text) : '';
+            const rawNormalized = String(l.rawText || l.text || '').normalize('NFKD').trim();
+            // Cek apakah baris memuat kombinasi Romaji + Karakter Jepang (seperti gaya subtitle resmi YOASOBI/Ayase)
+            // Contoh: "Itsumodouri no asa ni いつも通りの朝に"
+            const mixedMatch = rawNormalized.match(/^([a-zA-Z0-9\s,.'\"!?~—–-]+?)\s+([\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\u3000-\u303f「『].*)$/) ||
+                               rawNormalized.match(/^([\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\u3000-\u303f「『].+?)\s+([a-zA-Z0-9\s,.'\"!?~—–-]{3,})$/);
+
+            let roma = '';
+            let mainDisplay = rawNormalized;
+            let rawClean = rawNormalized;
+
+            if (mixedMatch && /[\u3040-\u30ff\u4e00-\u9fff]/.test(mixedMatch[2])) {
+                roma = mixedMatch[1].trim();
+                mainDisplay = mixedMatch[2].trim();
+                rawClean = mixedMatch[2].trim();
+            } else if (mixedMatch && /[\u3040-\u30ff\u4e00-\u9fff]/.test(mixedMatch[1])) {
+                roma = mixedMatch[2].trim();
+                mainDisplay = mixedMatch[1].trim();
+                rawClean = mixedMatch[1].trim();
+            } else {
+                const isPureKana = !hasKanji(rawNormalized) && hasHiraganaOrKatakana(rawNormalized);
+                roma = isPureKana ? kanaToRomaji(rawNormalized) : '';
+            }
+
             return {
                 time: l.time,
-                text: (roma && roma.toLowerCase() !== l.text.toLowerCase()) ? `${roma} · ${l.text}` : l.text,
-                rawText: l.text,
+                text: (roma && roma.toLowerCase() !== mainDisplay.toLowerCase()) ? `${roma} · ${mainDisplay}` : mainDisplay,
+                rawText: rawClean,
                 romaText: roma
             };
         });
+
+        // Jika lirik Jepang belum memiliki Romaji (hanya Kanji), gabungkan Romaji dari database NetEase jika ada
+        if (dbBundle && dbBundle.neRes && Array.isArray(dbBundle.neRes.lines)) {
+            const romaPool = dbBundle.neRes.lines.filter(l => l.romaText).map(l => ({ time: l.time, text: l.romaText }));
+            if (romaPool.length > 0 && finalLines.some(l => !l.romaText && hasJapaneseChars(l.rawText || l.text))) {
+                finalLines = mergeJapaneseAndRomajiLines(
+                    finalLines.map(l => ({ time: l.time, text: l.rawText || l.text })),
+                    romaPool
+                );
+            }
+        }
+
         syncMethod = 'YouTube Official CC (.srv3)';
     }
     // KASUS 2: Kita punya Lirik Standar Akurat dari Database + Gelombang Vokal Auto-ASR YouTube

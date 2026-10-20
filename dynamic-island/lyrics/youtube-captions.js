@@ -168,7 +168,7 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: searchBody,
-        timeout: 4200
+        timeout: 6500
     });
 
     if (!searchRes.body) return null;
@@ -227,7 +227,7 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
             ua: client.ua,
             headers: { 'Content-Type': 'application/json' },
             body: pBody,
-            timeout: 4200
+            timeout: 6500
         });
         const tracks = pJson &&
             pJson.captions &&
@@ -246,13 +246,21 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
 
     // Pisahkan kandidat ASR (memiliki <s t="..."> timestamp vokal per kata langsung dari gelombang audio)
     // dan kandidat Manual CC (subtitle dari kreator)
+    const isJpSong = Boolean(meta && meta.likelyJapanese);
     const scoreLang = (t) => {
         const lang = String(t.languageCode || '').toLowerCase();
         let s = 0;
-        if (lang.startsWith('id')) s += 85;
-        else if (meta && meta.likelyJapanese && lang.startsWith('ja')) s += 65;
-        else if (lang.startsWith('ja')) s += 50;
-        else if (lang.startsWith('en')) s += 40;
+        if (isJpSong) {
+            // Untuk lagu Jepang, jalur CC bahasa Jepang adalah vokal/lirik asli yang dinyanyikan!
+            if (lang.startsWith('ja')) s += 100;
+            else if (lang.startsWith('en')) s += 45;
+            else if (lang.startsWith('id')) s += 30;
+        } else {
+            // Untuk lagu non-Jepang (lagu Indonesia/Global), prioritaskan lirik Indonesia jika ada
+            if (lang.startsWith('id')) s += 100;
+            else if (lang.startsWith('en')) s += 60;
+            else if (lang.startsWith('ja')) s += 30;
+        }
         return { track: t, lang, langScore: s };
     };
 
@@ -272,9 +280,9 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     const idTrack = captionTracks.find(t => t && t.baseUrl && String(t.languageCode || '').toLowerCase().startsWith('id'));
 
     const [asrXmlRes, manualXmlRes, idXmlRes] = await Promise.all([
-        bestAsr ? httpRequestRaw(`${bestAsr.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 4000 }) : Promise.resolve({ body: '' }),
-        bestManual ? httpRequestRaw(`${bestManual.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 4000 }) : Promise.resolve({ body: '' }),
-        idTrack ? httpRequestRaw(`${idTrack.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 4000 }).catch(() => ({ body: '' })) : Promise.resolve({ body: '' })
+        bestAsr ? httpRequestRaw(`${bestAsr.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 6500 }) : Promise.resolve({ body: '' }),
+        bestManual ? httpRequestRaw(`${bestManual.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 6500 }) : Promise.resolve({ body: '' }),
+        idTrack ? httpRequestRaw(`${idTrack.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 6500 }).catch(() => ({ body: '' })) : Promise.resolve({ body: '' })
     ]);
 
     const parsedAsr = (asrXmlRes && asrXmlRes.body && asrXmlRes.body.length > 50)

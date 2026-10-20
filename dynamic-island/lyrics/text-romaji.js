@@ -266,10 +266,16 @@ function parseTrackMetadata(rawTitle, rawArtist) {
 
     const uniqueQueries = [...new Set(queries.map(q => q.replace(/\s+/g, ' ').trim()).filter(q => q.length >= 2))].slice(0, 7);
 
-    const likelyJapanese =
-        hasJapaneseChars(origTitle) ||
-        hasJapaneseChars(origArtist) ||
+    const isIdBranch = /\b(hololive[\s-]*(?:indonesia|id)|nijisanji[\s-]*id)\b/i.test(`${origTitle} ${origArtist}`);
+    const hasJpText = hasJapaneseChars(origTitle) || hasJapaneseChars(origArtist) || jpQuotes.length > 0;
+
+    let likelyJapanese =
+        hasJpText ||
         /\b(yoasobi|ado|vaundy|kenshi\s*yonezu|radwimps|lisa|aimer|eve|yorushika|zutomayo|hige\s*dism|official\s*higedandism|mrs\.\s*green\s*apple|fujii\s*kaze|majiko|yuuri|tuyu|mafumafu|kikuo|deco\*27|kanaria|pinocchiop|hoshimachi\s*suisei|shigure\s*ui|hololive|nijisanji|utattemita|kokoronashi|shinunoga|unravel|gurenge|idol|sparkle|zenzenzense|nandemonaiya|suzume|kaijuu|odoriko|lemon|kick\s*back|blinding|specialz|ao\s*no\s*sumika|kaikai\s*kitan)\b/i.test(`${origTitle} ${origArtist}`);
+
+    if (isIdBranch && !hasJpText && !/\b(utattemita|anime|jpop|j-pop|vocaloid)\b/i.test(origTitle)) {
+        likelyJapanese = false;
+    }
 
     return {
         origTitle,

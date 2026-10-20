@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.5",
-  "versionCode": 21,
+  "versionCode": 22,
   "version": "1.0.5",
-  "fixCount": 21,
-  "displayVersion": "1.0.5 (Kode: 21)",
+  "fixCount": 22,
+  "displayVersion": "1.0.5 (Kode: 22)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.5.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.5 (Patch 21): Prioritaskan YouTube Official CC untuk video cover/kolaborasi musik (seperti Bebas oleh Hololive ID), cegah pembajakan judul lagu di database LRCLIB, dan pastikan pemilihan subtitle Bahasa Indonesia tepat waktu."
+  "changelog": "Ukikura v1.0.5 (Patch 22): Perbaikan prioritas subtitle lagu Jepang agar Romaji dan huruf Jepang (Kanji/Kana) tetap tampil sebagai lirik utama disertai terjemahan Bahasa Indonesia resmi, serta normalisasi teks Unicode mathematical bold."
 }
