@@ -318,107 +318,107 @@
         gap: 6px;
     }
 
-    /* ================= HALAMAN 5: FILE SHELF (Nusa Shelf + Island Gulp) ================= */
-    .sh-zone {
-        left: 48px;
-        top: 40px;
-        width: 384px;
-        height: 118px;
-        transition: opacity 0.35s ease;
+    /* ================= HALAMAN 5: FILE SHELF & CLIPBOARD HISTORY ================= */
+    .shelf-tabs-bar {
+        position: absolute; left: 24px; right: 24px; top: 35px; height: 26px;
+        display: flex; align-items: center; justify-content: space-between; z-index: 6;
     }
-
+    .shelf-segmented-nav {
+        display: flex; align-items: center; background: rgba(255, 255, 255, 0.08);
+        border-radius: 8px; padding: 2px; gap: 2px; flex-shrink: 0;
+    }
+    .shelf-tab-btn {
+        display: flex; align-items: center; gap: 4px; height: 22px; padding: 0 7px;
+        border: none; border-radius: 6px; background: transparent; color: rgba(255, 255, 255, 0.65);
+        font-family: var(--ui); font-size: 10px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+        transition: background 0.18s, color 0.18s;
+    }
+    .shelf-tab-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+    .shelf-tab-btn.active { background: rgba(255, 255, 255, 0.2); color: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+    .shelf-tab-btn svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2; flex-shrink: 0; }
+    .shelf-count-badge {
+        display: inline-block; min-width: 14px; height: 14px; line-height: 14px; padding: 0 3px;
+        border-radius: 8px; background: rgba(255, 255, 255, 0.15); font-size: 8.5px; font-family: var(--mono); font-weight: 700; text-align: center; flex-shrink: 0;
+    }
+    .shelf-tab-btn.active .shelf-count-badge { background: var(--cyan); color: #000; }
+    .shelf-top-actions { display: flex; align-items: center; flex-shrink: 0; }
+    .sh-tab-hint { font-size: 9.5px; color: rgba(255, 255, 255, 0.5); letter-spacing: 0.2px; white-space: nowrap; }
+    .clip-filter-bar { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+    .clip-flt-chip {
+        height: 20px; padding: 0 5px; border-radius: 5px; border: none; background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.65); font-size: 9px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.15s ease;
+    }
+    .clip-flt-chip:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+    .clip-flt-chip.active { background: rgba(86, 200, 255, 0.25); color: #56c8ff; border: 1px solid rgba(86, 200, 255, 0.4); }
+    .clip-clear-btn {
+        height: 20px; padding: 0 5px; border-radius: 5px; border: 1px solid rgba(255, 90, 110, 0.35);
+        background: rgba(255, 90, 110, 0.12); color: #ff5a6e; font-size: 8.5px; font-weight: 700; cursor: pointer; margin-left: 2px; white-space: nowrap; transition: all 0.15s ease;
+    }
+    .clip-clear-btn:hover { background: rgba(255, 90, 110, 0.25); color: #fff; }
+    .shelf-view { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+    .sh-zone { left: 32px; top: 66px; width: 416px; height: 100px; transition: opacity 0.35s ease; }
     .sh-zone .zone {
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        border-radius: 16px;
-        border: 1.4px dashed rgba(255, 255, 255, 0.3);
-        background: rgba(255, 255, 255, 0.03);
-        transition: border-color 0.3s, background 0.3s, transform 0.4s var(--spring);
+        left: 0; top: 0; width: 100%; height: 100%; border-radius: 14px;
+        border: 1.4px dashed rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.03); transition: border-color 0.3s, background 0.3s, transform 0.4s var(--spring);
     }
-
-    .l-shelf.hover .zone {
-        border-color: rgba(255, 255, 255, 0.85);
-        background: rgba(255, 255, 255, 0.08);
-        transform: scale(1.02);
-    }
-
-    .l-shelf.has .sh-zone {
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    .l-shelf.has.hover .sh-zone {
-        opacity: 1;
-    }
-
+    .l-shelf.hover .zone { border-color: rgba(255, 255, 255, 0.85); background: rgba(255, 255, 255, 0.08); transform: scale(1.015); }
+    .l-shelf.has .sh-zone { opacity: 0; pointer-events: none; }
+    .l-shelf.has.hover .sh-zone { opacity: 1; }
     .shelf-cards {
-        position: absolute;
-        left: 48px;
-        right: 48px;
-        top: 42px;
-        bottom: 24px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        overflow-x: auto;
+        position: absolute; left: 32px; right: 32px; top: 66px; bottom: 18px;
+        display: flex; align-items: center; gap: 10px; overflow-x: auto;
     }
-
     .sh-card {
-        width: 72px;
-        padding: 6px;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.07);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        cursor: pointer;
-        flex-shrink: 0;
-        animation: fall 0.65s cubic-bezier(0.34, 1.6, 0.5, 1) both;
+        width: 76px; padding: 6px 5px; border-radius: 10px; background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; align-items: center;
+        cursor: grab; flex-shrink: 0; animation: fall 0.65s cubic-bezier(0.34, 1.6, 0.5, 1) both; transition: background 0.15s, border-color 0.15s, transform 0.15s;
     }
-
-    .sh-card:hover {
-        background: rgba(255, 255, 255, 0.15);
-    }
-
+    .sh-card:active { cursor: grabbing; }
+    .sh-card:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.22); transform: translateY(-2px); }
     @keyframes fall {
-        from { transform: translateY(-28px) scale(0.7); opacity: 0; }
+        from { transform: translateY(-24px) scale(0.7); opacity: 0; }
         to { transform: none; opacity: 1; }
     }
+    .sh-thumb { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(145deg, #2d5bff, #19b8ff); display: grid; place-items: center; }
+    .sh-thumb svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2; }
+    .sh-name { margin-top: 5px; font-size: 9.5px; font-weight: 600; max-width: 68px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+    .sh-size { margin-top: 1px; font-size: 8.5px; color: rgba(255, 255, 255, 0.5); }
+    .sh-drag-badge { margin-top: 2px; font-size: 7.5px; color: rgba(86, 200, 255, 0.85); font-weight: 600; }
 
-    .sh-thumb {
-        width: 38px;
-        height: 38px;
-        border-radius: 8px;
-        background: linear-gradient(145deg, #2d5bff, #19b8ff);
-        display: grid;
-        place-items: center;
+    /* Clipboard History Vault (Todo 5) */
+    .clip-list {
+        position: absolute; left: 32px; right: 32px; top: 66px; bottom: 18px;
+        display: flex; align-items: center; gap: 8px; overflow-x: auto; overflow-y: hidden; padding-bottom: 2px;
     }
-
-    .sh-thumb svg {
-        width: 20px;
-        height: 20px;
-        stroke: #fff;
-        fill: none;
-        stroke-width: 2;
+    .clip-list::-webkit-scrollbar, .shelf-cards::-webkit-scrollbar { height: 4px; }
+    .clip-list::-webkit-scrollbar-thumb, .shelf-cards::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 4px; }
+    .clip-card {
+        flex-shrink: 0; width: 142px; height: 94px; padding: 6px 8px; border-radius: 10px;
+        background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
+        position: relative; transition: background 0.15s, border-color 0.15s, transform 0.15s; box-sizing: border-box;
     }
-
-    .sh-name {
-        margin-top: 6px;
-        font-size: 10px;
-        font-weight: 600;
-        max-width: 64px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    .clip-card:hover { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.25); transform: translateY(-1px); }
+    .clip-card-header { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+    .clip-badge { font-size: 8.5px; font-weight: 700; font-family: var(--mono); padding: 1px 5px; border-radius: 4px; text-transform: uppercase; }
+    .clip-badge.code { background: rgba(167, 139, 250, 0.22); color: #c4b5fd; border: 1px solid rgba(167, 139, 250, 0.35); }
+    .clip-badge.url { background: rgba(56, 189, 248, 0.22); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
+    .clip-badge.text { background: rgba(255, 255, 255, 0.15); color: #e2e8f0; }
+    .clip-badge.image { background: rgba(244, 114, 182, 0.22); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.35); }
+    .clip-time { font-size: 8.5px; color: rgba(255, 255, 255, 0.45); font-family: var(--mono); }
+    .clip-body {
+        font-size: 9.8px; line-height: 1.35; color: rgba(255, 255, 255, 0.9);
+        overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-all; max-height: 42px;
     }
-
-    .sh-size {
-        margin-top: 2px;
-        font-size: 8.8px;
-        color: rgba(255, 255, 255, 0.5);
+    .clip-body.code-font { font-family: var(--mono); font-size: 9px; color: #e0e7ff; background: rgba(0, 0, 0, 0.25); padding: 2px 4px; border-radius: 4px; }
+    .clip-thumb-img { width: 100%; height: 42px; object-fit: cover; border-radius: 4px; background: #111; }
+    .clip-footer { display: flex; align-items: center; justify-content: space-between; width: 100%; font-size: 8.5px; color: rgba(255, 255, 255, 0.45); }
+    .clip-card.copied .clip-footer-action { color: #38d36f !important; font-weight: 700; }
+    .clip-empty-msg {
+        display: flex; align-items: center; justify-content: center; flex-direction: column;
+        width: 100%; height: 100%; color: rgba(255, 255, 255, 0.45); font-size: 10px; text-align: center; gap: 6px; padding: 0 20px;
     }
+    .clip-empty-msg svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; opacity: 0.6; }
 
     /* ================= HALAMAN 6: LMS SYNC & CONFIG ================= */
     .cfg-body {

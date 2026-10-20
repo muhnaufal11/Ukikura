@@ -9,6 +9,7 @@ const { initWhatsAppCompanion, ensureWhatsAppWindow, pollWhatsAppUnread, resetWa
 const { initAutoStart, isWindowsAutoStartEnabled, setWindowsAutoStart } = require("./main/autostart");
 const { startKuraServer } = require("./main/kura-server");
 const { initAutoUpdater, checkGitHubForUpdates, getLastUpdateStatus, openUpdateDownloadPage, getLocalVersionInfo, setUpdateChannel } = require("./main/updater");
+const { initClipboardWatcher } = require("./main/clipboard-watcher");
 
 let mainWindow = null;
 let loginWindow = null;
@@ -162,6 +163,7 @@ function createIslandWindow() {
     });
 
     startNusaHoverLoop();
+    initClipboardWatcher(mainWindow);
 }
 
 let lastIgnoreState = null;

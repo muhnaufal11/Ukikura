@@ -409,19 +409,59 @@
             </div>
         </div>
 
-        <!-- ================= HALAMAN 5: FILE SHELF DENGAN CAHAYA GULP NUSA ================= -->
+        <!-- ================= HALAMAN 5: FILE SHELF & CLIPBOARD HISTORY ================= -->
         <div class="ly l-shelf" id="shelf">
-            <canvas class="a" id="shCv" width="960" height="372" style="left:0;top:0;width:480px;height:186px;pointer-events:none" aria-hidden="true"></canvas>
-            <div class="shelf-cards" id="shelf-cards"></div>
-            <div class="a sh-zone" id="sh-zone">
-                <span class="a zone"></span>
-                <svg class="a c sh-icon" style="left:192px;top:38px;width:30px;height:30px" viewBox="-15 -22 30 32">
-                    <path d="M-10.2-8h20.4l3.2 7.8h-26.8z" fill="rgba(255,255,255,.28)"/>
-                    <path class="sh-arrow" d="M-1.7-21h3.4v6.5h3.5L0-8.5l-5.2-6H-1.7z" fill="rgba(255,255,255,.5)"/>
-                    <path d="M-14 1h8.8l1.6 3.2h7.2L5.2 1H14v8h-28z" fill="rgba(255,255,255,.85)"/>
-                </svg>
-                <span class="a c" style="left:192px;top:72px;font-size:13px;font-weight:600">Drop files here</span>
-                <span class="a c dim" style="left:192px;top:90px;font-size:10px">Simpan sementara file tugas Word/PDF · klik untuk buka</span>
+            <!-- Segmented Tab Bar di atas Shelf -->
+            <div class="shelf-tabs-bar">
+                <div class="shelf-segmented-nav">
+                    <button class="shelf-tab-btn active" id="btn-tab-shelf-files" title="Rak File Sementara & Drag-Out">
+                        <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        <span>File Shelf</span>
+                        <span class="shelf-count-badge" id="shelf-files-count">0</span>
+                    </button>
+                    <button class="shelf-tab-btn" id="btn-tab-shelf-clip" title="Riwayat Clipboard & Cuplikan (15 Item)">
+                        <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                        <span>Clipboard</span>
+                        <span class="shelf-count-badge" id="shelf-clip-count">0</span>
+                    </button>
+                </div>
+                <div class="shelf-top-actions">
+                    <span class="sh-tab-hint" id="shelf-drag-hint" title="Tahan dan tarik file ke WhatsApp / Browser / Explorer">💡 Drag file ke luar</span>
+                    <div class="clip-filter-bar" id="clip-filter-bar" style="display:none">
+                        <button class="clip-flt-chip active" data-clip-filter="all">Semua</button>
+                        <button class="clip-flt-chip" data-clip-filter="code">Kode</button>
+                        <button class="clip-flt-chip" data-clip-filter="url">Link</button>
+                        <button class="clip-flt-chip" data-clip-filter="text">Teks</button>
+                        <button class="clip-flt-chip" data-clip-filter="image">Gambar</button>
+                        <button class="clip-clear-btn" id="btn-clear-clip" title="Bersihkan riwayat clipboard">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-View 1: File Shelf Cards & Gulp Canvas -->
+            <div class="shelf-view" id="view-shelf-files">
+                <canvas class="a" id="shCv" width="960" height="372" style="left:0;top:0;width:480px;height:186px;pointer-events:none" aria-hidden="true"></canvas>
+                <div class="shelf-cards" id="shelf-cards"></div>
+                <div class="a sh-zone" id="sh-zone">
+                    <span class="a zone"></span>
+                    <svg class="a c sh-icon" style="left:192px;top:28px;width:28px;height:28px" viewBox="-15 -22 30 32">
+                        <path d="M-10.2-8h20.4l3.2 7.8h-26.8z" fill="rgba(255,255,255,.28)"/>
+                        <path class="sh-arrow" d="M-1.7-21h3.4v6.5h3.5L0-8.5l-5.2-6H-1.7z" fill="rgba(255,255,255,.5)"/>
+                        <path d="M-14 1h8.8l1.6 3.2h7.2L5.2 1H14v8h-28z" fill="rgba(255,255,255,.85)"/>
+                    </svg>
+                    <span class="a c" style="left:192px;top:60px;font-size:12.5px;font-weight:600">Drop files here</span>
+                    <span class="a c dim" style="left:192px;top:78px;font-size:9.5px">Simpan sementara · Tarik (drag) keluar ke WhatsApp/Browser</span>
+                </div>
+            </div>
+
+            <!-- Sub-View 2: Clipboard History Vault -->
+            <div class="shelf-view" id="view-shelf-clip" style="display:none">
+                <div class="clip-list" id="clip-list">
+                    <div class="clip-empty-msg">
+                        <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                        <span>Belum ada riwayat clipboard tersimpan. Salin (Ctrl+C) teks, link, kode, atau screenshot untuk memulai.</span>
+                    </div>
+                </div>
             </div>
         </div>
 

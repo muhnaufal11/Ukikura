@@ -1,8 +1,23 @@
-// ================= HALAMAN 5: NUSA SHELF + ISLAND GULP CANVAS GLOW =================
+// ================= HALAMAN 5: NUSA SHELF & CLIPBOARD HISTORY =================
 const shelfEl = document.getElementById('shelf');
 const shelfCardsEl = document.getElementById('shelf-cards');
 const shCv = document.getElementById('shCv');
 const sc = shCv.getContext('2d');
+const btnTabShelfFiles = document.getElementById('btn-tab-shelf-files');
+const btnTabShelfClip = document.getElementById('btn-tab-shelf-clip');
+const shelfFilesCountEl = document.getElementById('shelf-files-count');
+const shelfClipCountEl = document.getElementById('shelf-clip-count');
+const shelfDragHintEl = document.getElementById('shelf-drag-hint');
+const clipFilterBarEl = document.getElementById('clip-filter-bar');
+const btnClearClipEl = document.getElementById('btn-clear-clip');
+const viewShelfFilesEl = document.getElementById('view-shelf-files');
+const viewShelfClipEl = document.getElementById('view-shelf-clip');
+const clipListEl = document.getElementById('clip-list');
+
+let shelfActiveTab = 'files'; // 'files' | 'clip'
+let clipHistoryList = [];
+let clipFilter = 'all';
+let isDraggingOut = false;
 const PAL = [[40, 170, 240], [52, 104, 236], [104, 78, 222]];
 const SH_SPEED = 0.7;
 let shHov = 0, shHv = 0, shDropT = -1, shDx = 240, shCx = 240, shG = 0, shGv = 0, shHot = false, shLast = 0, shRaf = 0;
@@ -80,15 +95,35 @@ function shRun() {
     }
 }
 
+function switchShelfTab(tab) {
+    shelfActiveTab = tab;
+    const isFiles = tab === 'files';
+    if (btnTabShelfFiles) btnTabShelfFiles.classList.toggle('active', isFiles);
+    if (btnTabShelfClip) btnTabShelfClip.classList.toggle('active', !isFiles);
+    if (viewShelfFilesEl) viewShelfFilesEl.style.display = isFiles ? '' : 'none';
+    if (viewShelfClipEl) viewShelfClipEl.style.display = isFiles ? 'none' : '';
+    if (shelfDragHintEl) shelfDragHintEl.style.display = isFiles ? '' : 'none';
+    if (clipFilterBarEl) clipFilterBarEl.style.display = isFiles ? 'none' : 'flex';
+    if (!isFiles) {
+        renderClipboardHistory();
+    }
+}
+
+if (btnTabShelfFiles) btnTabShelfFiles.addEventListener('click', () => switchShelfTab('files'));
+if (btnTabShelfClip) btnTabShelfClip.addEventListener('click', () => switchShelfTab('clip'));
+
 function renderShelf() {
     shelfEl.classList.toggle('has', shelfItems.length > 0);
+    if (shelfFilesCountEl) shelfFilesCountEl.textContent = String(shelfItems.length);
+
     shelfCardsEl.innerHTML = shelfItems.map((item, idx) => `
-        <div class="sh-card" data-idx="${idx}" title="${escapeHtml(item.path || item.name)}">
+        <div class="sh-card" draggable="true" data-idx="${idx}" title="${escapeHtml(item.path || item.name)} · Tahan dan tarik ke luar untuk kirim">
             <span class="sh-thumb">
-                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 1-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             </span>
             <span class="sh-name">${escapeHtml(item.name)}</span>
             <span class="sh-size">${escapeHtml(item.size)}</span>
+            <span class="sh-drag-badge">Tarik keluar</span>
         </div>
     `).join('');
 
@@ -97,10 +132,135 @@ function renderShelf() {
             const item = shelfItems[parseInt(card.getAttribute('data-idx'), 10)];
             if (item && item.path) shell.openPath(item.path);
         });
+
+        // Native Drag-Out ke Browser / WhatsApp / File Explorer (Todo 6)
+        card.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+            isDraggingOut = true;
+            const item = shelfItems[parseInt(card.getAttribute('data-idx'), 10)];
+            if (item && item.path) {
+                ipcRenderer.send('island-start-drag', item.path);
+            }
+        });
+        card.addEventListener('dragend', () => {
+            isDraggingOut = false;
+        });
     });
 }
 
+function renderClipboardHistory() {
+    if (!clipListEl) return;
+    if (shelfClipCountEl) shelfClipCountEl.textContent = String(clipHistoryList.length);
+
+    let filtered = clipHistoryList;
+    if (clipFilter !== 'all') {
+        filtered = clipHistoryList.filter(item => item.type === clipFilter);
+    }
+
+    if (filtered.length === 0) {
+        clipListEl.innerHTML = `
+            <div class="clip-empty-msg">
+                <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                <span>${clipHistoryList.length === 0 
+                    ? 'Belum ada riwayat clipboard tersimpan. Salin teks, link, kode, atau screenshot untuk memulai.' 
+                    : 'Tidak ada item yang cocok dengan filter ini.'}</span>
+            </div>
+        `;
+        return;
+    }
+
+    clipListEl.innerHTML = filtered.map((item) => {
+        const typeBadge = `<span class="clip-badge ${item.type}">${item.type}</span>`;
+        let bodyHtml = '';
+        if (item.type === 'image') {
+            bodyHtml = `<img class="clip-thumb-img" src="${item.content}" alt="Screenshot" />`;
+        } else if (item.type === 'code') {
+            bodyHtml = `<div class="clip-body code-font">${escapeHtml(item.preview)}</div>`;
+        } else {
+            bodyHtml = `<div class="clip-body">${escapeHtml(item.preview)}</div>`;
+        }
+
+        const metaStr = item.type === 'image' ? 'Gambar' : `${item.charCount} chr`;
+
+        return `
+            <div class="clip-card" data-clip-id="${item.id}" title="Klik 1-kali untuk menyalin kembali ke clipboard">
+                <div class="clip-card-header">
+                    ${typeBadge}
+                    <span class="clip-time">${item.timeStr || ''}</span>
+                </div>
+                ${bodyHtml}
+                <div class="clip-footer">
+                    <span>${metaStr}</span>
+                    <span class="clip-footer-action">Salin</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    clipListEl.querySelectorAll('.clip-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const clipId = card.getAttribute('data-clip-id');
+            const item = clipHistoryList.find(c => c.id === clipId);
+            if (!item) return;
+
+            if (item.type === 'image') {
+                ipcRenderer.send('clipboard-copy-image', item.content);
+            } else {
+                ipcRenderer.send('clipboard-copy-text', item.content);
+            }
+
+            card.classList.add('copied');
+            const actEl = card.querySelector('.clip-footer-action');
+            if (actEl) actEl.textContent = '✓ Tersalin!';
+            setTimeout(() => {
+                card.classList.remove('copied');
+                if (actEl) actEl.textContent = 'Salin';
+            }, 1200);
+        });
+    });
+}
+
+if (clipFilterBarEl) {
+    clipFilterBarEl.querySelectorAll('.clip-flt-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            clipFilterBarEl.querySelectorAll('.clip-flt-chip').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            clipFilter = btn.getAttribute('data-clip-filter') || 'all';
+            renderClipboardHistory();
+        });
+    });
+}
+
+if (btnClearClipEl) {
+    btnClearClipEl.addEventListener('click', () => {
+        ipcRenderer.send('clipboard-clear');
+    });
+}
+
+ipcRenderer.on('clipboard-history-update', (event, history) => {
+    clipHistoryList = Array.isArray(history) ? history : [];
+    if (shelfClipCountEl) shelfClipCountEl.textContent = String(clipHistoryList.length);
+    if (shelfActiveTab === 'clip') {
+        renderClipboardHistory();
+    }
+});
+
+ipcRenderer.send('clipboard-get-history');
+
+const enableHScroll = (el) => {
+    if (!el) return;
+    el.addEventListener('wheel', (e) => {
+        if (e.deltaY !== 0) {
+            e.preventDefault();
+            el.scrollLeft += e.deltaY;
+        }
+    }, { passive: false });
+};
+enableHScroll(clipListEl);
+enableHScroll(shelfCardsEl);
+
 window.addEventListener('dragover', (e) => {
+    if (isDraggingOut) return;
     e.preventDefault();
     if (currentPage !== 'shelf') setPage('shelf');
     const r = mnEl.getBoundingClientRect();

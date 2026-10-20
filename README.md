@@ -9,8 +9,8 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.2-10b981.svg?style=flat-square)](./version.json)
-[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.2.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.2/Ukikura-Setup-v1.0.2.exe)
+[![Version](https://img.shields.io/badge/Version-1.0.3-10b981.svg?style=flat-square)](./version.json)
+[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.3.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.3/Ukikura-Setup-v1.0.3.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
 [Instalasi Langsung (Tanpa Compile)](#instalasi-langsung-tanpa-compile) · [Pratinjau Antarmuka](#pratinjau-antarmuka-100-identik) · [Integrasi AI LMS Assistant](#integrasi-dengan-telu-lms-quiz-assistant-ai--seb-proxy) · [Mesin Lirik & Forced Alignment](#mesin-lirik-multi-sumber--forced-alignment) · [Arsitektur Modular](#arsitektur-modular) · [Fitur Mendatang (Roadmap)](#rencana-pengembangan-fitur-mendatang-roadmap) · [Auto-Updater GitHub](#sistem-deteksi-pembaruan-github-auto-updater)
@@ -131,7 +131,7 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
 - **LMS Todolist & Auto-Crawler**: Sinkronisasi otomatis daftar kuis dan tugas kuliah melalui tautan kalender **iCal (`.ics`)** maupun sesi login latar belakang Moodle.
 - **Smart Calendar**: Kalender bulanan interaktif di dalam kapsul dengan penanda titik warna (*merah: tenggat mendesak*, *biru: tugas standar*, *ungu: catatan/agenda pribadi*).
 - **Pomodoro & Deadline Focus Timer**: Hitung mundur tenggat waktu terdekat secara *real-time* yang dapat dialihkan ke mode fokus **Pomodoro 25 Menit**.
-- **File Shelf (Island Gulp Canvas)**: Rak penyimpanan file sementara di atas layar dengan efek *liquid gulp* berbasis HTML5 Canvas untuk menampung dokumen Word/PDF/ZIP sebelum diunggah ke LMS.
+- **File Shelf & Clipboard Vault**: Rak penyimpanan file sementara di atas layar dengan efek *liquid gulp* berbasis HTML5 Canvas untuk menampung dokumen Word/PDF/ZIP sebelum diunggah ke LMS, mendukung **Drag-Out native** langsung ke browser/WhatsApp, serta **Clipboard History** 15 teks/kode/link/screenshot terakhir dengan 1-klik salin.
 
 ### 3. Jembatan Perangkat Keras WinRT & WhatsApp (`Uki Engine`)
 - **Pantauan Baterai Lintas Perangkat**: Menampilkan persentase baterai Laptop, status pengisian daya (*Charging Peek*), baterai HP Android/iOS (via Windows Phone Link / Bluetooth), serta baterai TWS, Mouse, dan Keyboard Bluetooth.
@@ -245,12 +245,12 @@ Berikut daftar rencana fitur baru yang sedang disiapkan untuk pembaruan **Ukikur
 ### 1. Modul Musik, Audio, & Lirik (`music-lyrics.js` & `lyrics/`)
 - [x] **1. Interactive Seek Bar & Volume Wheel**: Klik atau geser (*drag*) langsung pada garis durasi lagu (`#music-prog-1` / `#music-prog-2`) untuk melompat ke menit tertentu via perintah WinRT `TryChangePlaybackPositionAsync`, serta *scroll* roda mouse di atas sampul album untuk mengatur volume aplikasi pemutar musik secara langsung.
 - [x] **2. Real-Time Audio Ambient Visualizer (WASAPI Loopback)**: Mesin visualisasi Canvas 2D audio-reaktif (*3 fluid morphing color orbs* + undulasi pita gelombang audio di dasar notch) yang bergerak dinamis mengikuti frekuensi bass dan vokal asli dari output audio Windows secara *real-time*.
-- [ ] **3. Dual-Sub Lirik (Romaji + Kanji + Terjemahan Indonesia)**: Menambahkan opsi baris ke-3 opsional berisi arti Bahasa Indonesia (dari `tlyric` NetEase atau terjemahan subtitle YouTube `&tlang=id`) tepat di bawah baris Kanji.
-- [ ] **4. Mini Floating Karaoke Overlay (Mode Pin Transparan)**: Mode khusus yang hanya menampilkan 2 baris lirik aktif dengan latar belakang transparan penuh di atas layar sehingga bisa tetap membaca lirik sambil mengerjakan tugas atau bermain game tanpa tertutup kotak hitam kapsul.
+- [x] **3. Dual-Sub Lirik (Romaji + Kanji + Terjemahan Indonesia)**: Teks utama (Kanji/Original) di atas, baris Romaji di bawahnya, dan baris terjemahan Bahasa Indonesia di bawah Romaji (dari `tlyric` NetEase / CC YouTube). Dilengkapi tombol toggle `[SUB: ON]` / `[SUB: OFF]` di bilah kontrol musik.
+- [x] **4. Mini Floating Karaoke Overlay (Mode Pin Transparan)**: Mode khusus kapsul ramping melayang (`480px x 54px`, radius `22px`) semi-transparan dengan blur latar belakang (`backdrop-filter`) yang menampilkan 2 baris lirik (baris aktif + berikutnya / terjemahan), mini sampul lagu, tombol play/pause mini, tombol toggle sub `[≡]`, tombol perluas lirik `[⤢]`, dan tombol close `[✕]`.
 
 ### 2. Modul Kura Vault, File Shelf, & Akademik (`shelf-actions.js`, `lms-pomodoro.js`, & `smart-calendar.js`)
-- [ ] **5. Clipboard History & Snippet Vault di Halaman Shelf**: Menyimpan riwayat 15 teks, kode, tautan, atau gambar (*screenshot*) terakhir yang disalin (`Ctrl+C`) secara otomatis ke dalam tab di halaman **File Shelf**, sehingga bisa ditempel (*paste*) ulang kapan saja dengan 1 klik.
-- [ ] **6. Drag-Out dari File Shelf ke Browser / WhatsApp**: Menarik (*drag*) file dari dalam kapsul **Ukikura** langsung keluar ke kolom *upload* tugas LMS di browser atau ke ruang obrolan WhatsApp.
+- [x] **5. Clipboard History & Snippet Vault di Halaman Shelf**: Menyimpan riwayat 15 teks, kode, tautan, atau gambar (*screenshot*) terakhir yang disalin (`Ctrl+C`) secara otomatis ke dalam tab di halaman **File Shelf**, lengkap dengan filter kategori (`Semua`, `Kode`, `Link`, `Teks`, `Gambar`), badge warna tipe, tombol *Clear*, dan 1-klik salin ulang dengan feedback visual `✓ Tersalin!`.
+- [x] **6. Drag-Out dari File Shelf ke Browser / WhatsApp**: Menarik (*drag*) file dari dalam rak File Shelf langsung keluar ke kolom *upload* tugas LMS di browser, chat WhatsApp, atau File Explorer menggunakan Electron native OS drag API (`event.sender.startDrag`). Dilengkapi indikator badge "Tarik keluar" dan petunjuk interaktif.
 - [ ] **7. Instant Screenshot & OCR Crop ke Kura Shelf**: Tombol cepat di kapsul untuk menangkap area layar, menyimpannya ke File Shelf, atau langsung mengekstrak teks dari gambar (menggunakan `Windows.Media.Ocr` di [`dynamic-island/bridge/winrt-bridge.ps1`](./dynamic-island/bridge/winrt-bridge.ps1)) ke Clipboard.
 - [ ] **8. Notifikasi Suara & Popup Peringatan Bertahap Deadline LMS**: Ekspansi *Peek Popup* otomatis saat tugas LMS tersisa **H-24 jam**, **H-6 jam**, dan **H-1 jam**, lengkap dengan tombol 1-klik untuk langsung membuka halaman pengumpulan tugas tersebut.
 - [ ] **9. Jadwal Matkul Mingguan & Bunyi Alarm Kuliah**:

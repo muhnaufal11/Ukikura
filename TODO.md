@@ -23,11 +23,11 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
 
 ## 2. Modul Kura Vault, File Shelf, & Akademik (`shelf-actions.js`, `lms-pomodoro.js`, & `smart-calendar.js`)
 
-- [ ] **5. Clipboard History & Snippet Vault di Halaman Shelf**
-  - Menyimpan riwayat 15 teks, kode, tautan, atau gambar (*screenshot*) terakhir yang di-*copy* (`Ctrl+C`) secara otomatis ke dalam tab di halaman **File Shelf**, sehingga bisa di-*paste* ulang kapan saja dengan 1 klik.
+- [x] **5. Clipboard History & Snippet Vault di Halaman Shelf**
+  - Menyimpan riwayat 15 teks, kode, tautan, atau gambar (*screenshot*) terakhir yang di-*copy* (`Ctrl+C`) secara otomatis ke dalam tab di halaman **File Shelf**, lengkap dengan filter kategori (`Semua`, `Kode`, `Link`, `Teks`, `Gambar`), badge warna tipe, tombol *Clear*, dan 1-klik salin ulang dengan feedback visual `✓ Tersalin!`.
 
-- [ ] **6. Drag-Out dari File Shelf ke Browser / WhatsApp**
-  - Menarik (*drag*) file dari dalam kapsul **Ukikura** langsung keluar ke kolom *upload* tugas LMS di browser atau ke chat WhatsApp.
+- [x] **6. Drag-Out dari File Shelf ke Browser / WhatsApp**
+  - Menarik (*drag*) file dari dalam rak File Shelf langsung keluar ke kolom *upload* tugas LMS di browser, chat WhatsApp, atau File Explorer menggunakan Electron native OS drag API (`event.sender.startDrag`). Dilengkapi indikator badge "Tarik keluar" dan petunjuk interaktif.
 
 - [ ] **7. Instant Screenshot & OCR Crop ke Kura Shelf**
   - Tombol cepat di kapsul untuk menangkap area layar, menyimpannya ke File Shelf, atau langsung mengekstrak teks dari gambar (menggunakan `Windows.Media.Ocr` di `winrt-bridge.ps1`) ke Clipboard.
