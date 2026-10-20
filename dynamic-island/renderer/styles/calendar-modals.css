@@ -351,3 +351,18 @@
         background: rgba(255, 255, 255, 0.14);
         color: #fff;
     }
+
+    .cal-ev-row.class-ev {
+        border-left-color: #38bdf8;
+        background: rgba(56, 189, 248, 0.12);
+    }
+
+    .cal-ev-row.class-ev:hover {
+        background: rgba(56, 189, 248, 0.22);
+    }
+
+    .cal-day.has-class:not(.has-urgent):not(.has-event):not(.has-note)::after {
+        background: #38bdf8;
+        box-shadow: 0 0 5px #38bdf8;
+    }
+

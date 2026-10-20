@@ -398,7 +398,11 @@ document.getElementById('btn-login').addEventListener('click', (e) => {
 });
 
 document.getElementById('btn-open-courses').addEventListener('click', () => {
-    ipcRenderer.send('island-open-url', 'https://lms.telkomuniversity.ac.id/my/courses.php');
+    if (typeof openScheduleModal === 'function') {
+        openScheduleModal();
+    } else {
+        ipcRenderer.send('island-open-url', 'https://lms.telkomuniversity.ac.id/my/courses.php');
+    }
 });
 
 const LMS_AI_REPO_URL = 'https://github.com/muhnaufal11/lms-quiz-assistant';

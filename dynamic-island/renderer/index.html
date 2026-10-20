@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="./styles/pages-media-notif.css">
     <link rel="stylesheet" href="./styles/pages-lms-tools.css">
     <link rel="stylesheet" href="./styles/calendar-modals.css">
+    <link rel="stylesheet" href="./styles/schedule-modal.css">
 </head>
 <body>
 
@@ -500,6 +501,78 @@
             </div>
         </div>
 
+        <!-- ================= MODAL JADWAL KULIAH MINGGUAN (IGRACIAS) ================= -->
+        <div class="sched-modal" id="sched-modal">
+            <div class="sched-modal-hdr">
+                <div class="sched-hdr-left">
+                    <div class="sched-hdr-icon">
+                        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    </div>
+                    <div>
+                        <div class="sched-hdr-title">Jadwal Kuliah Mingguan (iGracias)</div>
+                        <div class="sched-hdr-sub">MUH NAUFAL RABBANI MARUN · NIM: 102062400038 · Ganjil 2026/2027</div>
+                    </div>
+                </div>
+                <div class="sched-hdr-actions">
+                    <button class="sched-pill-btn primary" id="btn-toggle-add-sched">+ Tambah</button>
+                    <button class="sched-pill-btn" id="btn-open-lms-courses-modal" title="Buka Halaman Kursus LMS">LMS Courses</button>
+                    <button class="sched-btn-close" id="btn-close-sched-modal" title="Tutup Jadwal">✕</button>
+                </div>
+            </div>
+
+            <!-- Drawer Form Tambah Matkul -->
+            <div class="sched-add-form" id="sched-add-form">
+                <div class="sched-form-row">
+                    <select class="sched-form-sel" id="sched-select-day" style="width:75px">
+                        <option value="1">Senin</option>
+                        <option value="2">Selasa</option>
+                        <option value="3">Rabu</option>
+                        <option value="4">Kamis</option>
+                        <option value="5">Jumat</option>
+                        <option value="6">Sabtu</option>
+                        <option value="0">Minggu</option>
+                    </select>
+                    <input type="text" class="sched-form-inp" id="sched-input-name" placeholder="Nama Mata Kuliah..." style="flex:2" />
+                    <input type="text" class="sched-form-inp" id="sched-input-start" placeholder="Mulai (13:30)" style="width:70px" />
+                    <input type="text" class="sched-form-inp" id="sched-input-end" placeholder="Selesai (16:30)" style="width:70px" />
+                </div>
+                <div class="sched-form-row">
+                    <input type="text" class="sched-form-inp" id="sched-input-room" placeholder="Ruangan / Lab (misal CYCLO LAB.)" style="flex:1" />
+                    <input type="text" class="sched-form-inp" id="sched-input-code" placeholder="Kode (BDK3CAB3)" style="width:90px" />
+                    <input type="text" class="sched-form-inp" id="sched-input-group" placeholder="Kelas (SSISI-07-REG-01)" style="width:115px" />
+                    <button class="sched-pill-btn primary" id="btn-submit-add-sched">Simpan</button>
+                </div>
+            </div>
+
+            <!-- Day Filter Bar -->
+            <div class="sched-filter-bar">
+                <button class="sched-filter-btn active" data-day="all">Semua</button>
+                <button class="sched-filter-btn" data-day="senin">Senin</button>
+                <button class="sched-filter-btn" data-day="selasa">Selasa</button>
+                <button class="sched-filter-btn" data-day="rabu">Rabu</button>
+                <button class="sched-filter-btn" data-day="kamis">Kamis</button>
+                <button class="sched-filter-btn" data-day="jumat">Jumat</button>
+                <button class="sched-filter-btn" data-day="sabtu">Sabtu</button>
+                <button class="sched-filter-btn" data-day="minggu">Minggu</button>
+            </div>
+
+            <!-- List of Classes -->
+            <div class="sched-list" id="sched-list"></div>
+
+            <!-- Modal Footer -->
+            <div class="sched-modal-ftr">
+                <div class="sched-ftr-info">
+                    <span class="sched-ftr-dot"></span>
+                    <span>Alarm Aktif (Chime H-30m, H-15m, H-10m, H-5m, & Saat Mulai)</span>
+                </div>
+                <div class="sched-ftr-actions">
+                    <button class="sched-pill-btn" id="btn-test-class-alarm" title="Uji Suara Chime Alarm">🔔 Test Alarm</button>
+                    <button class="sched-pill-btn" id="btn-reset-sched-default" title="Kembalikan ke Jadwal Asli iGracias Naufal">Reset Default</button>
+                    <button class="sched-pill-btn" id="btn-open-igracias" title="Buka Portal iGracias Telkom University">iGracias Web</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -512,6 +585,7 @@
     <script src="./js/lms-pomodoro.js"></script>
     <script src="./js/shelf-actions.js"></script>
     <script src="./js/smart-calendar.js"></script>
+    <script src="./js/class-schedule.js"></script>
     <script src="./js/mascot-engine.js"></script>
 </body>
 </html>

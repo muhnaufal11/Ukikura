@@ -14,10 +14,10 @@ const CAL_MONTHS_ID = [
 ];
 const CAL_DAYS_FULL_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
-let calViewYear = new Date().getFullYear();
-let calViewMonth = new Date().getMonth();
-let calSelectedDateKey = toDateKey(new Date());
-let customCalNotes = {};
+var calViewYear = new Date().getFullYear();
+var calViewMonth = new Date().getMonth();
+var calSelectedDateKey = toDateKey(new Date());
+var customCalNotes = {};
 
 try {
     const savedNotes = localStorage.getItem('nusa_cal_notes_v1');
@@ -94,12 +94,26 @@ function getEventsForDateKey(dateKey) {
             dateKey
         });
     }
+
+    // 3. Jadwal Kuliah Mingguan (iGracias Telkom University)
+    if (typeof getClassScheduleForDateKey === 'function') {
+        const classes = getClassScheduleForDateKey(dateKey);
+        for (const c of classes) {
+            list.push(c);
+        }
+    }
     return list;
 }
 
 function getUpcomingAllEvents() {
     const now = Date.now();
     const upcoming = [];
+
+    // Ambil jadwal perkuliahan hari ini & mendatang
+    if (typeof getUpcomingClassEvents === 'function') {
+        const classEvents = getUpcomingClassEvents();
+        upcoming.push(...classEvents);
+    }
 
     // Ambil semua tugas LMS aktif (belum selesai)
     for (const t of allTasks) {
@@ -154,7 +168,7 @@ function getUpcomingAllEvents() {
 
 function createCalendarEventRow(ev, isUpcomingPreview = false) {
     const row = document.createElement('div');
-    const statusCls = ev.type === 'note' ? 'custom' : (ev.completed ? 'done' : (ev.urgent ? 'urgent' : ''));
+    const statusCls = ev.type === 'class' ? 'class-ev' : (ev.type === 'note' ? 'custom' : (ev.completed ? 'done' : (ev.urgent ? 'urgent' : '')));
     row.className = `cal-ev-row ${statusCls}`;
     row.innerHTML = `
         <div class="cal-ev-info">
@@ -162,10 +176,16 @@ function createCalendarEventRow(ev, isUpcomingPreview = false) {
             <div class="cal-ev-meta"></div>
         </div>
     `;
-    row.querySelector('.cal-ev-name').textContent = ev.title;
+    row.querySelector('.cal-ev-name').textContent = ev.type === 'class' ? `[KULIAH] ${ev.title}` : ev.title;
     row.querySelector('.cal-ev-meta').textContent = `${ev.timeStr} • ${ev.course}`;
 
-    if (ev.type === 'note' && !isUpcomingPreview) {
+    if (ev.type === 'class') {
+        row.title = 'Klik untuk membuka Jadwal Kuliah Mingguan (iGracias)';
+        row.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (typeof openScheduleModal === 'function') openScheduleModal();
+        });
+    } else if (ev.type === 'note' && !isUpcomingPreview) {
         const delBtn = document.createElement('button');
         delBtn.type = 'button';
         delBtn.className = 'cal-ev-del';
@@ -294,8 +314,11 @@ function renderCalendar() {
         if (events.length > 0) {
             const hasUrgent = events.some(e => e.urgent && !e.completed);
             const hasNoteOnly = events.every(e => e.type === 'note');
+            const hasClass = events.some(e => e.type === 'class');
             if (hasUrgent) {
                 btn.classList.add('has-urgent');
+            } else if (hasClass) {
+                btn.classList.add('has-class');
             } else if (hasNoteOnly) {
                 btn.classList.add('has-note');
             } else {
@@ -393,4 +416,7 @@ if (jsDateEl) {
         setPage('cal');
     });
 }
+
+// Ekspos renderCalendar ke global window
+window.renderCalendar = renderCalendar;
 

@@ -1,0 +1,389 @@
+/* ================= MODAL JADWAL KULIAH MINGGUAN (IGRACIAS) ================= */
+.sched-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 14, 24, 0.98);
+    backdrop-filter: blur(24px);
+    border-radius: 28px;
+    z-index: 999;
+    display: none;
+    flex-direction: column;
+    padding: 10px 14px;
+    user-select: none;
+    overflow: hidden;
+    opacity: 0;
+    transform: scale(0.97);
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sched-modal.open {
+    display: flex;
+    opacity: 1;
+    transform: scale(1);
+}
+
+.sched-modal-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+}
+
+.sched-hdr-left {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+}
+
+.sched-hdr-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.18);
+    display: grid;
+    place-items: center;
+    color: #38bdf8;
+    flex-shrink: 0;
+}
+
+.sched-hdr-icon svg {
+    width: 13px;
+    height: 13px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    fill: none;
+}
+
+.sched-hdr-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sched-hdr-sub {
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sched-hdr-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.sched-pill-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-family: var(--ui);
+    font-size: 8.8px;
+    font-weight: 600;
+    padding: 2.5px 7px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3.5px;
+    transition: all 0.15s ease;
+}
+
+.sched-pill-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.sched-pill-btn.primary {
+    background: #38bdf8;
+    border-color: #38bdf8;
+    color: #06111e;
+    font-weight: 700;
+}
+
+.sched-pill-btn.primary:hover {
+    background: #7dd3fc;
+}
+
+.sched-btn-close {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s ease;
+}
+
+.sched-btn-close:hover {
+    background: rgba(255, 75, 85, 0.5);
+}
+
+.sched-filter-bar {
+    display: flex;
+    gap: 3px;
+    margin-bottom: 5px;
+    flex-shrink: 0;
+    overflow-x: auto;
+}
+
+.sched-filter-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.sched-filter-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 8.5px;
+    font-weight: 700;
+    padding: 1.5px 6px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.sched-filter-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.sched-filter-btn.active {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: #38bdf8;
+    color: #7dd3fc;
+}
+
+.sched-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-right: 2px;
+}
+
+.sched-list::-webkit-scrollbar {
+    width: 3px;
+}
+
+.sched-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.sched-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-left: 3px solid #38bdf8;
+    border-radius: 8px;
+    padding: 4px 8px;
+    transition: background 0.15s ease;
+}
+
+.sched-card:hover {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.sched-card-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5px;
+}
+
+.sched-card-top {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.sched-day-badge {
+    font-size: 7.5px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.sched-sks-badge {
+    font-size: 7.5px;
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 600;
+}
+
+.sched-card-title {
+    font-size: 9.8px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sched-card-meta {
+    font-size: 8.2px;
+    color: rgba(255, 255, 255, 0.58);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sched-card-meta b {
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.sched-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.sched-btn-del {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 11px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s ease;
+}
+
+.sched-btn-del:hover {
+    background: rgba(255, 75, 85, 0.4);
+    color: #fff;
+}
+
+.sched-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 9px;
+    text-align: center;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.sched-empty svg {
+    width: 18px;
+    height: 18px;
+    stroke: #38bdf8;
+    stroke-width: 1.8;
+    fill: none;
+    opacity: 0.8;
+}
+
+/* Drawer Form Tambah Matkul */
+.sched-add-form {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.22s ease, opacity 0.18s ease, margin 0.18s ease;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0 8px;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sched-add-form.open {
+    max-height: 110px;
+    opacity: 1;
+    padding: 6px 8px;
+    margin-bottom: 5px;
+}
+
+.sched-form-row {
+    display: flex;
+    gap: 4px;
+}
+
+.sched-form-inp, .sched-form-sel {
+    height: 20px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    padding: 0 5px;
+    font-family: var(--ui);
+    font-size: 8.8px;
+    outline: none;
+}
+
+.sched-form-inp:focus, .sched-form-sel:focus {
+    border-color: #38bdf8;
+}
+
+.sched-modal-ftr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 5px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.sched-ftr-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 8.2px;
+    color: rgba(255, 255, 255, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sched-ftr-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 5px #10b981;
+    flex-shrink: 0;
+}
+
+.sched-ftr-actions {
+    display: flex;
+    gap: 3.5px;
+    flex-shrink: 0;
+}
+

@@ -17,14 +17,14 @@ const PAGE_TITLES = {
 let allTasks = [];
 let lastUpdated = null;
 let urgentThresholdHours = 24;
-let currentFilter = 'active';
-let currentPage = 'todo';
-let lyricsMode = false;
-let closedStyle = 'pet'; // 'pet' | 'idle'
-let isExpanded = false;
-let isPinned = false;
-let peekTimer = null;
-let notifiedUrgentIds = new Set();
+var currentFilter = 'active';
+var currentPage = 'todo';
+var lyricsMode = false;
+var closedStyle = 'pet'; // 'pet' | 'idle'
+var isExpanded = false;
+var isPinned = false;
+var peekTimer = null;
+var notifiedUrgentIds = new Set();
 
 // Live Media & Lyrics state
 let mediaState = {
@@ -51,27 +51,27 @@ let focusRemainingSec = 25 * 60;
 // Shelf files
 let shelfItems = [];
 
-const holderEl = document.getElementById('mnHolder');
-const mnEl = document.getElementById('mn');
-const hdrTitleEl = document.getElementById('hdr-title');
-const petCountEl = document.getElementById('pet-count');
-const idleArtEl = document.getElementById('idle-art');
-const idleRingEl = document.getElementById('idle-ring');
-const hdrRingEl = document.getElementById('hdr-ring');
-const idleCenterEl = document.getElementById('idle-center');
-const todoRatioEl = document.getElementById('todo-ratio');
-const todoSubTextEl = document.getElementById('todo-sub-text');
-const todoListEl = document.getElementById('todo-list');
-const notifListEl = document.getElementById('notif-list');
-const notifCountNumEl = document.getElementById('notif-count-num');
-const pomoMainTimerEl = document.getElementById('pomo-main-timer');
-const pomoTitleEl = document.getElementById('pomo-title');
-const pomoCourseEl = document.getElementById('pomo-course');
-const icsInputEl = document.getElementById('ics-input');
-const lastSyncTextEl = document.getElementById('last-sync-text');
-const btnSyncEl = document.getElementById('btn-sync');
-const btnPinEl = document.getElementById('btn-pin');
-const lyrListEl = document.getElementById('lyr-list');
+var holderEl = document.getElementById('mnHolder');
+var mnEl = document.getElementById('mn');
+var hdrTitleEl = document.getElementById('hdr-title');
+var petCountEl = document.getElementById('pet-count');
+var idleArtEl = document.getElementById('idle-art');
+var idleRingEl = document.getElementById('idle-ring');
+var hdrRingEl = document.getElementById('hdr-ring');
+var idleCenterEl = document.getElementById('idle-center');
+var todoRatioEl = document.getElementById('todo-ratio');
+var todoSubTextEl = document.getElementById('todo-sub-text');
+var todoListEl = document.getElementById('todo-list');
+var notifListEl = document.getElementById('notif-list');
+var notifCountNumEl = document.getElementById('notif-count-num');
+var pomoMainTimerEl = document.getElementById('pomo-main-timer');
+var pomoTitleEl = document.getElementById('pomo-title');
+var pomoCourseEl = document.getElementById('pomo-course');
+var icsInputEl = document.getElementById('ics-input');
+var lastSyncTextEl = document.getElementById('last-sync-text');
+var btnSyncEl = document.getElementById('btn-sync');
+var btnPinEl = document.getElementById('btn-pin');
+var lyrListEl = document.getElementById('lyr-list');
 
 const PLAY_SVG_PATH = '<path d="M8 5v14l11-7z"/>';
 const PAUSE_SVG_PATH = '<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>';
@@ -163,22 +163,46 @@ document.querySelectorAll('[data-mcmd]').forEach(btn => {
     });
 });
 
+// Fungsi pembuka & penutup kapsul yang dapat dipanggil lintas modul
+function expandIsland(targetPage) {
+    isExpanded = true;
+    window.isExpanded = true;
+    if (targetPage && PAGES.includes(targetPage)) {
+        currentPage = targetPage;
+        window.currentPage = targetPage;
+    }
+    const eff = getEffectiveState();
+    mnEl.dataset.s = eff;
+    if (hdrTitleEl) hdrTitleEl.innerHTML = PAGE_TITLES[eff] || PAGE_TITLES.todo;
+    ipcRenderer.send('island-resize', true);
+}
+
+function collapseIsland() {
+    isExpanded = false;
+    window.isExpanded = false;
+    if (peekTimer) {
+        clearTimeout(peekTimer);
+        peekTimer = null;
+    }
+    mnEl.dataset.s = getClosedVisualMode();
+    ipcRenderer.send('island-resize', false);
+}
+
+window.expandIsland = expandIsland;
+window.collapseIsland = collapseIsland;
+window.setPage = setPage;
+
 // Klik pada mode tertutup langsung membuka Dynamic Island
 document.getElementById('l-pet').addEventListener('click', () => {
-    isExpanded = true;
     if (mediaState.status === 'Playing' && currentPage === 'todo') {
-        currentPage = 'music';
+        expandIsland('music');
+    } else {
+        expandIsland();
     }
-    mnEl.dataset.s = getEffectiveState();
-    hdrTitleEl.innerHTML = PAGE_TITLES[getEffectiveState()];
-    ipcRenderer.send('island-resize', true);
 });
 
 document.getElementById('l-idle').addEventListener('click', () => {
-    isExpanded = true;
-    mnEl.dataset.s = getEffectiveState();
-    hdrTitleEl.innerHTML = PAGE_TITLES[getEffectiveState()];
-    ipcRenderer.send('island-resize', true);
+    expandIsland();
 });
 
 document.getElementById('l-peek').addEventListener('click', () => {
