@@ -13,11 +13,11 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
 - [x] **2. Real-Time Audio Ambient Visualizer (WASAPI Loopback)**
   - Latar belakang aura (`.ambient`) dan pendaran sampul album di halaman musik & lirik berdenyut (*pulse & breathe*) mengikuti **frekuensi bass dan vokal asli** dari output audio Windows secara *real-time* via Web Audio API loopback stream (5 bar kapsul dipertahankan orisinal sesuai preferensi).
 
-- [ ] **3. Dual-Sub Lirik (Romaji + Kanji + Terjemahan Indonesia)**
-  - Menambahkan opsi baris ke-3 opsional berisi arti Bahasa Indonesia (dari `tlyric` NetEase atau terjemahan subtitle YouTube `&tlang=id`) tepat di bawah baris Kanji.
+- [x] **3. Dual-Sub Lirik (Romaji + Kanji + Terjemahan Indonesia)**
+  - Teks utama (Kanji/Original) di atas, baris Romaji di bawahnya, dan baris terjemahan Bahasa Indonesia di bawah Romaji (dari `tlyric` NetEase / CC YouTube). Dilengkapi tombol toggle `[SUB: ON]` / `[SUB: OFF]` di samping badge `[SYNC]`.
 
-- [ ] **4. Mini Floating Karaoke Overlay (Mode Pin Transparan)**
-  - Mode khusus yang hanya menampilkan **2 baris lirik aktif dengan latar belakang transparan penuh** di atas layar sehingga bisa tetap membaca lirik sambil mengerjakan tugas atau bermain game tanpa tertutup kotak hitam kapsul.
+- [x] **4. Mini Floating Karaoke Overlay (Mode Pin Transparan)**
+  - Mode khusus kapsul ramping melayang (`480px x 54px`, radius `22px`) semi-transparan dengan blur latar belakang (`backdrop-filter`) yang menampilkan 2 baris lirik (baris aktif + berikutnya / terjemahan), mini sampul lagu, tombol play/pause mini, tombol toggle sub `[≡]`, tombol perluas lirik `[⤢]`, dan tombol close `[✕]`. Klik tembus pandang otomatis saat kursor berada di luar kapsul.
 
 ---
 

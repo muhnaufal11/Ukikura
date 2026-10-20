@@ -200,9 +200,10 @@ function startNusaHoverLoop() {
                     clearTimeout(leaveCloseTimer);
                     leaveCloseTimer = null;
                 }
-                if (lastIgnoreState !== false) {
-                    lastIgnoreState = false;
-                    mainWindow.setIgnoreMouseEvents(false);
+                const needIgnore = isPinnedOpen && !insideOpen;
+                if (lastIgnoreState !== needIgnore) {
+                    lastIgnoreState = needIgnore;
+                    mainWindow.setIgnoreMouseEvents(needIgnore, { forward: true });
                 }
             } else {
                 // Kursor keluar dari area notch terbuka: tutup otomatis setelah jeda singkat
@@ -493,54 +494,21 @@ ipcMain.on('island-context-menu', () => {
     menu.popup({ window: mainWindow });
 });
 
-ipcMain.on('island-resize', (event, expand) => {
-    setIslandExpanded(expand);
-});
-
-ipcMain.on('island-pin', (event, pin) => {
-    isPinnedOpen = Boolean(pin);
-});
-
-ipcMain.on('island-tuck', (event, tuck) => {
-    setIslandTucked(tuck);
-});
-
+ipcMain.on('island-resize', (event, expand) => setIslandExpanded(expand));
+ipcMain.on('island-pin', (event, pin) => { isPinnedOpen = Boolean(pin); });
+ipcMain.on('island-tuck', (event, tuck) => setIslandTucked(tuck));
 ipcMain.on('island-ignore-mouse', (event, ignore) => {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-    if (ignore) {
-        mainWindow.setIgnoreMouseEvents(true, { forward: true });
-    } else {
-        mainWindow.setIgnoreMouseEvents(false);
-    }
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setIgnoreMouseEvents(Boolean(ignore), { forward: Boolean(ignore) });
 });
-
-ipcMain.on('media-control', (event, action) => {
-    sendMediaCommand(action);
-});
-
-ipcMain.on('media-seek', (event, targetSec) => {
-    const sec = Math.max(0, Number(targetSec) || 0);
-    sendMediaCommand(`SEEK:${sec.toFixed(2)}`);
-});
-
+ipcMain.on('media-control', (event, action) => sendMediaCommand(action));
+ipcMain.on('media-seek', (event, targetSec) => sendMediaCommand(`SEEK:${Math.max(0, Number(targetSec) || 0).toFixed(2)}`));
 ipcMain.on('volume-change', (event, data) => {
-    const delta = typeof data === 'object' && data !== null ? data.delta : Number(data);
-    const num = Number(delta) || 0;
+    const num = Number(typeof data === 'object' && data !== null ? data.delta : data) || 0;
     sendMediaCommand(`VOL:${num >= 0 ? '+' : ''}${num.toFixed(3)}`);
 });
-
-ipcMain.on('volume-set', (event, pct) => {
-    const p = Math.max(0, Math.min(100, Number(pct) || 0));
-    sendMediaCommand(`VOLSET:${p.toFixed(0)}`);
-});
-
-ipcMain.on('volume-mute', () => {
-    sendMediaCommand('VOLMUTE');
-});
-
-ipcMain.on('volume-get', () => {
-    sendMediaCommand('VOLGET');
-});
+ipcMain.on('volume-set', (event, pct) => sendMediaCommand(`VOLSET:${Math.max(0, Math.min(100, Number(pct) || 0)).toFixed(0)}`));
+ipcMain.on('volume-mute', () => sendMediaCommand('VOLMUTE'));
+ipcMain.on('volume-get', () => sendMediaCommand('VOLGET'));
 
 ipcMain.on('island-request-lyrics', (event, data) => {
     if (!data || !data.title) return;
@@ -551,37 +519,18 @@ ipcMain.on('island-request-lyrics', (event, data) => {
     }
 });
 
-ipcMain.on('island-open-wa', () => {
-    ensureWhatsAppWindow(true);
-});
-
-ipcMain.on('island-open-phonelink', () => {
-    shell.openExternal('ms-phone:');
-});
-
-ipcMain.on('island-open-url', (event, targetUrl) => {
-    if (targetUrl && typeof targetUrl === 'string') {
-        shell.openExternal(targetUrl);
-    }
-});
-
-ipcMain.on('island-login-lms', () => {
-    openLmsLoginWindow();
-});
-
+ipcMain.on('island-open-wa', () => ensureWhatsAppWindow(true));
+ipcMain.on('island-open-phonelink', () => shell.openExternal('ms-phone:'));
+ipcMain.on('island-open-url', (event, targetUrl) => { if (targetUrl && typeof targetUrl === 'string') shell.openExternal(targetUrl); });
+ipcMain.on('island-login-lms', () => openLmsLoginWindow());
 ipcMain.on('island-sync-now', async () => {
     postJsonToServer('/__qbot__/tasks/sync', {});
     await runHiddenLmsCrawler();
 });
-
 ipcMain.on('island-recenter', () => {
-    if (!mainWindow) return;
-    mainWindow.setBounds({ x: getCenteredX(WINDOW_WIDTH), y: 0, width: WINDOW_WIDTH, height: WINDOW_HEIGHT }, true);
+    if (mainWindow) mainWindow.setBounds({ x: getCenteredX(WINDOW_WIDTH), y: 0, width: WINDOW_WIDTH, height: WINDOW_HEIGHT }, true);
 });
-
-ipcMain.on('island-hide', () => {
-    if (mainWindow) mainWindow.hide();
-});
+ipcMain.on('island-hide', () => { if (mainWindow) mainWindow.hide(); });
 
 ipcMain.on('island-quit', () => {
     app.isQuitting = true;

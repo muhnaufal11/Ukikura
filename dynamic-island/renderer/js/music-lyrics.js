@@ -119,15 +119,42 @@ function getInterpolatedMediaPos() {
 }
 
 function renderLyricItemHtml(l, i) {
-    if (l && l.roma && l.jp) {
-        return `<li data-lidx="${i}" style="cursor:pointer"><div>${escapeHtml(l.roma)}</div><div style="font-size:10.2px;font-weight:500;opacity:0.72;margin-top:1px">${escapeHtml(l.jp)}</div></li>`;
+    let mainText = '';
+    let romaText = '';
+    let transText = (l && l.transText) || '';
+
+    if (l && l.rawText && l.romaText) {
+        mainText = l.rawText;
+        romaText = l.romaText;
+    } else if (l && l.roma && l.jp) {
+        mainText = l.jp;
+        romaText = l.roma;
+    } else if (l && typeof l.text === 'string' && l.text.includes(' · ')) {
+        const parts = l.text.split(' · ');
+        romaText = parts[0];
+        mainText = parts.slice(1).join(' · ');
+    } else {
+        mainText = (l && l.text) || '';
+        romaText = (l && l.romaText) || '';
     }
-    const txt = String((l && l.text) || '');
-    if (txt.includes(' · ')) {
-        const parts = txt.split(' · ');
-        return `<li data-lidx="${i}" style="cursor:pointer"><div>${escapeHtml(parts[0])}</div><div style="font-size:10.2px;font-weight:500;opacity:0.72;margin-top:1px">${escapeHtml(parts.slice(1).join(' · '))}</div></li>`;
+
+    if (romaText && romaText.trim().toLowerCase() === mainText.trim().toLowerCase()) {
+        romaText = '';
     }
-    return `<li data-lidx="${i}" style="cursor:pointer">${escapeHtml(txt)}</li>`;
+    if (transText && transText.trim().toLowerCase() === mainText.trim().toLowerCase()) {
+        transText = '';
+    }
+
+    let html = `<li data-lidx="${i}" style="cursor:pointer">`;
+    html += `<div class="lyr-main">${escapeHtml(mainText)}</div>`;
+    if (romaText) {
+        html += `<div class="lyr-sub">${escapeHtml(romaText)}</div>`;
+    }
+    if (transText) {
+        html += `<div class="lyr-trans">${escapeHtml(transText)}</div>`;
+    }
+    html += `</li>`;
+    return html;
 }
 
 let isSeekingGlobal = false;
@@ -172,7 +199,10 @@ function updateMediaProgressUI() {
 
 function scrollLyricsToActive() {
     const items = lyrListEl.querySelectorAll('li');
-    if (!items.length) return;
+    if (!items.length) {
+        if (typeof updateKaraokeOverlay === 'function') updateKaraokeOverlay();
+        return;
+    }
     const targetIdx = Math.max(0, Math.min(items.length - 1, activeLyricIndex >= 0 ? activeLyricIndex : 0));
     items.forEach((li, i) => li.classList.toggle('on', i === targetIdx));
     const activeLi = items[targetIdx];
@@ -180,6 +210,7 @@ function scrollLyricsToActive() {
         const offset = 62 - activeLi.offsetTop - activeLi.offsetHeight / 2;
         lyrListEl.style.transform = `translateY(${offset}px)`;
     }
+    if (typeof updateKaraokeOverlay === 'function') updateKaraokeOverlay();
 }
 
 // Interaksi badge SYNC: Klik untuk reset 0s, scroll wheel untuk atur offset secara presisi
@@ -232,6 +263,134 @@ lyrListEl.addEventListener('wheel', (e) => {
     updateLyricOffsetLabel();
     updateMediaProgressUI();
 }, { passive: false });
+
+// ==================== DUAL-SUB & KARAOKE OVERLAY INTERACTION ====================
+let subDisplayEnabled = true;
+const btnSubToggleEl = document.getElementById('btn-sub-toggle');
+const lyrBoxEl = document.getElementById('lyr-box');
+
+if (btnSubToggleEl) {
+    btnSubToggleEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        subDisplayEnabled = !subDisplayEnabled;
+        btnSubToggleEl.textContent = subDisplayEnabled ? 'SUB: ON' : 'SUB: OFF';
+        btnSubToggleEl.classList.toggle('off', !subDisplayEnabled);
+        if (lyrBoxEl) lyrBoxEl.classList.toggle('hide-subs', !subDisplayEnabled);
+    });
+}
+
+let karaokeSubMode = false;
+
+function updateKaraokeOverlay() {
+    const kLine1 = document.getElementById('karaoke-line-1');
+    const kLine2 = document.getElementById('karaoke-line-2');
+    if (!kLine1 || !kLine2) return;
+
+    if (!syncedLyrics || !syncedLyrics.length) {
+        kLine1.textContent = mediaState.title || 'Ukikura Karaoke';
+        kLine2.textContent = mediaState.artist || 'Memuat lirik karaoke...';
+        return;
+    }
+
+    const idx = Math.max(0, Math.min(syncedLyrics.length - 1, activeLyricIndex >= 0 ? activeLyricIndex : 0));
+    const curLine = syncedLyrics[idx];
+    const nextLine = syncedLyrics[idx + 1];
+
+    let curMain = '';
+    let curSub = '';
+    if (curLine) {
+        if (curLine.rawText && curLine.romaText) {
+            curMain = curLine.rawText;
+            curSub = curLine.transText || curLine.romaText;
+        } else if (curLine.text && curLine.text.includes(' · ')) {
+            const parts = curLine.text.split(' · ');
+            curMain = parts.slice(1).join(' · ');
+            curSub = curLine.transText || parts[0];
+        } else {
+            curMain = curLine.text || '';
+            curSub = curLine.transText || curLine.romaText || '';
+        }
+    }
+
+    if (karaokeSubMode && curSub) {
+        kLine1.textContent = curMain || '...';
+        kLine2.textContent = curSub;
+    } else {
+        kLine1.textContent = curMain || '...';
+        if (nextLine) {
+            let nextText = nextLine.rawText || nextLine.text || '';
+            if (nextText.includes(' · ')) nextText = nextText.split(' · ').slice(1).join(' · ');
+            kLine2.textContent = nextText;
+        } else {
+            kLine2.textContent = '...';
+        }
+    }
+
+    const kArt = document.getElementById('karaoke-art');
+    if (kArt) {
+        const coverSrc = lyricCoverUrl || (mediaState && mediaState.thumb ? `data:image/jpeg;base64,${mediaState.thumb}` : '');
+        if (coverSrc) {
+            kArt.style.backgroundImage = `url("${coverSrc.replace(/"/g, '\\"')}")`;
+        }
+    }
+
+    const kIcon = document.getElementById('play-icon-k');
+    if (kIcon) {
+        kIcon.innerHTML = (mediaState.status === 'Playing') ? PAUSE_SVG_PATH : PLAY_SVG_PATH;
+    }
+}
+
+const btnOpenKaraoke = document.getElementById('btn-open-karaoke');
+if (btnOpenKaraoke) {
+    btnOpenKaraoke.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setPage('karaoke');
+    });
+}
+
+const btnKaraokeExpand = document.getElementById('btn-karaoke-expand');
+if (btnKaraokeExpand) {
+    btnKaraokeExpand.addEventListener('click', (e) => {
+        e.stopPropagation();
+        lyricsMode = true;
+        setPage('music');
+        mnEl.dataset.s = 'lyrics';
+    });
+}
+
+const btnKaraokeClose = document.getElementById('btn-karaoke-close');
+if (btnKaraokeClose) {
+    btnKaraokeClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isPinned = false;
+        if (btnPinEl) btnPinEl.classList.remove('active');
+        ipcRenderer.send('island-pin', false);
+        lyricsMode = false;
+        currentPage = 'music';
+        isExpanded = false;
+        mnEl.dataset.s = getClosedVisualMode();
+    });
+}
+
+const btnKaraokeSub = document.getElementById('btn-karaoke-sub');
+if (btnKaraokeSub) {
+    btnKaraokeSub.addEventListener('click', (e) => {
+        e.stopPropagation();
+        karaokeSubMode = !karaokeSubMode;
+        btnKaraokeSub.classList.toggle('active', karaokeSubMode);
+        updateKaraokeOverlay();
+    });
+}
+
+const lKaraokeEl = document.getElementById('l-karaoke');
+if (lKaraokeEl) {
+    lKaraokeEl.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        lyricsMode = true;
+        setPage('music');
+        mnEl.dataset.s = 'lyrics';
+    });
+}
 
 setInterval(() => {
     if (mediaState.active && mediaState.status === 'Playing') {

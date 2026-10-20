@@ -454,6 +454,30 @@
         text-shadow: 0 0 10px rgba(255, 255, 255, 0.28);
     }
 
+    /* Dual-Sub Lirik Romaji & Terjemahan Khas Ukikura */
+    .lyr-sub-badge { background: rgba(160, 100, 255, 0.16); border-color: rgba(160, 100, 255, 0.38); color: rgba(220, 185, 255, 0.95); }
+    .lyr-sub-badge:hover { background: rgba(160, 100, 255, 0.28); border-color: rgba(160, 100, 255, 0.65); color: #fff; }
+    .lyr-sub-badge.off { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.14); color: rgba(255, 255, 255, 0.35); }
+    .lyr li .lyr-main { display: block; line-height: 1.3; }
+    .lyr li .lyr-sub { display: block; font-size: 10.2px; font-weight: 500; line-height: 1.25; color: rgba(160, 215, 255, 0.85); margin-top: 1.5px; }
+    .lyr li .lyr-trans { display: block; font-size: 9.8px; font-weight: 400; line-height: 1.2; color: rgba(255, 222, 135, 0.88); font-style: italic; margin-top: 1px; }
+    .lyr.hide-subs .lyr-sub, .lyr.hide-subs .lyr-trans { display: none !important; }
+
+    /* 3D. Mini Floating Karaoke Overlay (Melayang Ramping 480px x 54px) */
+    .l-karaoke { display: flex; align-items: center; position: absolute; inset: 0; padding: 0 10px; z-index: 6; }
+    .art-mini { position: absolute; left: 10px; top: 10px; width: 34px; height: 34px; border-radius: 9px; background: #141822 no-repeat center / cover; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.12); }
+    .ctl-btn.mini { position: absolute; left: 50px; top: 15px; width: 24px; height: 24px; border-radius: 50%; background: rgba(12, 15, 24, 0.88); border: 1px solid rgba(255, 255, 255, 0.22); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); transition: transform 0.15s ease, background 0.15s ease; }
+    .ctl-btn.mini:hover { transform: scale(1.12); background: var(--cyan); border-color: var(--cyan); }
+    .ctl-btn.mini svg { width: 10px; height: 10px; fill: #fff; }
+    .ctl-btn.mini:hover svg { fill: #000; }
+    .karaoke-center { position: absolute; left: 84px; right: 90px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; overflow: hidden; pointer-events: none; text-align: left; }
+    .k-line-1 { font-size: 12.8px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; text-shadow: 0 0 10px rgba(25, 184, 255, 0.55); letter-spacing: 0.15px; }
+    .k-line-2 { font-size: 10.5px; font-weight: 500; color: rgba(255, 255, 255, 0.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; margin-top: 2px; }
+    .karaoke-actions { position: absolute; right: 10px; top: 0; bottom: 0; display: flex; align-items: center; gap: 4px; z-index: 3; }
+    .karaoke-actions .hdr-icon-btn { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.72); cursor: pointer; transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease; }
+    .karaoke-actions .hdr-icon-btn:hover { background: rgba(255, 255, 255, 0.18); color: #fff; transform: scale(1.06); }
+    .karaoke-actions .hdr-icon-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+
     /* ================= HALAMAN 2: NOTIFIKASI HP & WHATSAPP ================= */
     .notif-left {
         position: absolute;

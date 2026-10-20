@@ -5,6 +5,7 @@ const PAGES = ['music', 'notif', 'todo', 'cal', 'pomo', 'shelf', 'config'];
 const PAGE_TITLES = {
     music: '<span>Now</span><span style="color:#5ec2ff">Playing</span>',
     lyrics: '<span>Synced</span><span style="color:#5ec2ff">Lyrics</span>',
+    karaoke: '<span>Mini</span><span style="color:#5ec2ff">Karaoke</span>',
     notif: '<span>Phone</span><span style="color:#25d366">&amp; WA</span>',
     todo: '<span>LMS</span><span style="color:#38d36f">Tasks</span>',
     cal: '<span>Smart</span><span style="color:#38bdf8">Calendar</span>',
@@ -75,12 +76,35 @@ const lyrListEl = document.getElementById('lyr-list');
 const PLAY_SVG_PATH = '<path d="M8 5v14l11-7z"/>';
 const PAUSE_SVG_PATH = '<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>';
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function getEffectiveState() {
+    if (currentPage === 'karaoke') return 'karaoke';
     if (currentPage === 'music' && lyricsMode) return 'lyrics';
     return currentPage;
 }
 
 function setPage(page) {
+    if (page === 'karaoke') {
+        currentPage = 'karaoke';
+        mnEl.dataset.s = 'karaoke';
+        isExpanded = true;
+        isPinned = true;
+        if (btnPinEl) btnPinEl.classList.add('active');
+        ipcRenderer.send('island-pin', true);
+        if (typeof updateKaraokeOverlay === 'function') {
+            updateKaraokeOverlay();
+        }
+        return;
+    }
     if (!PAGES.includes(page)) return;
     currentPage = page;
     const eff = getEffectiveState();

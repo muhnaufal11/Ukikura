@@ -9,8 +9,8 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.1-10b981.svg?style=flat-square)](./version.json)
-[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.1.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.1/Ukikura-Setup-v1.0.1.exe)
+[![Version](https://img.shields.io/badge/Version-1.0.2-10b981.svg?style=flat-square)](./version.json)
+[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.2.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.2/Ukikura-Setup-v1.0.2.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
 [Instalasi Langsung (Tanpa Compile)](#instalasi-langsung-tanpa-compile) · [Pratinjau Antarmuka](#pratinjau-antarmuka-100-identik) · [Integrasi AI LMS Assistant](#integrasi-dengan-telu-lms-quiz-assistant-ai--seb-proxy) · [Mesin Lirik & Forced Alignment](#mesin-lirik-multi-sumber--forced-alignment) · [Arsitektur Modular](#arsitektur-modular) · [Fitur Mendatang (Roadmap)](#rencana-pengembangan-fitur-mendatang-roadmap) · [Auto-Updater GitHub](#sistem-deteksi-pembaruan-github-auto-updater)
@@ -69,6 +69,7 @@ Seluruh pratinjau di bawah ini dirender menggunakan geometri vektor dan tata let
 | **`peek` / `charge` / `bt`** | `340px x 64px` | `20px` | `14px` | Popup ekspansi otomatis saat ada pesan WhatsApp baru, stiker masuk, atau perubahan status baterai. |
 | **`music` / `notif` / `todo` / `cal` / `pomo` / `shelf` / `config`** | `480px x 186px` | `32px` | `22px` | Kapsul utama terbuka dengan bilah status atas, panah navigasi kiri-kanan, dan 7 indikator halaman. |
 | **`lyrics` (Synced Lyrics)** | `520px x 186px` | `32px` | `22px` | Kapsul melebar khusus lirik tersinkronisasi dengan kontrol media di sisi kiri dan lirik bergulir di sisi kanan. |
+| **`karaoke` (Mini Floating Overlay)** | `480px x 54px` | `22px` | `15px` | Kapsul ramping melayang semi-transparan (blur) dengan 2 baris lirik aktif + terjemahan, mini album art, kontrol play/pause, dan tembus klik otomatis. |
 
 ---
 
@@ -118,6 +119,8 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
 ## Fitur Utama
 
 ### 1. Mesin Lirik Multi-Sumber & Forced Alignment (`dynamic-island/lyrics/`)
+- **Dual-Sub Lirik Tersinkronisasi**: Menampilkan teks utama (Kanji/Original) di baris pertama, Romaji di baris kedua, dan terjemahan Bahasa Indonesia di baris ketiga (dari `tlyric` NetEase / CC YouTube) dengan tombol beralih cepat `[SUB: ON]` / `[SUB: OFF]`.
+- **Mini Floating Karaoke Overlay (`480px x 54px`)**: Mode pin ramping mengambang bebas di atas layar dengan latar belakang blur semi-transparan (`backdrop-filter: blur(28px)`), menampilkan 2 baris lirik aktif + berikutnya atau terjemahan, mini artwork, kontrol putar/jeda, serta *click-through passthrough* otomatis saat kursor berada di luar kapsul.
 - **Ekstraksi Subtitle Asli YouTube (`.srv3` TimedText)**: Mengambil trek *Manual CC* maupun *Auto-Generated ASR* langsung dari aliran video YouTube (mendukung cover lagu, VTuber, dan live akustik) dengan presisi milidetik per kata.
 - **Audio-to-Text Forced Alignment & RANSAC Global Offset**: Mencocokkan teks lirik resmi dari database lirik terhadap stempel waktu vokal penyanyi menggunakan algoritma *Dynamic Programming Needleman-Wunsch* dan regresi *RANSAC* untuk menghilangkan pergeseran waktu (*intro offset* dan *tempo drift*).
 - **4 Database Lirik Dunia & Indonesia**: Menggabungkan **NetEase Cloud Music**, **LRCLIB**, **KuGou Music**, dan **YouTube Captions** untuk cakupan lagu Jepang (J-Pop/Anime/Vocaloid), Indonesia, Barat, dan Korea.

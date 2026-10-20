@@ -1,11 +1,11 @@
 {
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
-  "versionName": "1.0.1",
-  "versionCode": 11,
-  "version": "1.0.1",
-  "fixCount": 11,
-  "displayVersion": "1.0.1 (Kode: 11)",
+  "versionName": "1.0.2",
+  "versionCode": 12,
+  "version": "1.0.2",
+  "fixCount": 12,
+  "displayVersion": "1.0.2 (Kode: 12)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -13,8 +13,8 @@
     "Nauflix/Ukikura"
   ],
   "branch": "main",
-  "installerFile": "installer/Ukikura-Setup-v1.0.1.exe",
+  "installerFile": "installer/Ukikura-Setup-v1.0.2.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.1: Fluid Audio-Reactive Canvas Ambient Engine (3 morphing fluid color orbs + real-time WASAPI audio wave ribbon), perbaikan total layout mode Synced Lyrics 520px (dua kolom terpisah tanpa tumpang tindih), eliminasi tabrakan badge SYNC pada header persentase baterai HP, dan pembaruan installer tunggal terpadu v1.0.1."
+  "changelog": "Ukikura v1.0.2: Implementasi Todo 3 (Dual-Sub Synced Lyrics: Romaji + Kanji + Terjemahan Indonesia dengan tombol toggle [SUB: ON/OFF]) dan Todo 4 (Mini Floating Karaoke Overlay: mode pin melayang ramping 480x54px transparan dengan blur, 2 baris lirik aktif + berikutnya/terjemahan, album art mini, play/pause, dan click-through passthrough otomatis saat kursor di luar kapsul)."
 }

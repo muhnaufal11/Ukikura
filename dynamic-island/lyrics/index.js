@@ -1,6 +1,6 @@
 "use strict";
 const { lyricsCache } = require("./http-client");
-const { hasKanji, hasHiraganaOrKatakana, kanaToRomaji, parseTrackMetadata, mergeJapaneseAndRomajiLines } = require("./text-romaji");
+const { hasKanji, hasHiraganaOrKatakana, kanaToRomaji, parseTrackMetadata, mergeJapaneseAndRomajiLines, attachTranslationLines } = require("./text-romaji");
 const { searchNetEaseLyrics, searchLrclibLyrics, searchKuGouLyrics } = require("./providers");
 const { fetchYouTubeCaptionStream } = require("./youtube-captions");
 const { forceAlignLyricsToAudioStream } = require("./forced-alignment");
@@ -55,6 +55,12 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
                 romaPool
             );
             top.score += 25;
+        }
+        if (top && top.source !== 'NetEase' && ne && ne.lines.some(l => l.transText)) {
+            const transPool = ne.lines
+                .filter(l => l.transText)
+                .map(l => ({ time: l.time, text: l.transText }));
+            top.lines = attachTranslationLines(top.lines, transPool);
         }
         if (top) maybeEmitFast(top, true);
         return { neRes: ne, lrcRes: lrc, kgRes: kg, bestDb: top };

@@ -391,6 +391,32 @@ function computeMetadataSimilarity(candidateTitle, candidateArtist, meta) {
 }
 
 
+function attachTranslationLines(baseLines, transLines) {
+    if (!Array.isArray(baseLines)) return [];
+    if (!Array.isArray(transLines) || transLines.length === 0) {
+        return baseLines.map(l => ({
+            ...l,
+            transText: l.transText || ''
+        }));
+    }
+    return baseLines.map(bl => {
+        let bestTrans = null;
+        let minDiff = 999;
+        for (const tl of transLines) {
+            const diff = Math.abs(tl.time - bl.time);
+            if (diff < minDiff) {
+                minDiff = diff;
+                bestTrans = tl;
+            }
+        }
+        const transStr = (bestTrans && minDiff <= 2.8) ? bestTrans.text.trim() : '';
+        return {
+            ...bl,
+            transText: transStr || bl.transText || ''
+        };
+    });
+}
+
 module.exports = {
     hasJapaneseChars,
     hasKanji,
@@ -401,6 +427,7 @@ module.exports = {
     parseTrackMetadata,
     parseLrcText,
     mergeJapaneseAndRomajiLines,
+    attachTranslationLines,
     isUnwantedForeignTranslation,
     computeMetadataSimilarity
 };

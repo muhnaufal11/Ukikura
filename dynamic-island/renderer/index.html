@@ -95,6 +95,29 @@
             </span>
         </div>
 
+        <!-- 3D. MODE MINI FLOATING KARAOKE OVERLAY KHAS UKIKURA (Tinggi ~54px) -->
+        <div class="ly l-karaoke" id="l-karaoke" title="Klik ganda untuk membuka lirik penuh, drag untuk geser">
+            <span class="art-mini" id="karaoke-art" style="left:10px;top:10px;width:34px;height:34px"></span>
+            <button class="ctl-btn mini" data-mcmd="PLAYPAUSE" id="karaoke-play-btn" style="left:50px;top:15px;width:24px;height:24px" title="Putar / Jeda">
+                <svg class="ctl" id="play-icon-k" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div class="karaoke-center" id="karaoke-center-box" style="left:82px;right:92px">
+                <div class="k-line-1" id="karaoke-line-1">Memuat lirik karaoke...</div>
+                <div class="k-line-2" id="karaoke-line-2">...</div>
+            </div>
+            <div class="karaoke-actions">
+                <button class="hdr-icon-btn" id="btn-karaoke-sub" title="Beralih Dual-Sub (Romaji / Terjemahan)">
+                    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+                </button>
+                <button class="hdr-icon-btn" id="btn-karaoke-expand" title="Perluas ke Mode Synced Lyrics Penuh (520px)">
+                    <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                </button>
+                <button class="hdr-icon-btn" id="btn-karaoke-close" title="Tutup Mode Karaoke">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+        </div>
+
         <!-- HEADER SAAT TERBUKA -->
         <div class="ly l-hdr">
             <div class="hdr-bar">
@@ -203,8 +226,9 @@
             <div class="a" style="left:106px;width:138px;top:42px;display:flex;flex-direction:column;gap:3px">
                 <div class="sb" id="music-title-2" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Putar Musik</div>
                 <div class="dim" id="music-artist-2" style="font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Artis</div>
-                <div style="display:flex;align-items:center;margin-top:2px">
+                <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
                     <span class="lyr-sync-badge" id="lyr-offset-label" title="Klik baris lirik untuk sinkronkan manual, scroll untuk atur offset, klik ganda untuk reset">SYNC</span>
+                    <span class="lyr-sync-badge lyr-sub-badge" id="btn-sub-toggle" title="Klik untuk beralih mode Subtitle (Dual-Sub Romaji & Terjemahan / Teks Utama Saja)">SUB: ON</span>
                 </div>
             </div>
 
@@ -212,19 +236,22 @@
             <span class="a prog vc" style="left:76px;width:122px;top:110px"><i id="music-prog-2"></i></span>
             <span class="a vc" id="music-rem-2" style="left:204px;top:110px;font-family:var(--mono);font-size:9.5px">-00:00</span>
 
-            <button class="a bub-btn c" id="btn-close-lyrics" style="left:40px;top:142px" title="Kembali ke Pemutar Standar">
+            <button class="a bub-btn c" id="btn-close-lyrics" style="left:38px;top:142px" title="Kembali ke Pemutar Standar">
                 <svg class="bub" viewBox="0 0 18 16"><path d="M4 .8h10a3.2 3.2 0 0 1 3.2 3.2v4.6a3.2 3.2 0 0 1-3.2 3.2H8.4L4.6 15l.5-3.2H4A3.2 3.2 0 0 1 .8 8.6V4A3.2 3.2 0 0 1 4 .8z" fill="#fff"/><circle cx="6.3" cy="5.4" r="1.3" fill="#000"/><circle cx="11.3" cy="5.4" r="1.3" fill="#000"/></svg>
             </button>
-            <button class="a ctl-btn c" data-mcmd="PREV" style="left:76px;top:142px" title="Sebelumnya">
+            <button class="a bub-btn c" id="btn-open-karaoke" style="left:66px;top:142px" title="Mode Mini Floating Karaoke Overlay (Melayang ramping di atas layar)">
+                <svg class="bub" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+            </button>
+            <button class="a ctl-btn c" data-mcmd="PREV" style="left:98px;top:142px" title="Sebelumnya">
                 <svg class="ctl" viewBox="0 0 24 24"><path d="M11 6 3 12l8 6zM21 6l-8 6 8 6z"/></svg>
             </button>
-            <button class="a ctl-btn play-main c" data-mcmd="PLAYPAUSE" style="left:112px;top:142px" title="Putar / Jeda">
+            <button class="a ctl-btn play-main c" data-mcmd="PLAYPAUSE" style="left:134px;top:142px" title="Putar / Jeda">
                 <svg class="ctl" id="play-icon-2" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
-            <button class="a ctl-btn c" data-mcmd="NEXT" style="left:148px;top:142px" title="Berikutnya">
+            <button class="a ctl-btn c" data-mcmd="NEXT" style="left:170px;top:142px" title="Berikutnya">
                 <svg class="ctl" viewBox="0 0 24 24"><path d="m13 6 8 6-8 6zM3 6l8 6-8 6z"/></svg>
             </button>
-            <div class="a vol-group vc mini" id="vol-group-2" style="left:172px;top:142px">
+            <div class="a vol-group vc mini" id="vol-group-2" style="left:196px;top:142px">
                 <button class="vol-btn" id="btn-vol-2" title="Klik untuk Mute / Unmute, scroll untuk atur volume">
                     <svg viewBox="0 0 24 24" id="vol-svg-2" class="vol-icon"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
                 </button>

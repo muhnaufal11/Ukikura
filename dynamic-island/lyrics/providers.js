@@ -7,6 +7,7 @@ const {
     kanaToRomaji,
     parseLrcText,
     mergeJapaneseAndRomajiLines,
+    attachTranslationLines,
     isUnwantedForeignTranslation,
     computeMetadataSimilarity
 } = require("./text-romaji");
@@ -85,6 +86,7 @@ async function searchNetEaseLyrics(meta, mediaDur) {
 
         const rawLrc = lyrData.lrc && lyrData.lrc.lyric ? lyrData.lrc.lyric : '';
         const rawRoma = lyrData.romalrc && lyrData.romalrc.lyric ? lyrData.romalrc.lyric : '';
+        const rawTrans = lyrData.tlyric && lyrData.tlyric.lyric ? lyrData.tlyric.lyric : '';
         if (!rawLrc && !rawRoma) continue;
 
         const sample = (rawLrc || rawRoma).slice(0, 600);
@@ -94,6 +96,7 @@ async function searchNetEaseLyrics(meta, mediaDur) {
 
         const lrcLines = parseLrcText(rawLrc);
         const romaLines = parseLrcText(rawRoma);
+        const transLines = rawTrans ? parseLrcText(rawTrans) : [];
 
         let finalLines = [];
         const isJpLrc = hasJapaneseChars(sample);
@@ -104,15 +107,21 @@ async function searchNetEaseLyrics(meta, mediaDur) {
                 time: l.time,
                 text: l.text,
                 rawText: l.text,
-                romaText: ''
+                romaText: '',
+                transText: ''
             }));
         } else if (romaLines.length >= 4) {
             finalLines = romaLines.map(l => ({
                 time: l.time,
                 text: l.text,
                 rawText: l.text,
-                romaText: l.text
+                romaText: l.text,
+                transText: ''
             }));
+        }
+
+        if (transLines.length > 0 && finalLines.length > 0) {
+            finalLines = attachTranslationLines(finalLines, transLines);
         }
 
         if (finalLines.length >= 4) {
