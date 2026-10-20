@@ -200,9 +200,12 @@
             <canvas class="ambient-canvas" id="ambient-canvas-2" width="240" height="120"></canvas>
             <div class="ambient-vignette"></div>
             <span class="a art" id="music-art-2" style="left:40px;top:40px;width:56px;height:56px"></span>
-            <div class="a" style="left:106px;width:138px;top:44px">
-                <div class="sb" id="music-title-2" style="font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Putar Musik</div>
-                <div class="dim" id="music-artist-2" style="font-size:10.5px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Artis</div>
+            <div class="a" style="left:106px;width:138px;top:42px;display:flex;flex-direction:column;gap:3px">
+                <div class="sb" id="music-title-2" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Putar Musik</div>
+                <div class="dim" id="music-artist-2" style="font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Artis</div>
+                <div style="display:flex;align-items:center;margin-top:2px">
+                    <span class="lyr-sync-badge" id="lyr-offset-label" title="Klik baris lirik untuk sinkronkan manual, scroll untuk atur offset, klik ganda untuk reset">SYNC</span>
+                </div>
             </div>
 
             <span class="a vc" id="music-pos-2" style="left:40px;top:110px;font-family:var(--mono);font-size:9.5px">00:00</span>
@@ -231,7 +234,6 @@
             </div>
 
             <span class="a" style="left:252px;top:40px;width:1px;height:118px;background:rgba(255,255,255,.14)"></span>
-            <span class="a" id="lyr-offset-label" style="left:262px;top:20px;font-family:var(--mono);font-size:9px;color:rgba(94,194,255,.85);letter-spacing:0.5px;user-select:none" title="Klik baris lirik untuk sinkronkan manual, scroll untuk atur offset, klik ganda untuk reset">SYNC</span>
             <div class="a lyr">
                 <ol id="lyr-list">
                     <li class="on">Menunggu musik diputar...</li>

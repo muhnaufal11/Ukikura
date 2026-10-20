@@ -80,11 +80,15 @@ function updateLyricOffsetLabel() {
     if (!lbl) return;
     if (Math.abs(lyricTimeOffset) < 0.05) {
         lbl.textContent = 'SYNC';
-        lbl.style.color = 'rgba(94,194,255,.85)';
+        lbl.style.color = 'rgba(94,194,255,.9)';
+        lbl.style.borderColor = 'rgba(94,194,255,.28)';
+        lbl.style.background = 'rgba(94,194,255,.12)';
     } else {
         const sign = lyricTimeOffset > 0 ? '+' : '';
         lbl.textContent = `${sign}${lyricTimeOffset.toFixed(1)}s`;
         lbl.style.color = '#38d36f';
+        lbl.style.borderColor = 'rgba(56,211,111,.35)';
+        lbl.style.background = 'rgba(56,211,111,.15)';
     }
 }
 
@@ -173,9 +177,28 @@ function scrollLyricsToActive() {
     items.forEach((li, i) => li.classList.toggle('on', i === targetIdx));
     const activeLi = items[targetIdx];
     if (activeLi) {
-        const offset = 52 - activeLi.offsetTop - activeLi.offsetHeight / 2;
+        const offset = 62 - activeLi.offsetTop - activeLi.offsetHeight / 2;
         lyrListEl.style.transform = `translateY(${offset}px)`;
     }
+}
+
+// Interaksi badge SYNC: Klik untuk reset 0s, scroll wheel untuk atur offset secara presisi
+const lyrOffsetBadgeEl = document.getElementById('lyr-offset-label');
+if (lyrOffsetBadgeEl) {
+    lyrOffsetBadgeEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        lyricTimeOffset = 0;
+        updateLyricOffsetLabel();
+        updateMediaProgressUI();
+    });
+    lyrOffsetBadgeEl.addEventListener('wheel', (e) => {
+        if (!syncedLyrics.length) return;
+        e.preventDefault();
+        e.stopPropagation();
+        lyricTimeOffset += (e.deltaY > 0 ? 0.15 : -0.15);
+        updateLyricOffsetLabel();
+        updateMediaProgressUI();
+    }, { passive: false });
 }
 
 // Klik pada baris lirik mana saja untuk langsung menyinkronkan waktu ke baris tersebut (klik ganda untuk reset ke 0s)
