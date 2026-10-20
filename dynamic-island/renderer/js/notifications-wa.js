@@ -45,11 +45,13 @@ function triggerPeekPopup(item) {
         setPeekMode('peek', 6000);
     }
 
-    const notifKey = `${item.sender || ''}_${item.message || ''}_${item.sticker ? 'stk' : 'txt'}`;
+    const notifKey = `${String(item.sender || '').trim()}::${String(item.message || '').trim()}`.toLowerCase();
     const now = Date.now();
-    const isDuplicateAlert = (notifKey === lastAlertedNotifKey && (now - lastAlertedNotifTime) < 3500);
-    lastAlertedNotifKey = notifKey;
-    lastAlertedNotifTime = now;
+    const isDuplicateAlert = Boolean(notifKey && notifKey === lastAlertedNotifKey && (now - lastAlertedNotifTime) < 4000);
+    if (!isDuplicateAlert) {
+        lastAlertedNotifKey = notifKey;
+        lastAlertedNotifTime = now;
+    }
 
     // Bunyikan nada alert notifikasi WA/HP (hanya jika bukan duplikat, bukan alarm kuliah, dan bukan kuis yang punya nada sendiri)
     if (!item.isClassAlarm && !item.isQuizAlarm && !item.isSilent && !isDuplicateAlert && typeof window.playAudioAlert === 'function') {

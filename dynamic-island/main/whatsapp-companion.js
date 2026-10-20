@@ -16,6 +16,7 @@ function ensureWhatsAppWindow(showWindow = false) {
         if (showWindow) {
             waWindow.show();
             waWindow.focus();
+            try { waWindow.webContents.setAudioMuted(false); } catch (_) {}
         }
         return;
     }
@@ -35,6 +36,7 @@ function ensureWhatsAppWindow(showWindow = false) {
 
     try {
         waWindow.webContents.setBackgroundThrottling(false);
+        waWindow.webContents.setAudioMuted(!showWindow);
     } catch (_) {}
 
     const chromeUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
@@ -78,6 +80,7 @@ function ensureWhatsAppWindow(showWindow = false) {
         if (!app.isQuitting) {
             e.preventDefault();
             waWindow.hide();
+            try { waWindow.webContents.setAudioMuted(true); } catch (_) {}
         }
     });
 }
@@ -124,17 +127,20 @@ async function pollWhatsAppUnread() {
                                 tag: String(opts.tag || '')
                             }));
                         } catch (_) {}
-                        return new OrigNotif(title, opts);
+                        // Jangan buat Windows Toast native dari jendela background agar tidak memicu suara Windows
+                        // dan tidak tertangkap kembali oleh WinRT listener (mencegah loop feedback notif dobel).
+                        const dummy = (typeof EventTarget === 'function') ? new EventTarget() : {};
+                        dummy.title = title;
+                        dummy.close = () => {};
+                        return dummy;
                     };
                     WrappedNotif.prototype = OrigNotif.prototype;
                     try {
                         Object.defineProperty(WrappedNotif, 'permission', {
-                            get: () => OrigNotif.permission
+                            get: () => 'granted'
                         });
                     } catch (_) {}
-                    WrappedNotif.requestPermission = OrigNotif.requestPermission
-                        ? OrigNotif.requestPermission.bind(OrigNotif)
-                        : () => Promise.resolve('granted');
+                    WrappedNotif.requestPermission = () => Promise.resolve('granted');
                     window.Notification = WrappedNotif;
                 }
 

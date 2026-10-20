@@ -300,10 +300,10 @@ async function playAudioAlert(channel = 'class', forcePreset = null, forceVol = 
 
     if (preset === 'mute' || volPct <= 0) return;
 
-    // Debounce anti-suara dobel: cegah nada berulang tumpang tindih dalam jeda < 1.8 detik (kecuali tes manual dari modal)
+    // Debounce anti-suara dobel: cegah tumpang tindih oscillator audio jika event tiba serentak < 450ms (kecuali tes manual dari modal)
     if (forcePreset === null) {
         const nowMs = Date.now();
-        const minCooldown = (key === 'notif') ? 1800 : 1200;
+        const minCooldown = (key === 'notif') ? 450 : 1200;
         if (nowMs - (lastPlayedChannelTimestamps[key] || 0) < minCooldown) {
             return;
         }
