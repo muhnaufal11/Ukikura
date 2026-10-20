@@ -9,7 +9,8 @@ const {
     mergeJapaneseAndRomajiLines,
     attachTranslationLines,
     isUnwantedForeignTranslation,
-    computeMetadataSimilarity
+    computeMetadataSimilarity,
+    isIndonesianText
 } = require("./text-romaji");
 
 // ==================== DATABASE 1: NETEASE CLOUD MUSIC (JEPANG KANJI+ROMAJI, INDONESIA, GLOBAL) ====================
@@ -65,19 +66,27 @@ async function searchNetEaseLyrics(meta, mediaDur) {
         if (seenIds.has(c.id)) continue;
         seenIds.add(c.id);
         topSongs.push(c);
-        if (topSongs.length >= 2) break;
+        if (topSongs.length >= 4) break;
     }
 
     if (topSongs.length === 0) return null;
 
-    const lyrPayloads = await Promise.all(
-        topSongs.map(song =>
-            httpRequestJson(
+    const lyrPayloads = [];
+    for (const song of topSongs) {
+        try {
+            const lyrData = await httpRequestJson(
                 `https://music.163.com/api/song/lyric?id=${song.id}&lv=1&kv=1&tv=-1&rv=-1`,
-                { headers: { 'Referer': 'https://music.163.com' }, timeout: 4200 }
-            ).then(lyrData => ({ song, lyrData }))
-        )
-    );
+                { headers: { 'Referer': 'https://music.163.com' }, timeout: 3800 }
+            );
+            if (lyrData) {
+                lyrPayloads.push({ song, lyrData });
+                // Jika lagu Jepang dan sudah menemukan romalrc lengkap, cukup dan langsung gunakan
+                if (meta.likelyJapanese && lyrData.romalrc && lyrData.romalrc.lyric && lyrData.romalrc.lyric.length > 50) {
+                    break;
+                }
+            }
+        } catch (_) {}
+    }
 
     let bestResult = null;
 
@@ -96,6 +105,9 @@ async function searchNetEaseLyrics(meta, mediaDur) {
 
         const isJpLrc = hasJapaneseChars(sample);
         if (meta && ((meta.isEnglishVersion || meta.isIndonesianVersion) && isJpLrc)) {
+            continue;
+        }
+        if (meta && meta.isIndonesianVersion && !isIndonesianText(sample)) {
             continue;
         }
 
@@ -190,8 +202,8 @@ async function searchLrclibLyrics(meta, mediaDur) {
                 }
                 score += 30; // Bonus kecocokan bahasa Inggris
             } else if (meta && meta.isIndonesianVersion) {
-                // TOLAK lirik Jepang/Mandarin/Korea jika lagu adalah versi/cover Bahasa Indonesia!
-                if (isJpText || hasJapaneseChars(item.trackName || '') || hasJapaneseChars(item.artistName || '')) {
+                // TOLAK lirik non-Indonesia jika lagu adalah versi/cover Bahasa Indonesia!
+                if (isJpText || hasJapaneseChars(item.trackName || '') || hasJapaneseChars(item.artistName || '') || !isIndonesianText(lyrSample)) {
                     continue;
                 }
                 score += 30;
@@ -322,6 +334,9 @@ async function searchKuGouLyrics(meta, mediaDur) {
         if (parsed.length >= 5) {
             const isJp = hasJapaneseChars(rawLrc.slice(0, 500));
             if (meta && ((meta.isEnglishVersion || meta.isIndonesianVersion) && isJp)) {
+                continue;
+            }
+            if (meta && meta.isIndonesianVersion && !isIndonesianText(rawLrc.slice(0, 800))) {
                 continue;
             }
             return {

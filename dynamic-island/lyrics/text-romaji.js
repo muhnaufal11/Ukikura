@@ -444,13 +444,17 @@ function computeMetadataSimilarity(candidateTitle, candidateArtist, meta) {
         const segNorm = normalizePhoneticLatin(seg);
         if (!segNorm || segNorm.length < 2) continue;
 
-        // Jika segmen adalah nama channel/artis (misal "hololive ID" atau "Ayunda Risu"), jangan hitung sebagai judul!
-        const isArtistSeg = chNorm && (
+        // Jika segmen adalah nama channel/artis (misal "hololive ID", "Ayunda Risu", atau "ReoNa"), jangan hitung sebagai judul!
+        const isArtistSeg = (chNorm && (
             segNorm === chNorm ||
             chNorm.includes(segNorm) ||
             segNorm.includes(chNorm) ||
             segNorm.split(/\s+/).some(w => w.length >= 3 && chNorm.includes(w))
-        );
+        )) || (candArtistNorm && (
+            segNorm === candArtistNorm ||
+            candArtistNorm.includes(segNorm) ||
+            segNorm.includes(candArtistNorm)
+        ));
         if (isArtistSeg) {
             if (candArtistNorm === segNorm || candArtistNorm.includes(segNorm) || segNorm.includes(candArtistNorm)) {
                 artistScore += 60;
@@ -543,6 +547,27 @@ function attachTranslationLines(baseLines, transLines) {
     });
 }
 
+const TAGALOG_MARKERS = /\b(mga|nang|hindi|bakit|'di\s+ba|naman|lahat|humingang|pumikit|namamalikmata|nababahala|binaon|tinakpan|andito|intindihin)\b/i;
+const INDONESIAN_DISTINCT_WORDS = new Set([
+    'yang', 'dan', 'untuk', 'adalah', 'dengan', 'kamu', 'aku', 'kau', 'dia', 'kita', 'mereka',
+    'bisa', 'ada', 'tidak', 'tak', 'bukan', 'saat', 'sudah', 'lagi', 'hati', 'cinta',
+    'sebelum', 'kuberikan', 'semua', 'hidup', 'masih', 'mata', 'luka', 'rasa', 'ini', 'itu'
+]);
+
+function isIndonesianText(sample) {
+    if (!sample || typeof sample !== 'string') return false;
+    if (TAGALOG_MARKERS.test(sample)) return false;
+    const words = sample.toLowerCase().split(/[^a-zA-Z\u00C0-\u024F]+/);
+    const matchedDistinct = new Set();
+    for (const w of words) {
+        if (INDONESIAN_DISTINCT_WORDS.has(w)) {
+            matchedDistinct.add(w);
+            if (matchedDistinct.size >= 2) return true;
+        }
+    }
+    return false;
+}
+
 module.exports = {
     hasJapaneseChars,
     hasKanji,
@@ -556,5 +581,6 @@ module.exports = {
     mergeJapaneseAndRomajiLines,
     attachTranslationLines,
     isUnwantedForeignTranslation,
-    computeMetadataSimilarity
+    computeMetadataSimilarity,
+    isIndonesianText
 };

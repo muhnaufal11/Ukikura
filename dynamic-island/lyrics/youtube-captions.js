@@ -319,14 +319,52 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         ? parseSrv3Stream(idXmlRes.body)
         : { tokens: [], lines: [] };
 
+function mergeFragmentedAsrLines(rawLines) {
+    if (!Array.isArray(rawLines) || rawLines.length <= 2) return rawLines;
+    const merged = [];
+    let cur = null;
+
+    for (let i = 0; i < rawLines.length; i++) {
+        const item = rawLines[i];
+        const text = String(item.text || item.rawText || '').trim();
+        if (!text) continue;
+
+        if (!cur) {
+            cur = { ...item };
+            continue;
+        }
+
+        const curText = cur.text.trim();
+        const wordCount = curText.split(/\s+/).length;
+        const gap = item.time - (cur.endTime || cur.time);
+        const endsWithPunct = /[.!?]$/.test(curText);
+        const curDur = (cur.endTime || (item.time + 1.5)) - cur.time;
+
+        const shouldMerge = !endsWithPunct && (wordCount < 4 || curDur < 2.4) && gap < 1.6 && (wordCount + text.split(/\s+/).length <= 9);
+
+        if (shouldMerge) {
+            const separator = hasJapaneseChars(curText + text) ? '' : ' ';
+            cur.text = `${curText}${separator}${text}`;
+            cur.rawText = cur.text;
+            cur.endTime = Math.max(cur.endTime || 0, item.endTime || (item.time + 1.5));
+        } else {
+            merged.push(cur);
+            cur = { ...item };
+        }
+    }
+    if (cur) merged.push(cur);
+    return merged;
+}
+
     // Untuk Forced Alignment:
     // - Jika ada Manual CC pada bahasa lagu yang sama (langScore >= 45), gunakan Manual CC karena bebas jeda decoding ASR!
     // - Jika menggunakan Auto-ASR (kind === 'asr'), tandai isAsrTokens = true untuk kompensasi jeda vokal ASR (-1.05s)
-    const manualHasSameLang = bestManual && bestManual.langScore >= 45 && parsedManual.tokens.length >= 10;
+    const isManualCC = Boolean(bestManual && parsedManual.lines.length >= 4);
+    const manualHasSameLang = isManualCC && bestManual.langScore >= 45 && parsedManual.tokens.length >= 10;
     const useAsrPrimary = !manualHasSameLang && parsedAsr.tokens.length >= 6;
     const primaryTokens = useAsrPrimary ? parsedAsr.tokens : (parsedManual.tokens.length >= 6 ? parsedManual.tokens : parsedAsr.tokens);
-    const primaryLines = parsedManual.lines.length >= 4 ? parsedManual.lines : parsedAsr.lines;
-    const isManualCC = parsedManual.lines.length >= 4;
+    const asrMergedLines = mergeFragmentedAsrLines(parsedAsr.lines);
+    const primaryLines = isManualCC ? parsedManual.lines : asrMergedLines;
     const languageCode = (bestManual && bestManual.lang) || (bestAsr && bestAsr.lang) || '';
 
     if (primaryTokens.length === 0 && primaryLines.length === 0) return null;

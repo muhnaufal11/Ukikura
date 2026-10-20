@@ -1,6 +1,16 @@
 "use strict";
 const { lyricsCache, httpRequestJson, translateToIndonesian, translateBatchToIndonesian } = require("./http-client");
-const { hasJapaneseChars, hasKanji, hasHiraganaOrKatakana, kanaToRomaji, parseTrackMetadata, parseLrcText, mergeJapaneseAndRomajiLines, attachTranslationLines } = require("./text-romaji");
+const {
+    hasJapaneseChars,
+    hasKanji,
+    hasHiraganaOrKatakana,
+    kanaToRomaji,
+    parseTrackMetadata,
+    parseLrcText,
+    mergeJapaneseAndRomajiLines,
+    attachTranslationLines,
+    isIndonesianText
+} = require("./text-romaji");
 const { searchNetEaseLyrics, searchLrclibLyrics, searchKuGouLyrics } = require("./providers");
 const { fetchYouTubeCaptionStream } = require("./youtube-captions");
 const { forceAlignLyricsToAudioStream } = require("./forced-alignment");
@@ -16,23 +26,29 @@ async function enrichWithRomaji(lines, meta, bestDb) {
     const searchQueries = [
         bestDb ? `${bestDb.artistName} ${bestDb.trackName}` : '',
         meta.jpQuotes && meta.jpQuotes[0] ? `${meta.cleanChannel || ''} ${meta.jpQuotes[0]}` : '',
+        ...(meta.queries || []),
         meta.cleanedTitle,
         meta.origTitle
-    ].map(q => String(q || '').replace(/\b(?:cover|covered|utattemita|歌ってみた)\b/gi, '').trim()).filter(q => q && q.length >= 2);
+    ]
+        .map(q => String(q || '').replace(/[|•·／/]/g, ' ').replace(/\b(?:cover|covered|utattemita|歌ってみた)\b/gi, '').replace(/\s+/g, ' ').trim())
+        .filter(q => q && q.length >= 2);
 
-    for (const q of searchQueries.slice(0, 2)) {
+    const uniqueQueries = [...new Set(searchQueries)].slice(0, 3);
+
+    for (const q of uniqueQueries) {
         try {
             const data = await httpRequestJson(
-                `https://music.163.com/api/search/get?s=${encodeURIComponent(q)}&type=1&limit=3`,
+                `https://music.163.com/api/search/get?s=${encodeURIComponent(q)}&type=1&limit=4`,
                 { method: 'POST', headers: { Referer: 'https://music.163.com' }, timeout: 3500 }
             );
-            const firstSong = data?.result?.songs?.[0];
-            if (firstSong && firstSong.id) {
+            const songs = data?.result?.songs || [];
+            for (const s of songs) {
+                if (!s || !s.id) continue;
                 const lyrData = await httpRequestJson(
-                    `https://music.163.com/api/song/lyric?id=${firstSong.id}&lv=1&kv=1&tv=-1&rv=-1`,
+                    `https://music.163.com/api/song/lyric?id=${s.id}&lv=1&kv=1&tv=-1&rv=-1`,
                     { headers: { Referer: 'https://music.163.com' }, timeout: 3500 }
                 );
-                if (lyrData?.romalrc?.lyric) {
+                if (lyrData?.romalrc?.lyric && lyrData.romalrc.lyric.length > 50) {
                     const romaLines = parseLrcText(lyrData.romalrc.lyric);
                     if (romaLines.length >= 4) {
                         return mergeJapaneseAndRomajiLines(
@@ -156,9 +172,8 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     let trackDuration = mediaDur || (bestDb && bestDb.duration) || (ytCaptions && ytCaptions.videoDur) || 0;
 
     // KASUS 1: Video YouTube memiliki Subtitle Resmi / Manual CC dari kreator video itu sendiri!
-    // (Atau lagu adalah COVER dan YouTube memiliki CC langsung dari pembuat cover!)
-    const isCoverWithCaptions = Boolean(meta && meta.isCover && ytCaptions && ytCaptions.lines.length >= 4);
-    if ((ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4) || isCoverWithCaptions) {
+    const hasManualCC = Boolean(ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4);
+    if (hasManualCC) {
         finalLines = ytCaptions.lines.map(l => {
             const rawNormalized = String(l.rawText || l.text || '').normalize('NFKD').trim();
             // Cek apakah baris memuat kombinasi Romaji + Karakter Jepang (seperti gaya subtitle resmi YOASOBI/Ayase)
@@ -191,7 +206,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             };
         });
 
-        syncMethod = ytCaptions.isManualCC ? 'YouTube Official CC (.srv3)' : 'YouTube Cover Captions (.srv3)';
+        syncMethod = 'YouTube Official CC (.srv3)';
     }
     // KASUS 2: Kita punya Lirik Standar Akurat dari Database + Gelombang Vokal Auto-ASR YouTube
     // -> Jalankan Audio-to-Text Forced Alignment agar ejaan 100% akurat & timestamp mengikuti vokal video!
@@ -248,13 +263,16 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     }
 
     // 2. Lampirkan sub-lirik terjemahan Bahasa Indonesia resmi jika tersedia dari YouTube TimedText!
-    const isAlreadyIndonesian = meta.isIndonesianVersion || (ytCaptions && ytCaptions.languageCode && ytCaptions.languageCode.toLowerCase().startsWith('id'));
+    const combinedSample = finalLines.slice(0, 15).map(l => l.rawText || l.text || '').join(' ');
+    const isNaturallyIndonesian = isIndonesianText(combinedSample) || isIndonesianText(rawTitle);
+    const isAlreadyIndonesian = meta.isIndonesianVersion || isNaturallyIndonesian || (ytCaptions && ytCaptions.languageCode && ytCaptions.languageCode.toLowerCase().startsWith('id'));
     if (!isAlreadyIndonesian && ytCaptions && Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 3 && finalLines.length > 0) {
         finalLines = attachTranslationLines(finalLines, ytCaptions.indonesianLines);
     }
 
     // 3. Terjemahkan SEMUA baris lagu ke Bahasa Indonesia secara batch cepat jika belum ada terjemahan
-    if (!isAlreadyIndonesian && finalLines.length > 0) {
+    // Catatan: DILARANG menerjemahkan lagu yang sudah bahasa Indonesia atau cover versi Inggris
+    if (!isAlreadyIndonesian && !meta.isEnglishVersion && finalLines.length > 0) {
         const missingLines = finalLines.filter(l => !l.transText || l.transText.trim().toLowerCase() === (l.rawText || l.text || '').trim().toLowerCase() || (!/[\u4e00-\u9fa5]/.test(meta.origTitle) && /[\u4e00-\u9fa5]/.test(l.transText)));
         if (missingLines.length > 0) {
             const toProcess = missingLines.slice(0, 85);
