@@ -46,23 +46,9 @@
         pointer-events: none;
     }
 
-    /* Saat notch sedang terbuka (expanded), barulah terima klik mouse penuh */
-    .mn-holder.is-expanded,
-    .mn-holder.is-expanded * {
-        pointer-events: auto !important;
-    }
-
-    /* Saat notch dalam keadaan tertutup (tidak expanded): seluruh elemen notch WAJIB pointer-events: none */
-    .mn-holder:not(.is-expanded) {
-        pointer-events: none !important;
-    }
-    .mn-holder:not(.is-expanded) * {
-        pointer-events: none !important;
-    }
-
-    /* Pengecualian saat peek popup aktif agar tombol peek bisa diklik */
-    .mn-holder:not(.is-expanded):has(.mn[data-s="peek"]),
-    .mn-holder:not(.is-expanded):has(.mn[data-s="peek"]) * {
+    /* Kapsul notch selalu menerima interaksi & klik mouse secara responsif */
+    .mn,
+    .mn * {
         pointer-events: auto !important;
     }
 
@@ -77,15 +63,9 @@
 
     /* Saat browser (Brave, Chrome, dll.) terdeteksi sedang fullscreen/maximized agar tab di belakang terlihat */
     .mn-holder.browser-maximized:not(.is-expanded) .mn {
-        opacity: 0.16 !important;
+        opacity: 0.25;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         transition: opacity 0.22s ease, box-shadow 0.22s ease;
-    }
-
-    .mn-holder.browser-maximized:not(.is-expanded):hover .mn,
-    .mn-holder.browser-maximized:not(.is-expanded).passthrough .mn {
-        opacity: 0.02 !important;
-        pointer-events: none !important;
     }
 
     /* Saat notch sedang terbuka (expanded), selalu 100% tajam dan jelas */

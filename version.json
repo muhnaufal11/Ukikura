@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 58,
+  "versionCode": 59,
   "version": "1.0.6",
-  "fixCount": 58,
-  "displayVersion": "1.0.6 (Patch 58 - Fullscreen Browser Tab Auto-Passthrough, 100% Click-Through & Intentional Dwell Expansion)",
+  "fixCount": 59,
+  "displayVersion": "1.0.6 (Patch 59 - Dual-Zone Interactive Notch & 100% Non-Focusable Surrounding Click-Through)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 58 - Fullscreen Browser Tab Auto-Passthrough & 100% Click-Through): 1) Mengatasi masalah tab browser tertutup/tidak bisa diklik: mengimplementasikan deteksi otomatis barisan tab browser (y = 0..44px) yang seketika mengaktifkan mode Ghost Passthrough (opacity 0.08 dan pointer-events: none) serta setIgnoreMouseEvents(true), sehingga seluruh klik mouse jatuh 100% langsung ke tab browser di belakangnya tanpa halangan. 2) Menghilangkan pemicu klik bibir atas yang memblokir klik (touchingTopBezel y <= 3px) dan menggantinya dengan Intentional Hover Dwell (320ms) agar pengguna bebas beralih tab tanpa sengaja memicu pembukaan notch. 3) Mengintegrasikan pemantau jendela aktif native C++ (ForegroundWindowMonitor di ukikura-bridge.exe) untuk mendeteksi saat browser (Brave, Chrome, Edge, Firefox, dll.) sedang maximized/fullscreen, sehingga notch otomatis menjadi semi-transparan (opacity 0.35) agar judul tab di baliknya selalu terbaca dengan jelas."
+  "changelog": "Ukikura v1.0.6 (Patch 59 - Dual-Zone Interactive Notch & 100% Surrounding Click-Through): 1) Mengatasi kendala klik di sekitar pulau dan pada pulau itu sendiri: Mengubah jendela overlay menjadi focusable: false saat tertutup dan setAlwaysOnTop level 'floating' agar Windows OS secara instan mengalirkan seluruh klik mouse di sekitar pulau (tab browser, toolbar, web page) langsung ke aplikasi background tanpa mencuri fokus jendela. 2) Memulihkan interaktivitas penuh kapsul notch: Memastikan elemen .mn dan maskot l-pet/l-idle memiliki pointer-events: auto dan setIgnoreMouseEvents(false) seketika saat kursor memasuki kapsul, sehingga pulau dapat diklik 100% untuk membuka halaman dan merespons interaksi dengan lancar. 3) Mengelola focusable dinamis (setFocusable true saat terbuka agar input teks berfungsi, dan setFocusable false saat tertutup)."
 }
