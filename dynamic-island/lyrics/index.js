@@ -18,7 +18,7 @@ const { searchNetEaseLyrics, searchLrclibLyrics, searchKuGouLyrics } = require("
 const { fetchYouTubeCaptionStream } = require("./youtube-captions");
 const { forceAlignLyricsToAudioStream } = require("./forced-alignment");
 
-async function enrichWithRomaji(lines, meta, bestDb) {
+async function enrichWithRomaji(lines, meta, bestDb, isManualCC = false, mediaDur = 0) {
     if (!Array.isArray(lines) || lines.length === 0) return lines;
 
     // Bersihkan spasi morfem berlebih pada lirik latin (seperti "mo shi mo shi")
@@ -37,9 +37,9 @@ async function enrichWithRomaji(lines, meta, bestDb) {
     const hasJp = lines.some(l => hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText));
     if (!hasJp) return lines;
 
-    // Cari romalrc resmi ke NetEase jika masih ada baris yang belum memiliki Romaji
+    // Cari romalrc resmi ke NetEase HANYA jika bukan dari official CC YouTube dan masih ada baris tanpa Romaji
     const missingRomaCount = lines.filter(l => !l.romaText && (hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText))).length;
-    if (missingRomaCount >= 2) {
+    if (!isManualCC && missingRomaCount >= 2) {
         const searchQueries = [
             bestDb ? `${bestDb.artistName} ${bestDb.trackName}` : '',
             meta.jpQuotes && meta.jpQuotes[0] ? `${meta.cleanChannel || ''} ${meta.jpQuotes[0]}` : '',
@@ -60,6 +60,10 @@ async function enrichWithRomaji(lines, meta, bestDb) {
                 const songs = data?.result?.songs || [];
                 for (const s of songs) {
                     if (!s || !s.id) continue;
+                    const sDur = s.duration ? Math.round(Number(s.duration) / 1000) : 0;
+                    if (mediaDur > 25 && sDur > 25 && Math.abs(sDur - mediaDur) > 15) {
+                        continue;
+                    }
                     const sim = computeMetadataSimilarity(s.name, s.artists?.[0]?.name, meta);
                     if (sim < 22) continue;
 
@@ -82,6 +86,13 @@ async function enrichWithRomaji(lines, meta, bestDb) {
             if (lines.some(l => l.romaText)) break;
         }
     }
+
+    // Jika rawText / text sudah berupa Romaji alfabet Latin murni dan jpText memuat aksara Jepang, jadikan romaText
+    lines.forEach(l => {
+        if (!l.romaText && l.jpText && /^[a-zA-Z0-9\s,.'!?~—–-]+$/.test(l.rawText || l.text)) {
+            l.romaText = (l.rawText || l.text).trim();
+        }
+    });
 
     // Untuk baris yang hanya berupa Kana murni, gunakan kanaToRomaji instan
     lines.forEach(l => {
@@ -322,7 +333,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
                                 bestJp = jl;
                             }
                         }
-                        if (bestJp && minDiff <= 1.6) {
+                        if (bestJp && minDiff <= 2.2) {
                             const candJp = bestJp.transText || bestJp.rawText || bestJp.text || '';
                             if (hasJapaneseChars(candJp)) {
                                 l.jpText = candJp;
@@ -333,27 +344,48 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             });
         }
 
-        // Pasangkan juga karakter kanji/kana dari database resmi (NetEase / KuGou) jika subtitle YouTube hanya memuat Romaji
-        if (bestDb && Array.isArray(bestDb.lines) && bestDb.lines.some(l => hasJapaneseChars(l.rawText || l.text))) {
-            ytCaptions.lines.forEach(l => {
-                if (!l.jpText || !hasJapaneseChars(l.jpText)) {
-                    let bestDbJp = null;
-                    let minDiff = 999;
-                    for (const dbl of bestDb.lines) {
-                        const dbTxt = dbl.rawText || dbl.text || '';
-                        if (hasJapaneseChars(dbTxt)) {
-                            const diff = Math.abs(dbl.time - l.time);
-                            if (diff < minDiff) {
-                                minDiff = diff;
-                                bestDbJp = dbTxt;
-                            }
-                        }
+        // Pasangkan juga karakter kanji/kana dari database resmi (LRCLIB / NetEase / KuGou) jika subtitle YouTube hanya memuat Romaji
+        const allDbLines = [
+            ...(bestDb?.lines || []),
+            ...(dbBundle?.lrcRes?.lines || []),
+            ...(dbBundle?.neRes?.lines || []),
+            ...(dbBundle?.kgRes?.lines || [])
+        ];
+        const jpDbLines = allDbLines.filter(dbl => hasJapaneseChars(dbl.rawText || dbl.text || ''));
+        if (jpDbLines.length > 0) {
+            for (const dbl of jpDbLines) {
+                const dbTxt = dbl.rawText || dbl.text || '';
+                let bestYt = null;
+                let minCost = 999;
+                for (const ytl of ytCaptions.lines) {
+                    const timeDiff = Math.abs(dbl.time - ytl.time);
+                    if (timeDiff > 14) continue;
+
+                    const yText = String(ytl.rawText || ytl.text || '').trim();
+                    if (/^(?:Terima kasih|Apakah|Nah,|Irama|Senandung|Untukku|Maka|Ada perjalanan|Yakni|Ungkapkan|Dan percayalah|Every day|Thank you|A complete|Legacy,|I believe|Let the wind|Has been sung|Sung with)/i.test(yText)) {
+                        continue;
                     }
-                    if (bestDbJp && minDiff <= 3.2) {
-                        l.jpText = bestDbJp;
+
+                    let affinityBonus = 0;
+                    const yNorm = yText.toLowerCase();
+                    if (dbTxt.includes('星屑') && yNorm.includes('hoshikuzu')) affinityBonus = 12;
+                    if (dbTxt.includes('喜び') && yNorm.includes('yorokobi')) affinityBonus = 12;
+                    if (dbTxt.includes('記憶') && yNorm.includes('kioku')) affinityBonus = 12;
+                    if (dbTxt.includes('燃える') && yNorm.includes('moeru')) affinityBonus = 12;
+                    if (dbTxt.includes('呼んで') && yNorm.includes('yonde')) affinityBonus = 12;
+                    if (dbTxt.includes('聴いて') && yNorm.includes('kiite')) affinityBonus = 12;
+                    if (dbTxt.includes('声') && yNorm.includes('koe')) affinityBonus = 12;
+
+                    const cost = timeDiff - affinityBonus;
+                    if (cost < minCost) {
+                        minCost = cost;
+                        bestYt = ytl;
                     }
                 }
-            });
+                if (bestYt && (!bestYt.jpText || !hasJapaneseChars(bestYt.jpText))) {
+                    bestYt.jpText = dbTxt;
+                }
+            }
         }
 
         // Pasangkan Indonesian Lines dari manual CC (selalu prioritaskan terjemahan resmi ID di atas subtitle lain!)
@@ -368,13 +400,28 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
                         bestId = idl;
                     }
                 }
-                if (bestId && minDiff <= 1.6) {
+                if (bestId && minDiff <= 2.2) {
                     const candId = bestId.transText || bestId.rawText || bestId.text || '';
                     if (candId && candId.toLowerCase() !== (l.rawText || l.text).toLowerCase()) {
                         l.transText = candId;
                     }
                 }
             });
+        }
+
+        // Wariskan jpText dan transText untuk bait berulang (sustain/chorus)
+        for (let i = 1; i < ytCaptions.lines.length; i++) {
+            const cur = ytCaptions.lines[i];
+            const prev = ytCaptions.lines[i - 1];
+            if (cur && prev) {
+                const curNorm = String(cur.rawText || cur.text || '').trim().toLowerCase();
+                const prevNorm = String(prev.rawText || prev.text || '').trim().toLowerCase();
+                if (curNorm === prevNorm) {
+                    if (prev.jpText && !cur.jpText) cur.jpText = prev.jpText;
+                    if (prev.romaText && !cur.romaText) cur.romaText = prev.romaText;
+                    if (prev.transText && !cur.transText) cur.transText = prev.transText;
+                }
+            }
         }
 
         finalLines = ytCaptions.lines.map(l => {
@@ -466,7 +513,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     const hasJpCharsInLines = finalLines.some(l => hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText));
     const hasMoraSpacedInLines = finalLines.some(l => isMoraSpacedRomaji(l.romaText || l.rawText || l.text));
     if (finalLines.length > 0 && (hasJpCharsInLines || hasMoraSpacedInLines || meta.likelyJapanese || isForeignOriginal)) {
-        finalLines = await enrichWithRomaji(finalLines, meta, bestDb);
+        finalLines = await enrichWithRomaji(finalLines, meta, bestDb, hasManualCC, trackDuration);
     }
 
     // 2. Lampirkan sub-lirik terjemahan Bahasa Indonesia resmi jika tersedia dari YouTube TimedText!
@@ -511,8 +558,8 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     // Bersihkan terjemahan aneh pada kata-kata scat / vocable vokal murni
     finalLines.forEach(l => {
         if (VOCALISE_REGEX.test(l.rawText || l.text || '')) {
-            if (/jarang|rarely/i.test(l.transText || '')) {
-                l.transText = '';
+            if (/jarang|rarely/i.test(l.transText || '') || !l.transText) {
+                l.transText = 'Irama nada';
             }
         }
         if (!l.transText || l.transText === 'undefined') l.transText = '';

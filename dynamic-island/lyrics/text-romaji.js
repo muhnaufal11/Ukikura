@@ -351,9 +351,12 @@ function mergeJapaneseAndRomajiLines(jpLines, romaLines) {
             const pureKanaRoma = (!hasKanji(l.text) && hasHiraganaOrKatakana(l.text)) ? kanaToRomaji(l.text) : '';
             return {
                 time: l.time,
+                endTime: l.endTime,
                 text: l.text,
-                rawText: l.text,
-                romaText: pureKanaRoma
+                rawText: l.rawText || l.text,
+                romaText: l.romaText || pureKanaRoma,
+                jpText: l.jpText || '',
+                transText: l.transText || ''
             };
         });
     }
@@ -414,9 +417,12 @@ function mergeJapaneseAndRomajiLines(jpLines, romaLines) {
             : jl.text;
         return {
             time: jl.time,
+            endTime: jl.endTime,
             text: display,
-            rawText: jl.text,
-            romaText: romaStr
+            rawText: jl.rawText || jl.text,
+            romaText: romaStr || jl.romaText || '',
+            jpText: jl.jpText || '',
+            transText: jl.transText || ''
         };
     });
 }

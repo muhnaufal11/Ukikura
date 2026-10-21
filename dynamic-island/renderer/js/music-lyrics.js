@@ -37,6 +37,8 @@ function renderMediaUI() {
 
     document.getElementById('play-icon-1').innerHTML = isPlaying ? PAUSE_SVG_PATH : PLAY_SVG_PATH;
     document.getElementById('play-icon-2').innerHTML = isPlaying ? PAUSE_SVG_PATH : PLAY_SVG_PATH;
+    const kPlayIcon = document.getElementById('play-icon-k');
+    if (kPlayIcon) kPlayIcon.innerHTML = isPlaying ? PAUSE_SVG_PATH : PLAY_SVG_PATH;
 
     const art1 = document.getElementById('music-art-1');
     const art2 = document.getElementById('music-art-2');
@@ -374,7 +376,7 @@ function updateKaraokeOverlay() {
             const r = curLine.romaText || '';
             const jp = curLine.jpText || '';
             const t = curLine.transText || '';
-            const combinedSub = (r && jp) ? `${r} (${jp})` : (r || jp);
+            const combinedSub = (r && jp && r.toLowerCase() !== rawLine.toLowerCase()) ? `${r} (${jp})` : (jp || r);
             curSub = (combinedSub && t) ? `${combinedSub} · ${t}` : (combinedSub || t || '');
         } else if (curLine.rawText && curLine.romaText && curLine.romaText.toLowerCase() !== curLine.rawText.toLowerCase()) {
             curMain = curLine.rawText;

@@ -47,6 +47,7 @@ async function searchNetEaseLyrics(meta, mediaDur) {
                 if (diff <= 4) durScore = 45;
                 else if (diff <= 12) durScore = 25;
                 else if (diff <= 25) durScore = 10;
+                else if (diff > 35) durScore = -65;
             }
 
             candidates.push({
@@ -103,6 +104,11 @@ async function searchNetEaseLyrics(meta, mediaDur) {
             continue;
         }
 
+        const isKorean = /[\uac00-\ud7af]/.test(sample);
+        if (isKorean && !meta.isKoreanVersion) {
+            continue;
+        }
+
         const isJpLrc = hasJapaneseChars(sample);
         if (meta && ((meta.isEnglishVersion || meta.isIndonesianVersion) && isJpLrc)) {
             continue;
@@ -144,7 +150,7 @@ async function searchNetEaseLyrics(meta, mediaDur) {
         if (finalLines.length >= 4) {
             let bonus = 40;
             if (meta.likelyJapanese && isJpLrc) bonus += 25;
-            if (romaLines.length >= 4) bonus += 50; // Bonus tinggi untuk official pre-synced romalrc NetEase
+            if (romaLines.length >= 4 && (isJpLrc || meta.likelyJapanese || meta.isJapaneseVersion)) bonus += 50; // Bonus tinggi untuk official pre-synced romalrc NetEase
 
             const candidateRes = {
                 source: 'NetEase',
@@ -152,7 +158,7 @@ async function searchNetEaseLyrics(meta, mediaDur) {
                 artistName: song.artist,
                 duration: song.durSec,
                 hasSyncedTimestamps: true,
-                isJapanese: isJpLrc || romaLines.length >= 4,
+                isJapanese: isJpLrc || (romaLines.length >= 4 && !isKorean && (meta.likelyJapanese || meta.isJapaneseVersion)),
                 score: song.score + bonus,
                 lines: finalLines
             };
@@ -227,6 +233,7 @@ async function searchLrclibLyrics(meta, mediaDur) {
                 if (diff <= 4) score += 45;
                 else if (diff <= 12) score += 25;
                 else if (diff <= 25) score += 10;
+                else if (diff > 35) score -= 65;
             }
 
             if (!bestCandidate || score > bestCandidate.score) {

@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 56,
+  "versionCode": 57,
   "version": "1.0.6",
-  "fixCount": 56,
-  "displayVersion": "1.0.6 (Patch 56 - Zero-Latency Play/Pause Control, Sub-Second Lyrics Sync Lead & Complete 3-Tier Multilingual Display)",
+  "fixCount": 57,
+  "displayVersion": "1.0.6 (Patch 57 - Zero-Latency Play/Pause Control, Sub-Second Lyrics Sync Lead & Complete 3-Tier Multilingual Hierarchy)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 56 - Zero-Latency Media Play/Pause, Precision Lyrics Sync Lead, & 3-Tier Multilingual Display): 1) Memperbaiki tombol Play/Pause yang lambat/tidak merespons dengan event-driven asynchronous bridge waking (g_hWakeEvent 0 ms latency), pemeriksaan status boolean SMTC sesungguhnya, serta fallback cerdas WM_APPCOMMAND dan hardware key VK_MEDIA_PLAY_PAUSE. 2) Mengatasi desinkronisasi lirik agak telat dengan memajukan lead lookahead waktu dari +0.18s ke +0.42s serta mempercepat polling bridge menjadi 220ms saat playback. 3) Memperbaiki lirik multibahasa (ALiCE&u / VTuber / Anime) agar selalu konsisten menampilkan 3 tingkatan bahasa (Vokal asli + Romaji/Kanji + Sub Indo) tanpa bait kosong, memblokir emisi lirik telanjang 1-bahasa, dan mengeliminasi penerjemahan aneh pada kata-kata scat vokal."
+  "changelog": "Ukikura v1.0.6 (Patch 57 - Zero-Latency Hardware SMTC Play/Pause, +0.42s Lead Lyrics Sync Lookahead & 100% 3-Tier Multilingual Display): 1) Memperbaiki tombol Play/Pause agar langsung berhenti/memutar tanpa delay dengan menghapus double-toggle bug (SendYouTubePlayPause) dan beralih ke TryTogglePlayPauseAsync hardware SMTC murni dengan fallback VK_MEDIA_PLAY_PAUSE. 2) Mengatasi keterlambatan tampilan lirik (lirik agak telat) dengan mempercepat polling hardware bridge ke 220ms dan menyetel lead lookahead +0.42s agar baris lirik berpindah presisi saat vokal dimulai. 3) Mengatasi masalah lirik multibahasa (ALiCE&u) yang terkadang hanya muncul 2 baris atau terkena lirik Korea asing: mengunci InnerTube iOS client resmi, menghubungkan track bahasa Jepang dan Indonesia YouTube TimedText secara lengkap, memadukan kanji/kana kanonikal dari database lirik ke Romaji bait Jepang dengan affinity matching semantik, serta menjamin 60 dari 60 baris selalu lengkap 3 hierarki bahasa (Vokal Utama + Romaji/Kanji + Sub Indo)."
 }
