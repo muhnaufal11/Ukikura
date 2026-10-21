@@ -213,6 +213,18 @@ document.querySelectorAll('[data-mcmd]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const cmd = btn.getAttribute('data-mcmd');
+        if (cmd === 'PLAYPAUSE' || cmd === 'PLAY' || cmd === 'PAUSE') {
+            if (typeof mediaState !== 'undefined' && mediaState.active) {
+                if (cmd === 'PLAYPAUSE') {
+                    mediaState.status = (mediaState.status === 'Playing') ? 'Paused' : 'Playing';
+                } else if (cmd === 'PAUSE') {
+                    mediaState.status = 'Paused';
+                } else if (cmd === 'PLAY') {
+                    mediaState.status = 'Playing';
+                }
+                if (typeof renderMediaUI === 'function') renderMediaUI();
+            }
+        }
         ipcRenderer.send('media-control', cmd);
     });
 });

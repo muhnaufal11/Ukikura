@@ -889,6 +889,52 @@ public:
         return false;
     }
 
+    bool SendYouTubePlayPause() {
+        HWND foundHwnd = NULL;
+        HWND fallbackHwnd = NULL;
+        EnumWindows([](HWND hWnd, LPARAM lParam) -> BOOL {
+            if (!IsWindowVisible(hWnd)) return TRUE;
+            wchar_t title[512] = {0};
+            if (GetWindowTextW(hWnd, title, 512) > 0) {
+                std::wstring wTitle(title);
+                if (wTitle.find(L"YouTube") != std::wstring::npos) {
+                    *(HWND*)lParam = hWnd;
+                    return FALSE;
+                }
+                HWND *fallback = (HWND*)lParam + 1;
+                if (*fallback == NULL && (
+                    wTitle.find(L"Brave") != std::wstring::npos ||
+                    wTitle.find(L"Chrome") != std::wstring::npos ||
+                    wTitle.find(L"Edge") != std::wstring::npos ||
+                    wTitle.find(L"Firefox") != std::wstring::npos ||
+                    wTitle.find(L"Opera") != std::wstring::npos)) {
+                    *fallback = hWnd;
+                }
+            }
+            return TRUE;
+        }, (LPARAM)&foundHwnd);
+
+        HWND target = foundHwnd ? foundHwnd : fallbackHwnd;
+        if (target) {
+            SendMessageW(target, WM_APPCOMMAND, (WPARAM)target, MAKELPARAM(0, FAPPCOMMAND_KEY | APPCOMMAND_MEDIA_PLAY_PAUSE));
+            if (foundHwnd) {
+                HWND fore = GetForegroundWindow();
+                if (IsIconic(foundHwnd)) ShowWindow(foundHwnd, SW_RESTORE);
+                SetForegroundWindow(foundHwnd);
+                Sleep(35);
+                keybd_event(0x4B, 0, 0, 0); // 'K' key for YouTube
+                keybd_event(0x4B, 0, KEYEVENTF_KEYUP, 0);
+                if (fore && fore != foundHwnd) {
+                    Sleep(30);
+                    SetForegroundWindow(fore);
+                }
+                return true;
+            }
+            return true;
+        }
+        return false;
+    }
+
     void ExecuteCommand(const std::string &rawCmd) {
         std::string cmd = rawCmd;
         while (!cmd.empty() && (cmd.back() == '\r' || cmd.back() == '\n' || cmd.back() == ' ')) cmd.pop_back();
@@ -906,24 +952,84 @@ public:
                 if (upperCmd == "PLAYPAUSE") {
                     void *op = nullptr;
                     if (SUCCEEDED(session->TryTogglePlayPauseAsync(&op)) && op) {
-                        AwaitAsync(op, 500);
+                        bool res = false;
+                        if (AwaitAsync(op, 350)) {
+                            ((IAsyncOperation_Bool*)op)->GetResults(&res);
+                        }
                         ((IUnknown*)op)->Release();
+                        handled = res;
+                    }
+                    if (!handled) {
+                        std::string curSt = GetPlaybackStatus();
+                        if (curSt == "Playing") {
+                            void *pauseOp = nullptr;
+                            if (SUCCEEDED(session->TryPauseAsync(&pauseOp)) && pauseOp) {
+                                bool res = false;
+                                if (AwaitAsync(pauseOp, 350)) {
+                                    ((IAsyncOperation_Bool*)pauseOp)->GetResults(&res);
+                                }
+                                ((IUnknown*)pauseOp)->Release();
+                                handled = res;
+                            }
+                        } else if (curSt == "Paused") {
+                            void *playOp = nullptr;
+                            if (SUCCEEDED(session->TryPlayAsync(&playOp)) && playOp) {
+                                bool res = false;
+                                if (AwaitAsync(playOp, 350)) {
+                                    ((IAsyncOperation_Bool*)playOp)->GetResults(&res);
+                                }
+                                ((IUnknown*)playOp)->Release();
+                                handled = res;
+                            }
+                        }
+                    }
+                    if (!handled) {
+                        handled = SendYouTubePlayPause();
+                    }
+                    if (!handled) {
+                        keybd_event(VK_MEDIA_PLAY_PAUSE, 0, 0, 0);
+                        keybd_event(VK_MEDIA_PLAY_PAUSE, 0, KEYEVENTF_KEYUP, 0);
                         handled = true;
                     }
+                    Poll(true);
                 } else if (upperCmd == "PLAY") {
                     void *op = nullptr;
                     if (SUCCEEDED(session->TryPlayAsync(&op)) && op) {
-                        AwaitAsync(op, 500);
+                        bool res = false;
+                        if (AwaitAsync(op, 350)) {
+                            ((IAsyncOperation_Bool*)op)->GetResults(&res);
+                        }
                         ((IUnknown*)op)->Release();
+                        handled = res;
+                    }
+                    if (!handled) {
+                        handled = SendYouTubePlayPause();
+                    }
+                    if (!handled) {
+                        keybd_event(VK_MEDIA_PLAY_PAUSE, 0, 0, 0);
+                        keybd_event(VK_MEDIA_PLAY_PAUSE, 0, KEYEVENTF_KEYUP, 0);
                         handled = true;
                     }
+                    Poll(true);
                 } else if (upperCmd == "PAUSE") {
                     void *op = nullptr;
                     if (SUCCEEDED(session->TryPauseAsync(&op)) && op) {
-                        AwaitAsync(op, 500);
+                        bool res = false;
+                        if (AwaitAsync(op, 350)) {
+                            ((IAsyncOperation_Bool*)op)->GetResults(&res);
+                        }
                         ((IUnknown*)op)->Release();
+                        handled = res;
+                    }
+                    if (!handled) {
+                        handled = SendYouTubePlayPause();
+                    }
+                    if (!handled) {
+                        keybd_event(VK_MEDIA_PLAY_PAUSE, 0, 0, 0);
+                        keybd_event(VK_MEDIA_PLAY_PAUSE, 0, KEYEVENTF_KEYUP, 0);
                         handled = true;
                     }
+                    Poll(true);
                 } else if (upperCmd == "NEXT") {
                     void *op = nullptr;
                     if (SUCCEEDED(session->TrySkipNextAsync(&op)) && op) {
@@ -1256,13 +1362,35 @@ public:
 std::atomic<bool> g_running(true);
 std::vector<std::string> g_queuedCommands;
 std::mutex g_cmdMutex;
+HANDLE g_hWakeEvent = NULL;
 
 void StdinReaderThread() {
-    std::string line;
-    while (g_running && std::getline(std::cin, line)) {
-        if (!line.empty()) {
-            std::lock_guard<std::mutex> lock(g_cmdMutex);
-            g_queuedCommands.push_back(line);
+    HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
+    if (hStdIn == INVALID_HANDLE_VALUE || hStdIn == NULL) return;
+
+    std::string lineBuf;
+    char buffer[256];
+    DWORD bytesRead = 0;
+
+    while (g_running) {
+        if (ReadFile(hStdIn, buffer, sizeof(buffer), &bytesRead, NULL) && bytesRead > 0) {
+            for (DWORD i = 0; i < bytesRead; ++i) {
+                char ch = buffer[i];
+                if (ch == '\n' || ch == '\r') {
+                    if (!lineBuf.empty()) {
+                        {
+                            std::lock_guard<std::mutex> lock(g_cmdMutex);
+                            g_queuedCommands.push_back(lineBuf);
+                        }
+                        lineBuf.clear();
+                        if (g_hWakeEvent) SetEvent(g_hWakeEvent);
+                    }
+                } else {
+                    lineBuf.push_back(ch);
+                }
+            }
+        } else {
+            Sleep(40);
         }
     }
 }
@@ -1286,6 +1414,7 @@ void ProcessFileCommands(MediaController &media, const std::wstring &cmdFile, co
                         while (std::getline(stream, line)) {
                             media.ExecuteCommand(line);
                         }
+                        if (g_hWakeEvent) SetEvent(g_hWakeEvent);
                         continue;
                     }
                 }
@@ -1445,6 +1574,9 @@ int wmain(int argc, wchar_t *argv[]) {
         ReportVolume((int)std::round(initV * 100.0f), initM);
     }
 
+    // Buat event untuk respon instan (0 ms latency) saat menerima perintah media
+    g_hWakeEvent = CreateEventW(NULL, FALSE, FALSE, NULL);
+
     // Jalankan listener thread pembaca stdin
     std::thread stdinThread(StdinReaderThread);
     stdinThread.detach();
@@ -1505,8 +1637,8 @@ int wmain(int argc, wchar_t *argv[]) {
         }
 
         bool isPlaying = (media.GetPlaybackStatus() == "Playing");
-        int sleepMs = isPlaying ? 550 : 1100;
-        Sleep(sleepMs);
+        DWORD sleepMs = isPlaying ? 220 : 900;
+        WaitForSingleObject(g_hWakeEvent, sleepMs);
     }
 
     RoUninitialize();

@@ -155,9 +155,13 @@ function renderLyricItemHtml(l, i) {
         mainText = rawVal;
         const jp = l.jpText || '';
         if (romaVal && jp && romaVal.toLowerCase() !== jp.toLowerCase()) {
-            subText = `${romaVal} · ${jp}`;
+            if (romaVal.toLowerCase() === mainText.toLowerCase()) {
+                subText = jp;
+            } else {
+                subText = `${romaVal} · ${jp}`;
+            }
         } else {
-            subText = romaVal || jp;
+            subText = (romaVal && romaVal.toLowerCase() !== mainText.toLowerCase()) ? romaVal : jp;
         }
     } else {
         // Lagu umum (Indonesia, Inggris, dll.)
@@ -231,7 +235,7 @@ function updateMediaProgressUI() {
         if (basePeriod > 30 && pos >= basePeriod) {
             rawLoopPos = pos % basePeriod;
         }
-        let effectivePos = rawLoopPos + lyricTimeOffset + 0.18;
+        let effectivePos = rawLoopPos + lyricTimeOffset + 0.42;
         if (basePeriod > 30 && pos >= basePeriod) {
             effectivePos = ((effectivePos % basePeriod) + basePeriod) % basePeriod;
         }
@@ -297,7 +301,7 @@ lyrListEl.addEventListener('click', (e) => {
     const pos = getInterpolatedMediaPos();
     const basePeriod = getBaseLyricLoopPeriod();
     const rawLoopPos = (basePeriod > 30 && pos >= basePeriod) ? (pos % basePeriod) : pos;
-    lyricTimeOffset = syncedLyrics[idx].time - rawLoopPos - 0.18;
+    lyricTimeOffset = syncedLyrics[idx].time - rawLoopPos - 0.42;
     activeLyricIndex = idx;
     scrollLyricsToActive();
     updateLyricOffsetLabel();

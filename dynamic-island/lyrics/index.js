@@ -190,10 +190,12 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
         if (cand && cand.hasSyncedTimestamps && Array.isArray(cand.lines) && cand.lines.length >= 4) {
             // Untuk lagu Jepang / Asing / Multilingual, JANGAN pernah kirim fast LRC yang hanya 1 bahasa (misal bahasa Inggris tanpa Romaji/Kanji)
             // jika lagu aslinya memiliki subtitle Romaji/Kanji/Sub Indo yang sedang diekstraksi dari YouTube CC!
-            if (meta.likelyJapanese || meta.isJapaneseVersion || /[\u3040-\u30ff\u4e00-\u9fff]/.test(rawTitle) || /\b(?:hololive|nijisanji|vshojo|vtuber|anime)\b/i.test(`${rawTitle} ${rawArtist}`)) {
-                const hasRomaji = cand.lines.some(l => l.romaText);
-                const hasJpChars = cand.lines.some(l => l.jpText || hasJapaneseChars(l.rawText || l.text));
-                if (!hasRomaji && !hasJpChars) {
+            if (meta.likelyJapanese || meta.isJapaneseVersion || /[\u3040-\u30ff\u4e00-\u9fff]/.test(rawTitle) || /\b(?:hololive|nijisanji|vshojo|vtuber|anime|alice&u)\b/i.test(`${rawTitle} ${rawArtist}`)) {
+                const totalLines = cand.lines.length;
+                const withTrans = cand.lines.filter(l => l.transText && l.transText.trim()).length;
+                const withRomaOrJp = cand.lines.filter(l => l.romaText || l.jpText || hasJapaneseChars(l.rawText || l.text)).length;
+                // Jika lagu multilingual/asing ini belum memiliki terjemahan memadai (<40%) atau Romaji/Kanji (<30%), tahan jangan di-emit fast
+                if (withTrans < totalLines * 0.4 || withRomaOrJp < totalLines * 0.3) {
                     return;
                 }
             }
@@ -331,6 +333,29 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             });
         }
 
+        // Pasangkan juga karakter kanji/kana dari database resmi (NetEase / KuGou) jika subtitle YouTube hanya memuat Romaji
+        if (bestDb && Array.isArray(bestDb.lines) && bestDb.lines.some(l => hasJapaneseChars(l.rawText || l.text))) {
+            ytCaptions.lines.forEach(l => {
+                if (!l.jpText || !hasJapaneseChars(l.jpText)) {
+                    let bestDbJp = null;
+                    let minDiff = 999;
+                    for (const dbl of bestDb.lines) {
+                        const dbTxt = dbl.rawText || dbl.text || '';
+                        if (hasJapaneseChars(dbTxt)) {
+                            const diff = Math.abs(dbl.time - l.time);
+                            if (diff < minDiff) {
+                                minDiff = diff;
+                                bestDbJp = dbTxt;
+                            }
+                        }
+                    }
+                    if (bestDbJp && minDiff <= 3.2) {
+                        l.jpText = bestDbJp;
+                    }
+                }
+            });
+        }
+
         // Pasangkan Indonesian Lines dari manual CC (selalu prioritaskan terjemahan resmi ID di atas subtitle lain!)
         if (Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 4) {
             ytCaptions.lines.forEach(l => {
@@ -455,13 +480,15 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     }
 
     // 3. Terjemahkan SEMUA baris lagu asing ke Bahasa Indonesia secara batch cepat jika belum ada terjemahan
+    const VOCALISE_REGEX = /^(?:rurira\s*rarira|shalala\s*shalila|lalala|la\s*la|nanana|na\s*na|ooh+|aah+|woah+|yeah+|du\s*du|da\s*da|du\s*ru)\b/i;
     if (!isAlreadyIndonesian && finalLines.length > 0) {
         const missingLines = finalLines.filter(l =>
-            !l.transText ||
+            (!l.transText ||
             l.transText.trim().toLowerCase() === (l.rawText || l.text || '').trim().toLowerCase() ||
             hasJapaneseChars(l.transText) ||
             /[\u0400-\u04ff]/.test(l.transText) ||
-            (!/[\u4e00-\u9fa5]/.test(meta.origTitle) && /[\u4e00-\u9fa5]/.test(l.transText))
+            (!/[\u4e00-\u9fa5]/.test(meta.origTitle) && /[\u4e00-\u9fa5]/.test(l.transText))) &&
+            !VOCALISE_REGEX.test(l.rawText || l.text || '')
         );
         if (missingLines.length > 0) {
             const toProcess = missingLines.slice(0, 95);
@@ -481,8 +508,13 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
         }
     }
 
-    // Pastikan transText selalu bertipe string
+    // Bersihkan terjemahan aneh pada kata-kata scat / vocable vokal murni
     finalLines.forEach(l => {
+        if (VOCALISE_REGEX.test(l.rawText || l.text || '')) {
+            if (/jarang|rarely/i.test(l.transText || '')) {
+                l.transText = '';
+            }
+        }
         if (!l.transText || l.transText === 'undefined') l.transText = '';
     });
 

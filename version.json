@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 55,
+  "versionCode": 56,
   "version": "1.0.6",
-  "fixCount": 55,
-  "displayVersion": "1.0.6 (Patch 55 - Cloud Lightweight Web Installer, Ukikura PE Binary Identity & Task Manager Grouping)",
+  "fixCount": 56,
+  "displayVersion": "1.0.6 (Patch 56 - Zero-Latency Play/Pause Control, Sub-Second Lyrics Sync Lead & Complete 3-Tier Multilingual Display)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 55 - Cloud Lightweight Web Installer, Ukikura PE Binary Identity & Process Grouping): 1) Mengembalikan format installer ke arsitektur Cloud Web Installer ultra-ringan (~2.2 MB) yang mengunduh runtime secara otomatis saat instalasi baru dan langsung melewatinya jika sudah terpasang. 2) Mengganti nama biner eksekusi menjadi Ukikura.exe serta mem-patch PE header, ikon RT_GROUP_ICON/RT_ICON, FileDescription, dan ProductName langsung via ukikura-bridge.exe sehingga Windows Task Manager menampilkan nama resmi Ukikura dan ikon Ukikura (bukan Electron / atom biru). 3) Mengoptimalkan penggunaan RAM dengan memuat WhatsApp Web secara on-demand sehingga konsumsi memori idle turun drastis (~200 MB) namun notifikasi WhatsApp native tetap tertangkap seketika via bridge C++."
+  "changelog": "Ukikura v1.0.6 (Patch 56 - Zero-Latency Media Play/Pause, Precision Lyrics Sync Lead, & 3-Tier Multilingual Display): 1) Memperbaiki tombol Play/Pause yang lambat/tidak merespons dengan event-driven asynchronous bridge waking (g_hWakeEvent 0 ms latency), pemeriksaan status boolean SMTC sesungguhnya, serta fallback cerdas WM_APPCOMMAND dan hardware key VK_MEDIA_PLAY_PAUSE. 2) Mengatasi desinkronisasi lirik agak telat dengan memajukan lead lookahead waktu dari +0.18s ke +0.42s serta mempercepat polling bridge menjadi 220ms saat playback. 3) Memperbaiki lirik multibahasa (ALiCE&u / VTuber / Anime) agar selalu konsisten menampilkan 3 tingkatan bahasa (Vokal asli + Romaji/Kanji + Sub Indo) tanpa bait kosong, memblokir emisi lirik telanjang 1-bahasa, dan mengeliminasi penerjemahan aneh pada kata-kata scat vokal."
 }
