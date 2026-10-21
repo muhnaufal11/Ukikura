@@ -680,6 +680,10 @@ if (!gotLock) {
         setTimeout(() => checkGitHubForUpdates(false), 6000);
         setInterval(() => checkGitHubForUpdates(false), 2 * 60 * 60 * 1000);
 
+        // Siapkan pemantau WhatsApp di background (otomatis mendeteksi jika sebelumnya sudah login QR)
+        setTimeout(() => ensureWhatsAppWindow(false), 3000);
+        setInterval(() => pollWhatsAppUnread(), 5000);
+
         // Jalankan background crawler LMS otomatis saat start & setiap 5 menit
         setTimeout(() => runHiddenLmsCrawler(), 4000);
         setInterval(() => runHiddenLmsCrawler(), 5 * 60 * 1000);

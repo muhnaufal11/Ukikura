@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 53,
+  "versionCode": 54,
   "version": "1.0.6",
-  "fixCount": 53,
-  "displayVersion": "1.0.6 (Patch 53 - Fix Locked node.exe File Access & Windows Job Object Process Auto-Kill)",
+  "fixCount": 54,
+  "displayVersion": "1.0.6 (Patch 54 - Native C++ Hardware Bridge & Restoration of Patch 44 Desktop Architecture)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 53 - Perbaikan File Lock node.exe & Integrasi Windows Job Object): 1) Memperbaiki galat instalasi 'DeleteFile failed; code 5. Access is denied' pada runtime/node.exe dengan menambahkan pembersihan proses otomatis di InitializeSetup dan PrepareToInstall Inno Setup. 2) Menerapkan Windows Job Object (JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE) pada host native Rust agar proses child background node.exe dan ukikura-bridge.exe otomatis mati tuntas saat Ukikura ditutup."
+  "changelog": "Ukikura v1.0.6 (Patch 54 - Pemulihan Penuh Arsitektur Desktop Patch 44 & Implementasi Hardware Bridge Native C++ ukikura-bridge.exe): 1) Mengembalikan host desktop utama ke arsitektur Patch 44 yang stabil dan kaya fitur (transparansi tanpa clipping, fisika maskot 11 emosi, lirik sinkron 3 bahasa Romaji/Kanji/Sub-Indo, dan WhatsApp Web background). 2) Menggantikan bridge PowerShell dengan biner native C++ murni (ukikura-bridge.exe) berkinerja tinggi, RAM ~2 MB, 0% CPU idle, untuk kontrol WASAPI master volume, WinRT SMTC media metadata/timeline/thumbnail, baterai laptop/Bluetooth (CfgMgr32), dan Toast notifications. 3) Mengemas installer mandiri offline 100% tanpa perlu unduhan internet."
 }

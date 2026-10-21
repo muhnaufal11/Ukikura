@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch53-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch54-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -151,6 +151,14 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
     * **`30 FPS`**: Standar seimbang 30 FPS.
     * **`15 FPS`**: Mode hemat daya baterai 15 FPS.
   - Pilihan tersimpan secara persisten di `localStorage`.
+- **Pemulihan Penuh Arsitektur Desktop Patch 44 & Hardware Bridge Native C++ (Patch 54)**:
+  - **Pemulihan Total Arsitektur Desktop Patch 44**: Mengembalikan antarmuka desktop ke arsitektur Patch 44 berbasis Electron yang terbukti stabil, mulus, dan bebas cacat visual (tanpa masalah clipping, transparansi melayang murni tanpa kotak hitam, fisika maskot Nusa dengan 11 emosi, dan sinkronisasi lirik 3-tingkat Romaji/Kanji/Sub-Indo yang sempurna).
+  - **Hardware Bridge Native C++ Murni (`ukikura-bridge.exe`)**: Menggantikan skrip PowerShell dan prototipe C# dengan biner C++ native yang dikompilasi langsung menggunakan LLVM-MinGW `clang++` (`-O3 -static`). Berjalan sangat ringan (~2 MB RAM, 0% CPU idle), startup instan (< 10ms), tanpa dependensi runtime eksternal (.NET/PowerShell). Mengintegrasikan:
+    1. **WASAPI Master Volume Control**: Pengaturan level volume dan mute secara instan via `IAudioEndpointVolume`.
+    2. **WinRT SMTC Media Session**: Menangkap metadata musik/video (Spotify, Brave, Chrome, YouTube), durasi/posisi milidetik, thumbnail album cover (dikonversi ke Base64), dan kontrol media playback.
+    3. **Baterai Laptop & Bluetooth Perangkat**: Pemantauan baterai laptop dan status cas (`GetSystemPowerStatus`) serta pemindaian perangkat Bluetooth audio/mouse/keyboard/gamepad/HP melalui Windows SetupAPI & CfgMgr32 (`CM_Locate_DevNodeW`, `CM_Get_DevNode_PropertyW`).
+    4. **Windows Toast Notifications**: Menangkap notifikasi masuk dari sistem dan Phone Link via `UserNotificationListener`.
+  - **Installer Mandiri 100% Offline (Inno Setup 6)**: Paket installer tunggal terpadu berukuran ~91 MB (dikompresi dengan `lzma2/ultra64` dan ditandatangani digital Authenticode SHA-256) siap pasang langsung tanpa memerlukan koneksi internet saat instalasi.
 - **Perbaikan File Lock node.exe & Integrasi Windows Job Object (Patch 53 - Installer & Host)**:
   - **Penyelesaian Tuntas Galat Installer 'DeleteFile failed; code 5. Access is denied'**: Memperbaiki kegagalan instalasi saat menimpa `runtime/node.exe` dengan menambahkan prosedur pembersihan proses terpusat `TerminateUkikuraProcesses` pada fase `InitializeSetup` dan `PrepareToInstall` Inno Setup, memastikan tidak ada file `.exe` yang terkunci saat proses ekstraksi berlangsung.
   - **Windows Job Object (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`)**: Mengintegrasikan Windows Job Object pada host native Rust `Ukikura.exe`, sehingga seluruh proses child (`runtime/node.exe` dan `ukikura-bridge.exe`) otomatis diterminasi tuntas oleh kernel Windows saat Ukikura ditutup atau keluar dari tray.

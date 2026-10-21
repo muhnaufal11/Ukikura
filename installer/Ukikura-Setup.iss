@@ -1,17 +1,18 @@
 ; ==============================================================================
-; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT (RUST NATIVE STANDALONE RUNTIME)
+; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT (OFFLINE STANDALONE RUNTIME)
 ; Uki (Terapung / Floating Island) + Kura (Gudang Penyimpanan Data & Tugas)
-; Versi: 1.0.6 (Kode Versi: 51 - Ultra-Lightweight Rust Native Host & Full Features)
+; Versi: 1.0.6 (Kode Versi: 54 - Native C++ Bridge & Patch 44 Architecture)
 ; License: GNU General Public License v3.0 (GPLv3)
 ; ==============================================================================
 
 #define MyAppName "Ukikura"
 #define MyAppFullTitle "Ukikura (浮倉) — Floating Island & Task Vault"
 #define MyAppVersion "1.0.6"
-#define MyAppVersionCode "53"
+#define MyAppVersionCode "54"
 #define MyAppPublisher "Nauflix (muhnaufal11)"
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
-#define MyAppExeName "Ukikura.exe"
+#define MyAppExeName "electron.exe"
+#define MyAppEntryArgs "dynamic-island\main.js"
 #define OutputName "Ukikura-Setup-v" + MyAppVersion
 
 [Setup]
@@ -36,7 +37,7 @@ UninstallDisplayIcon={app}\assets\ukikura-logo.ico
 PrivilegesRequired=lowest
 OutputDir=.
 OutputBaseFilename={#OutputName}
-Compression=lzma2/normal
+Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
@@ -56,15 +57,14 @@ Name: "autostart"; Description: "Jalankan Ukikura otomatis saat Windows menyala 
 Name: "{app}\runtime"
 
 [Files]
-; 1. Aplikasi Utama Native Rust & WebView2 Loader (Ultra Ringan ~35 MB RAM, 0% CPU)
-Source: "..\Ukikura.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
+; 1. Runtime Mandiri Standalone (100% Offline, Tanpa Perlu Unduh Internet saat Instalasi)
+; Mengoptimalkan paket dengan menyertakan en-US.pak dan mengecualikan file html lisensi & shader compiler non-esensial agar installer < 90 MB
+Source: "..\node_modules\electron\dist\*"; DestDir: "{app}\runtime"; Excludes: "LICENSES.chromium.html,locales\*,dxcompiler.dll,dxil.dll,vk_swiftshader.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\node_modules\electron\dist\locales\en-US.pak"; DestDir: "{app}\runtime\locales"; Flags: ignoreversion
 
-; 2. Runtime Headless Node (Khusus Background Kura Local Vault & Sync Lirik)
-Source: "..\runtime\node.exe"; DestDir: "{app}\runtime"; Flags: ignoreversion
-
-; 3. Modul Dynamic Island & Assets Lengkap
-Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*,host-rust\target\*,*.md"; Flags: ignoreversion recursesubdirs createallsubdirs
+; 2. Modul Utama Ukikura (Dynamic Island, Mesin Lirik, UI Assets, Native C++ Bridge ukikura-bridge.exe)
+Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*,host-rust\*,src\*,*.md"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\Ukikura-Debug.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\version.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\package.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
@@ -72,12 +72,13 @@ Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\assets\ukikura-logo.ico"; Comment: "{#MyAppFullTitle}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; IconFilename: "{app}\assets\ukikura-logo.ico"; Comment: "{#MyAppFullTitle}"
+Name: "{group}\Ukikura (Mode Debug)"; Filename: "{app}\Ukikura-Debug.bat"; WorkingDir: "{app}"; IconFilename: "{app}\assets\ukikura-logo.ico"; Comment: "Jalankan Ukikura dengan Developer Tools & Console Log"
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\assets\ukikura-logo.ico"; Tasks: desktopicon; Comment: "{#MyAppFullTitle}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; IconFilename: "{app}\assets\ukikura-logo.ico"; Tasks: desktopicon; Comment: "{#MyAppFullTitle}"
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Ukikura"; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletevalue; Tasks: autostart
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Ukikura"; ValueData: """{app}\runtime\{#MyAppExeName}"" ""{app}\{#MyAppEntryArgs}"""; Flags: uninsdeletevalue; Tasks: autostart
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "NusaDynamicIsland"; Flags: deletevalue
 
 [InstallDelete]
@@ -85,10 +86,10 @@ Type: files; Name: "{userappdata}\Microsoft\Windows\Start Menu\Programs\Startup\
 Type: files; Name: "{userstartup}\NusaDynamicIsland.vbs"
 
 [Run]
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; StatusMsg: "Menutup sesi lama..."; Flags: runhidden waituntilterminated
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; StatusMsg: "Menutup sesi lama Ukikura..."; Flags: runhidden waituntilterminated
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM ukikura-bridge.exe /T"; StatusMsg: "Menutup sesi lama bridge..."; Flags: runhidden waituntilterminated
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Ukikura.exe /T"; Flags: runhidden waituntilterminated
-Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Description: "Jalankan {#MyAppFullTitle} sekarang"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; Description: "Jalankan {#MyAppFullTitle} sekarang"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopUkikuraProcesses"
@@ -99,25 +100,24 @@ Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Ukikura.exe /T"; Flags: runh
 Type: filesandordirs; Name: "{app}\runtime"
 
 [Code]
-procedure TerminateUkikuraProcesses();
+function InitializeSetup(): Boolean;
 var
   ResultCode: Integer;
 begin
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM ukikura-bridge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Ukikura.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), '-NoProfile -NonInteractive -Command "Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -like ''*Ukikura*'' -or $_.CommandLine -like ''*kura-server.js*'' } | Stop-Process -Force -ErrorAction SilentlyContinue"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Sleep(400);
-end;
-
-function InitializeSetup(): Boolean;
-begin
-  TerminateUkikuraProcesses();
+  Sleep(250);
   Result := True;
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
 begin
-  TerminateUkikuraProcesses();
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM ukikura-bridge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Ukikura.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(250);
   Result := '';
 end;
