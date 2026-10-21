@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 41,
+  "versionCode": 42,
   "version": "1.0.6",
-  "fixCount": 41,
-  "displayVersion": "1.0.6 (Patch 41)",
+  "fixCount": 42,
+  "displayVersion": "1.0.6 (Patch 42)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 41): Perbaikan kritis proses inisialisasi instalasi dan peluncuran Dynamic Island. Memperbaiki pengecekan integritas runtime Electron pada installer Inno Setup (memverifikasi kelengkapan resources.pak & chrome_100_percent.pak dengan auto-repair fallback Expand-Archive), serta mengeliminasi loop terminate fs.watchFile pada main.js di lingkungan produksi sehingga Dynamic Island tampil stabil dan persisten di atas layar."
+  "changelog": "Ukikura v1.0.6 (Patch 42): Optimasi masif konsumsi RAM & CPU (turun dari ~710 MB ke ~108 MB dan 0% CPU idle). Mengeliminasi pemuatan otomatis WhatsApp Web headless yang tidak perlu di background saat boot (dimuat on-demand saat dibuka), mengaktifkan backgroundThrottling, menambahkan pembersihan V8 garbage collection & working set memory trimming berkala via native EmptyWorkingSet di winrt-bridge."
 }

@@ -110,6 +110,9 @@ public class BtBatteryReader {
     [DllImport("user32.dll")]
     public static extern bool IsIconic(IntPtr hWnd);
 
+    [DllImport("psapi.dll")]
+    public static extern int EmptyWorkingSet(IntPtr hwProc);
+
     public static void SendMediaKey(byte vk) {
         keybd_event(vk, 0, 0, UIntPtr.Zero);
         keybd_event(vk, 0, 2, UIntPtr.Zero);
@@ -843,6 +846,15 @@ while ($true) {
     }
 
     $tickCount++
+
+    # 5. Trim RAM Electron secara berkala agar konsumsi memori selalu ramping (< 100 MB)
+    if (($tickCount % 60) -eq 10) {
+        try {
+            Get-Process electron -ErrorAction SilentlyContinue | ForEach-Object {
+                [BtBatteryReader]::EmptyWorkingSet($_.Handle) | Out-Null
+            }
+        } catch {}
+    }
     for ($w = 0; $w -lt 18; $w++) {
         Start-Sleep -Milliseconds 50
         Process-MediaCmd

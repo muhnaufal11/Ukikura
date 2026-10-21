@@ -12,6 +12,7 @@ function replyWhatsApp(sender, text) { return sendWhatsAppReply(waWindow, sender
 let seenWaSignatures = new Set();
 let initialWaPass = true;
 let waClickAttempts = new Map();
+let waPollTimer = null;
 
 function ensureWhatsAppWindow(showWindow = false) {
     if (waWindow && !waWindow.isDestroyed()) {
@@ -27,23 +28,27 @@ function ensureWhatsAppWindow(showWindow = false) {
         width: 1000,
         height: 720,
         show: Boolean(showWindow),
-        title: 'WhatsApp Companion — Nusa Dynamic Island (Tetap berjalan di background saat ditutup)',
+        title: 'WhatsApp Companion — Ukikura Dynamic Island',
         autoHideMenuBar: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            backgroundThrottling: false
+            backgroundThrottling: true
         }
     });
 
     try {
-        waWindow.webContents.setBackgroundThrottling(false);
+        waWindow.webContents.setBackgroundThrottling(true);
         waWindow.webContents.setAudioMuted(!showWindow);
     } catch (_) {}
 
     const chromeUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
     waWindow.webContents.setUserAgent(chromeUA);
     waWindow.loadURL('https://web.whatsapp.com/');
+
+    if (!waPollTimer) {
+        waPollTimer = setInterval(() => pollWhatsAppUnread(), 5000);
+    }
 
     // Tangkap event notifikasi instan langsung saat WhatsApp Web memanggil new window.Notification()
     waWindow.webContents.on('console-message', (event, level, message) => {
@@ -82,17 +87,17 @@ function ensureWhatsAppWindow(showWindow = false) {
         }
     });
 
-    waWindow.on('close', (e) => {
-        if (!app.isQuitting) {
-            e.preventDefault();
-            waWindow.hide();
-            try { waWindow.webContents.setAudioMuted(true); } catch (_) {}
+    waWindow.on('closed', () => {
+        waWindow = null;
+        if (waPollTimer) {
+            clearInterval(waPollTimer);
+            waPollTimer = null;
         }
     });
 }
 
 async function pollWhatsAppUnread() {
-    if (!waWindow || waWindow.isDestroyed()) return;
+    if (!waWindow || waWindow.isDestroyed() || !waWindow.isVisible()) return;
     try {
         const chatItems = await waWindow.webContents.executeJavaScript(`
             (async function() {
