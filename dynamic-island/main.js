@@ -118,7 +118,7 @@ function createIslandWindow() {
         movable: true,
         skipTaskbar: true,
         hasShadow: false,
-        focusable: false,
+        focusable: true,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
@@ -126,7 +126,7 @@ function createIslandWindow() {
         }
     });
 
-    mainWindow.setAlwaysOnTop(true, 'floating');
+    mainWindow.setAlwaysOnTop(true, 'screen-saver');
     mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     mainWindow.setIgnoreMouseEvents(true, { forward: true });
 
@@ -205,10 +205,17 @@ let lastPassthroughState = false;
 let hoverOpenTimer = null;
 let lastPtX = -9999;
 let lastPtY = -9999;
+let loopTickCount = 0;
 
 function startNusaHoverLoop() {
     setInterval(() => {
         if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible()) return;
+
+        loopTickCount++;
+        // Pastikan Ukikura selalu berada di Z-band paling atas (screen-saver) dan tidak pernah di belakang tab
+        if (loopTickCount % 30 === 0) {
+            try { mainWindow.setAlwaysOnTop(true, 'screen-saver'); } catch (_) {}
+        }
 
         const pt = screen.getCursorScreenPoint();
         const b = mainWindow.getBounds();
@@ -283,35 +290,82 @@ function startNusaHoverLoop() {
         const isFullscreenOrMaximized = Boolean(winState && (winState.browserMaximized || winState.isMaximized));
 
         // Dimensi kapsul notch saat tertutup (Closed Notch: 176px x 25px, di tengah atas y = 0..30px)
-        const halfClosedW = Math.round(CLOSED_NOTCH_W / 2) + 12;
+        const halfClosedW = Math.round(CLOSED_NOTCH_W / 2) + 10;
         const inHorizontalSpan = pt.x >= (centerX - halfClosedW) && pt.x <= (centerX + halfClosedW);
-        const approachingNotch = inHorizontalSpan && pt.y >= 0 && pt.y <= (CLOSED_NOTCH_H + 12);
+
+        // Zona Tab Browser di belakang pulau (y: 0..24px): Area di mana tab browser berada
+        const inTabBarZone = inHorizontalSpan && pt.y >= 0 && pt.y <= 24;
+        // Zona Bibir Bawah / Dagu Pulau (y: 25..38px): Area bawah kapsul untuk interaksi langsung
+        const inChinZone = inHorizontalSpan && pt.y > 24 && pt.y <= (CLOSED_NOTCH_H + 12);
+        // Seluruh area notch tertutup
+        const insideClosedNotch = inHorizontalSpan && pt.y >= 0 && pt.y <= (CLOSED_NOTCH_H + 12);
 
         if (isFullscreenOrMaximized) {
             // =========================================================================
-            // MODE FULLSCREEN / MAXIMIZED:
+            // MODE FULLSCREEN / BROWSER MAXIMIZED:
             // "kalau fullscreen dia tetap sama kecuali aku dekatin di island nya
             //  baru dia transparan + bisa di klik di belakang nya"
             // =========================================================================
-            if (approachingNotch) {
-                // Kursor MENDEKATI / BERADA DI ATAS NOTCH:
+            if (inTabBarZone) {
+                // Kursor BERADA DI AREA TAB BROWSER (y = 0..24px):
                 // 1. Seketika ubah menjadi transparan tipis agar tab di belakang terlihat jelas!
                 if (!lastPassthroughState) {
                     lastPassthroughState = true;
                     mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'ghost' });
                 }
-                // 2. Tembus klik 100% langsung ke tab browser di belakangnya!
+                // 2. Tembus klik 100% langsung ke tab browser di belakangnya (bisa klik tab, ganti tab, atau tutup tab)!
                 if (lastIgnoreState !== true) {
                     lastIgnoreState = true;
                     mainWindow.setIgnoreMouseEvents(true, { forward: true });
                 }
-                if (hoverOpenTimer) {
+
+                // 3. JIKA kursor berdiam (dwell) di pulau selama >= 320ms: buka pulau otomatis!
+                if (!isTucked) {
+                    if (!hoverOpenTimer) {
+                        hoverOpenTimer = setTimeout(() => {
+                            hoverOpenTimer = null;
+                            if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
+                                setIslandExpanded(true);
+                            }
+                        }, 320);
+                    }
+                } else if (hoverOpenTimer) {
+                    clearTimeout(hoverOpenTimer);
+                    hoverOpenTimer = null;
+                }
+            } else if (inChinZone) {
+                // Kursor BERADA DI BIBIR BAWAH / DAGU PULAU (y = 25..38px):
+                // Pengguna menyentuh dagu pulau secara sengaja di bawah tab browser:
+                // Tampilan kembali normal & aktifkan klik seketika agar pulau bisa diklik untuk membuka!
+                if (lastPassthroughState) {
+                    lastPassthroughState = false;
+                    mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
+                }
+                if (lastIgnoreState !== false) {
+                    lastIgnoreState = false;
+                    mainWindow.setIgnoreMouseEvents(false);
+                }
+
+                if (!isTucked) {
+                    if (!hoverOpenTimer) {
+                        hoverOpenTimer = setTimeout(() => {
+                            hoverOpenTimer = null;
+                            if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
+                                setIslandExpanded(true);
+                            }
+                        }, 250);
+                    }
+                } else if (hoverOpenTimer) {
                     clearTimeout(hoverOpenTimer);
                     hoverOpenTimer = null;
                 }
             } else {
-                // Kursor DI LUAR NOTCH (area halaman web atau video):
-                // 1. Tampilan kembali NORMAL (tetap sama seperti biasa, solid black + mata maskot)
+                // Kursor DI LUAR PULAU (area halaman web atau video):
+                if (hoverOpenTimer) {
+                    clearTimeout(hoverOpenTimer);
+                    hoverOpenTimer = null;
+                }
+                // 1. Tampilan kembali NORMAL (solid black + mata maskot berkedip)
                 if (lastPassthroughState) {
                     lastPassthroughState = false;
                     mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
@@ -321,27 +375,11 @@ function startNusaHoverLoop() {
                     lastIgnoreState = true;
                     mainWindow.setIgnoreMouseEvents(true, { forward: true });
                 }
-
-                // Opsi buka sengaja saat fullscreen: letakkan kursor sedikit di bawah tab (y: 42..65px) selama >= 450ms
-                if (inHorizontalSpan && pt.y > 40 && pt.y <= 65 && !isTucked) {
-                    if (!hoverOpenTimer) {
-                        hoverOpenTimer = setTimeout(() => {
-                            hoverOpenTimer = null;
-                            if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
-                                setIslandExpanded(true);
-                            }
-                        }, 450);
-                    }
-                } else if (hoverOpenTimer) {
-                    clearTimeout(hoverOpenTimer);
-                    hoverOpenTimer = null;
-                }
             }
         } else {
             // =========================================================================
             // MODE NORMAL (Desktop / Jendela Tidak Maximized):
             // =========================================================================
-            const insideClosedNotch = inHorizontalSpan && pt.y >= 0 && pt.y <= (CLOSED_NOTCH_H + 6);
             if (insideClosedNotch) {
                 // Kursor berada tepat di atas kapsul notch:
                 // Aktifkan interaksi mouse penuh agar maskot & notch bisa diklik seketika!
@@ -395,13 +433,14 @@ function setIslandExpanded(expand) {
     if (isExpanded) {
         isTucked = false;
         lastIgnoreState = false;
-        try { mainWindow.setFocusable(true); } catch (_) {}
+        lastPassthroughState = false;
         mainWindow.setIgnoreMouseEvents(false);
+        try { mainWindow.setAlwaysOnTop(true, 'screen-saver'); } catch (_) {}
     } else {
         isPinnedOpen = false;
         lastIgnoreState = true;
-        try { mainWindow.setFocusable(false); } catch (_) {}
         mainWindow.setIgnoreMouseEvents(true, { forward: true });
+        try { mainWindow.setAlwaysOnTop(true, 'screen-saver'); } catch (_) {}
     }
     mainWindow.webContents.send('nusa-state', { expanded: isExpanded });
 }
@@ -424,6 +463,14 @@ initAutoUpdater(() => mainWindow);
 
 function buildIslandMenu() {
     return Menu.buildFromTemplate([
+        {
+            label: 'Buka / Kembangkan Dynamic Island',
+            click: () => {
+                if (!mainWindow) return;
+                if (!mainWindow.isVisible()) mainWindow.show();
+                setIslandExpanded(true);
+            }
+        },
         {
             label: 'Tampilkan / Sembunyikan Ukikura Dynamic Island',
             click: () => {

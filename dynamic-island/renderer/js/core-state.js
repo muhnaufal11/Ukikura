@@ -352,13 +352,17 @@ document.getElementById('btn-tuck').addEventListener('click', (e) => {
     ipcRenderer.send('island-tuck', true);
 });
 
-mnEl.addEventListener('click', () => {
+mnEl.addEventListener('click', (e) => {
     if (mnEl.dataset.s === 'tucked') {
         ipcRenderer.send('island-tuck', false);
         mnEl.dataset.s = getClosedVisualMode();
-    if (typeof window.ensureLivingEyesLoop === 'function') {
-        window.ensureLivingEyesLoop();
+        if (typeof window.ensureLivingEyesLoop === 'function') {
+            window.ensureLivingEyesLoop();
+        }
+        return;
     }
+    if (!isExpanded) {
+        expandIsland();
     }
 });
 

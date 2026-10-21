@@ -62,7 +62,7 @@
        Seketika transparan tipis + tembus klik agar tab di belakang terlihat jelas & bebas diklik 100%! */
     .mn-holder.ghost-passthrough:not(.is-expanded) .mn,
     .mn-holder.passthrough:not(.is-expanded) .mn {
-        opacity: 0.04 !important;
+        opacity: 0.05 !important;
         transform: scale(0.96);
         pointer-events: none !important;
         transition: opacity 0.12s ease, transform 0.14s ease;
