@@ -74,12 +74,33 @@ pub fn handle_page_click(app: &mut App, shape: &NotchShape, x: f32, y: f32, s: f
             }
         }
         AppPage::Todo => {
-            let card_x = left + 44.0 * s;
-            let mut item_y = 38.0 * s;
+            let col1_x = left + 44.0 * s;
+            let btn_y = shape.height - 34.0 * s;
+
+            // Courses button
+            if x >= col1_x && x <= col1_x + 48.0 * s && y >= btn_y && y <= btn_y + 22.0 * s {
+                let _ = std::process::Command::new("cmd").args(["/c", "start", "https://lms.telkomuniversity.ac.id/my/"]).spawn();
+                return;
+            }
+            // Sound bell button
+            if x >= col1_x + 52.0 * s && x <= col1_x + 74.0 * s && y >= btn_y && y <= btn_y + 22.0 * s {
+                app.active_modal = Some(crate::app::ActiveModal::Sound);
+                app.render();
+                return;
+            }
+            // AI button
+            if x >= col1_x + 78.0 * s && x <= col1_x + 132.0 * s && y >= btn_y && y <= btn_y + 22.0 * s {
+                let _ = std::process::Command::new("cmd").args(["/c", "start", "https://github.com/muhnaufal11/lms-quiz-assistant"]).spawn();
+                return;
+            }
+
+            // Checkbox tugas di kolom kanan
+            let col2_x = left + 184.0 * s;
+            let mut item_y = 36.0 * s;
             let card_h = 36.0 * s;
             let tasks = app.vault.get_tasks().tasks;
             for task in tasks.iter().take(3) {
-                let chk_x = card_x + 16.0 * s;
+                let chk_x = col2_x + 16.0 * s;
                 let chk_y = item_y + card_h / 2.0;
                 let dist = ((x - chk_x).powi(2) + (y - chk_y).powi(2)).sqrt();
                 if dist <= 16.0 * s {
@@ -87,10 +108,20 @@ pub fn handle_page_click(app: &mut App, shape: &NotchShape, x: f32, y: f32, s: f
                     app.render();
                     return;
                 }
-                item_y += card_h + 6.0 * s;
+                item_y += card_h + 5.0 * s;
             }
         }
-        AppPage::Calendar => {}
+        AppPage::Calendar => {
+            let right = shape.center_x + shape.width / 2.0;
+            let sched_btn_w = 90.0 * s;
+            let sched_btn_x = right - 36.0 * s - sched_btn_w;
+            let sched_btn_y = 36.0 * s;
+            if x >= sched_btn_x && x <= sched_btn_x + sched_btn_w && y >= sched_btn_y && y <= sched_btn_y + 18.0 * s {
+                app.active_modal = Some(crate::app::ActiveModal::Schedule);
+                app.render();
+                return;
+            }
+        }
         AppPage::Pomodoro => {
             let btn_y = 142.0 * s;
             let dist_play = ((x - cx).powi(2) + (y - btn_y).powi(2)).sqrt();
@@ -147,7 +178,8 @@ pub fn handle_page_click(app: &mut App, shape: &NotchShape, x: f32, y: f32, s: f
             // Pill A: Suara
             let p_sound_w = 64.0 * scale_val(s);
             if y >= cur_y && y <= cur_y + pill_h && x >= px && x <= px + p_sound_w {
-                app.show_peek(crate::pages::peek::PeekType::Battery, "Pengaturan Suara", "Kanal alarm aktif", 2000);
+                app.active_modal = Some(crate::app::ActiveModal::Sound);
+                app.render();
                 return;
             }
             px += p_sound_w + 5.0 * s;

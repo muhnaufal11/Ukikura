@@ -312,3 +312,229 @@ pub fn draw_lyrics_bubble(gpu: &Gpu, x: f32, y: f32, size: f32, color: D2D1_COLO
     }
     Ok(())
 }
+
+pub fn draw_wa_icon(gpu: &Gpu, x: f32, y: f32, size: f32, color: D2D1_COLOR_F) -> Result<()> {
+    unsafe {
+        let brush = gpu.dc.CreateSolidColorBrush(&color, None)?;
+        let bubble = D2D1_ELLIPSE {
+            point: Vector2 { X: x, Y: y - size * 0.05 },
+            radiusX: size * 0.45,
+            radiusY: size * 0.45,
+        };
+        gpu.dc.DrawEllipse(&bubble, &brush, 1.4, None);
+
+        let geo = gpu.d2d_factory.CreatePathGeometry()?;
+        let sink = geo.Open()?;
+        sink.BeginFigure(Vector2 { X: x - size * 0.28, Y: y + size * 0.25 }, D2D1_FIGURE_BEGIN_FILLED);
+        sink.AddLine(Vector2 { X: x - size * 0.46, Y: y + size * 0.46 });
+        sink.AddLine(Vector2 { X: x - size * 0.15, Y: y + size * 0.38 });
+        sink.EndFigure(D2D1_FIGURE_END_CLOSED);
+        sink.Close()?;
+        gpu.dc.FillGeometry(&geo, &brush, None);
+    }
+    Ok(())
+}
+
+pub fn draw_sync_icon(gpu: &Gpu, x: f32, y: f32, size: f32, color: D2D1_COLOR_F) -> Result<()> {
+    unsafe {
+        let brush = gpu.dc.CreateSolidColorBrush(&color, None)?;
+        let r = size * 0.36;
+        let arc1 = D2D1_ELLIPSE {
+            point: Vector2 { X: x, Y: y },
+            radiusX: r,
+            radiusY: r,
+        };
+        gpu.dc.DrawEllipse(&arc1, &brush, 1.4, None);
+
+        // Arrow head top right
+        let geo = gpu.d2d_factory.CreatePathGeometry()?;
+        let sink = geo.Open()?;
+        sink.BeginFigure(Vector2 { X: x + r - size * 0.12, Y: y - size * 0.18 }, D2D1_FIGURE_BEGIN_FILLED);
+        sink.AddLine(Vector2 { X: x + r + size * 0.12, Y: y - size * 0.18 });
+        sink.AddLine(Vector2 { X: x + r, Y: y - size * 0.02 });
+        sink.EndFigure(D2D1_FIGURE_END_CLOSED);
+        sink.Close()?;
+        gpu.dc.FillGeometry(&geo, &brush, None);
+    }
+    Ok(())
+}
+
+pub fn draw_key_icon(gpu: &Gpu, x: f32, y: f32, size: f32, color: D2D1_COLOR_F) -> Result<()> {
+    unsafe {
+        let brush = gpu.dc.CreateSolidColorBrush(&color, None)?;
+        let ring = D2D1_ELLIPSE {
+            point: Vector2 { X: x - size * 0.18, Y: y + size * 0.12 },
+            radiusX: size * 0.22,
+            radiusY: size * 0.22,
+        };
+        gpu.dc.DrawEllipse(&ring, &brush, 1.4, None);
+        gpu.dc.DrawLine(
+            Vector2 { X: x - size * 0.02, Y: y - size * 0.02 },
+            Vector2 { X: x + size * 0.42, Y: y - size * 0.42 },
+            &brush,
+            1.5,
+            None,
+        );
+        gpu.dc.DrawLine(
+            Vector2 { X: x + size * 0.25, Y: y - size * 0.25 },
+            Vector2 { X: x + size * 0.35, Y: y - size * 0.15 },
+            &brush,
+            1.5,
+            None,
+        );
+    }
+    Ok(())
+}
+
+pub fn draw_bell_icon(gpu: &Gpu, x: f32, y: f32, size: f32, color: D2D1_COLOR_F) -> Result<()> {
+    unsafe {
+        let brush = gpu.dc.CreateSolidColorBrush(&color, None)?;
+        let geo = gpu.d2d_factory.CreatePathGeometry()?;
+        let sink = geo.Open()?;
+        sink.BeginFigure(Vector2 { X: x, Y: y - size * 0.45 }, D2D1_FIGURE_BEGIN_HOLLOW);
+        sink.AddArc(&D2D1_ARC_SEGMENT {
+            point: Vector2 { X: x + size * 0.36, Y: y + size * 0.2 },
+            size: D2D_SIZE_F { width: size * 0.38, height: size * 0.42 },
+            rotationAngle: 0.0,
+            sweepDirection: D2D1_SWEEP_DIRECTION_CLOCKWISE,
+            arcSize: D2D1_ARC_SIZE_SMALL,
+        });
+        sink.AddLine(Vector2 { X: x - size * 0.36, Y: y + size * 0.2 });
+        sink.AddArc(&D2D1_ARC_SEGMENT {
+            point: Vector2 { X: x, Y: y - size * 0.45 },
+            size: D2D_SIZE_F { width: size * 0.38, height: size * 0.42 },
+            rotationAngle: 0.0,
+            sweepDirection: D2D1_SWEEP_DIRECTION_CLOCKWISE,
+            arcSize: D2D1_ARC_SIZE_SMALL,
+        });
+        sink.EndFigure(D2D1_FIGURE_END_CLOSED);
+        sink.Close()?;
+        gpu.dc.DrawGeometry(&geo, &brush, 1.3, None);
+
+        // Clapper bottom dot
+        let clapper = D2D1_ELLIPSE {
+            point: Vector2 { X: x, Y: y + size * 0.35 },
+            radiusX: size * 0.1,
+            radiusY: size * 0.1,
+        };
+        gpu.dc.FillEllipse(&clapper, &brush);
+    }
+    Ok(())
+}
+
+pub fn draw_volume_icon(gpu: &Gpu, x: f32, y: f32, size: f32, color: D2D1_COLOR_F) -> Result<()> {
+    unsafe {
+        let brush = gpu.dc.CreateSolidColorBrush(&color, None)?;
+        let geo = gpu.d2d_factory.CreatePathGeometry()?;
+        let sink = geo.Open()?;
+        sink.BeginFigure(Vector2 { X: x - size * 0.35, Y: y - size * 0.18 }, D2D1_FIGURE_BEGIN_FILLED);
+        sink.AddLine(Vector2 { X: x - size * 0.15, Y: y - size * 0.18 });
+        sink.AddLine(Vector2 { X: x + size * 0.12, Y: y - size * 0.4 });
+        sink.AddLine(Vector2 { X: x + size * 0.12, Y: y + size * 0.4 });
+        sink.AddLine(Vector2 { X: x - size * 0.15, Y: y + size * 0.18 });
+        sink.AddLine(Vector2 { X: x - size * 0.35, Y: y + size * 0.18 });
+        sink.EndFigure(D2D1_FIGURE_END_CLOSED);
+        sink.Close()?;
+        gpu.dc.FillGeometry(&geo, &brush, None);
+
+        // Wave arc
+        let geo_w = gpu.d2d_factory.CreatePathGeometry()?;
+        let sink_w = geo_w.Open()?;
+        sink_w.BeginFigure(Vector2 { X: x + size * 0.25, Y: y - size * 0.25 }, D2D1_FIGURE_BEGIN_HOLLOW);
+        sink_w.AddArc(&D2D1_ARC_SEGMENT {
+            point: Vector2 { X: x + size * 0.25, Y: y + size * 0.25 },
+            size: D2D_SIZE_F { width: size * 0.3, height: size * 0.3 },
+            rotationAngle: 0.0,
+            sweepDirection: D2D1_SWEEP_DIRECTION_CLOCKWISE,
+            arcSize: D2D1_ARC_SIZE_SMALL,
+        });
+        sink_w.EndFigure(D2D1_FIGURE_END_OPEN);
+        sink_w.Close()?;
+        gpu.dc.DrawGeometry(&geo_w, &brush, 1.4, None);
+    }
+    Ok(())
+}
+
+pub fn draw_mic_icon(gpu: &Gpu, x: f32, y: f32, size: f32, color: D2D1_COLOR_F) -> Result<()> {
+    unsafe {
+        let brush = gpu.dc.CreateSolidColorBrush(&color, None)?;
+        // Pill mic capsule
+        let capsule = D2D1_ROUNDED_RECT {
+            rect: D2D_RECT_F {
+                left: x - size * 0.18,
+                top: y - size * 0.45,
+                right: x + size * 0.18,
+                bottom: y + size * 0.15,
+            },
+            radiusX: size * 0.18,
+            radiusY: size * 0.18,
+        };
+        gpu.dc.FillRoundedRectangle(&capsule, &brush);
+
+        // Arc holder
+        let geo = gpu.d2d_factory.CreatePathGeometry()?;
+        let sink = geo.Open()?;
+        sink.BeginFigure(Vector2 { X: x - size * 0.32, Y: y - size * 0.05 }, D2D1_FIGURE_BEGIN_HOLLOW);
+        sink.AddArc(&D2D1_ARC_SEGMENT {
+            point: Vector2 { X: x + size * 0.32, Y: y - size * 0.05 },
+            size: D2D_SIZE_F { width: size * 0.32, height: size * 0.32 },
+            rotationAngle: 0.0,
+            sweepDirection: D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE,
+            arcSize: D2D1_ARC_SIZE_SMALL,
+        });
+        sink.EndFigure(D2D1_FIGURE_END_OPEN);
+        sink.Close()?;
+        gpu.dc.DrawGeometry(&geo, &brush, 1.4, None);
+
+        // Stand stem & base
+        gpu.dc.DrawLine(Vector2 { X: x, Y: y + size * 0.28 }, Vector2 { X: x, Y: y + size * 0.45 }, &brush, 1.5, None);
+        gpu.dc.DrawLine(Vector2 { X: x - size * 0.22, Y: y + size * 0.45 }, Vector2 { X: x + size * 0.22, Y: y + size * 0.45 }, &brush, 1.5, None);
+    }
+    Ok(())
+}
+
+pub fn draw_eq_bars(
+    gpu: &Gpu,
+    x: f32,
+    y: f32,
+    count: usize,
+    anim_time: f32,
+    is_playing: bool,
+    color: D2D1_COLOR_F,
+    scale: f32,
+) -> Result<()> {
+    unsafe {
+        let brush = gpu.dc.CreateSolidColorBrush(&color, None)?;
+        let bar_w = 2.0 * scale;
+        let gap = 2.0 * scale;
+        let max_h = 12.0 * scale;
+        let min_h = 3.0 * scale;
+
+        let total_w = (count as f32) * bar_w + ((count - 1) as f32) * gap;
+        let mut start_x = x - total_w / 2.0;
+
+        for i in 0..count {
+            let h = if is_playing {
+                let phase = anim_time * 6.0 + (i as f32) * 1.35;
+                let sin_v = (phase.sin() * 0.5 + 0.5).clamp(0.0, 1.0);
+                min_h + (max_h - min_h) * sin_v
+            } else {
+                min_h + (i as f32 % 2.0) * 1.5 * scale
+            };
+
+            let rect = D2D1_ROUNDED_RECT {
+                rect: D2D_RECT_F {
+                    left: start_x,
+                    top: y - h / 2.0,
+                    right: start_x + bar_w,
+                    bottom: y + h / 2.0,
+                },
+                radiusX: 1.0 * scale,
+                radiusY: 1.0 * scale,
+            };
+            gpu.dc.FillRoundedRectangle(&rect, &brush);
+            start_x += bar_w + gap;
+        }
+    }
+    Ok(())
+}

@@ -36,6 +36,12 @@ pub enum Mode {
     Tucked,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ActiveModal {
+    Sound,
+    Schedule,
+}
+
 struct Dim {
     w: f32,
     h: f32,
@@ -79,6 +85,9 @@ pub struct App {
     pub closed_style_mascot: bool,
     pub notifs: Vec<crate::pages::battery_notif::NotifItem>,
     pub shelf_files: Vec<crate::pages::shelf::ShelfFile>,
+    pub active_modal: Option<ActiveModal>,
+    pub sound_modal_state: crate::pages::modals::sound::SoundModalState,
+    pub class_schedule: Vec<crate::pages::modals::schedule::ClassScheduleItem>,
     w: Spring,
     h: Spring,
     r: Spring,
@@ -140,6 +149,9 @@ impl App {
             closed_style_mascot: true,
             notifs: Vec::new(),
             shelf_files: Vec::new(),
+            active_modal: None,
+            sound_modal_state: crate::pages::modals::sound::SoundModalState::default(),
+            class_schedule: crate::pages::modals::schedule::default_classes(),
             w: Spring::new(d.w, 300.0, 30.0),
             h: Spring::new(d.h, 300.0, 30.0),
             r: Spring::new(d.r, 300.0, 30.0),
@@ -256,17 +268,26 @@ impl App {
                     }
                 }
                 let is_playing = self.media_state.status == "Playing";
-                let active_lyr = self.lyrics.get_active();
-                if is_playing && active_lyr.is_some() {
-                    let _ = crate::pages::music::draw_closed_karaoke(
+                let anim_time = self.last_frame.elapsed().as_secs_f32();
+                if self.closed_style_mascot {
+                    let _ = self.mascot.draw(
                         &self.gpu,
                         &shape,
-                        active_lyr.as_ref().unwrap(),
-                        self.media_state.position_sec,
+                        is_playing,
+                        self.notifs.len(),
+                        anim_time,
                         self.scale,
                     );
                 } else {
-                    let _ = self.mascot.draw(&self.gpu, &shape, self.scale);
+                    let _ = crate::pages::mascot::draw_idle_bar(
+                        &self.gpu,
+                        &shape,
+                        &self.media_state.title,
+                        is_playing,
+                        anim_time,
+                        self.power.battery_percent,
+                        self.scale,
+                    );
                 }
             }
             Mode::Expanded => {
@@ -352,6 +373,27 @@ impl App {
                     let _ = navbar::draw_pagination_dots(&self.gpu, &shape, self.page, self.scale);
                 }
                 let _ = navbar::draw_header(&self.gpu, &shape, self.page, &self.power, self.pinned, self.scale);
+                if let Some(modal) = self.active_modal {
+                    match modal {
+                        ActiveModal::Sound => {
+                            let _ = crate::pages::modals::sound::draw_sound_modal(
+                                &self.gpu,
+                                &shape,
+                                &self.sound_modal_state,
+                                self.scale,
+                            );
+                        }
+                        ActiveModal::Schedule => {
+                            let _ = crate::pages::modals::schedule::draw_schedule_modal(
+                                &self.gpu,
+                                &shape,
+                                &self.class_schedule,
+                                "Semua",
+                                self.scale,
+                            );
+                        }
+                    }
+                }
             }
             Mode::Tucked => {}
         }
@@ -486,6 +528,24 @@ impl App {
                 self.set_mode(Mode::Expanded);
             }
             Mode::Expanded => {
+                // 0. Jika ada modal aktif, tangani klik modal terlebih dahulu
+                if let Some(modal) = self.active_modal {
+                    let closed = match modal {
+                        ActiveModal::Sound => {
+                            crate::pages::modals::sound::hit_test_close(&shape, x, y, s)
+                                || crate::pages::modals::sound::hit_test_done(&shape, x, y, s)
+                        }
+                        ActiveModal::Schedule => {
+                            crate::pages::modals::schedule::hit_test_close(&shape, x, y, s)
+                        }
+                    };
+                    if closed {
+                        self.active_modal = None;
+                        self.render();
+                    }
+                    return;
+                }
+
                 // 1. Tombol Pin di Header Kanan
                 if navbar::hit_test_pin(&shape, x, y, s) {
                     self.pinned = !self.pinned;
@@ -496,6 +556,32 @@ impl App {
                 // 2. Tombol Tuck di Header Kanan
                 if navbar::hit_test_tuck(&shape, x, y, s) {
                     self.set_mode(Mode::Tucked);
+                    return;
+                }
+
+                // 3. Tombol Sound di Header Kanan
+                if navbar::hit_test_sound(&shape, x, y, s) {
+                    self.active_modal = Some(ActiveModal::Sound);
+                    self.render();
+                    return;
+                }
+
+                // 4. Tombol Login LMS
+                if navbar::hit_test_login(&shape, x, y, s) {
+                    let _ = std::process::Command::new("cmd").args(["/c", "start", "https://lms.telkomuniversity.ac.id/login/index.php"]).spawn();
+                    return;
+                }
+
+                // 5. Tombol Sync LMS
+                if navbar::hit_test_sync(&shape, x, y, s) {
+                    self.show_peek(PeekType::Battery, "Sinkronisasi LMS", "Memperbarui jadwal & tugas...", 2500);
+                    return;
+                }
+
+                // 6. Tombol WA Quick
+                if navbar::hit_test_wa_quick(&shape, x, y, s) {
+                    self.page = AppPage::Notif;
+                    self.render();
                     return;
                 }
 

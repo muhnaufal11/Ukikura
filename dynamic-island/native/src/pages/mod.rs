@@ -3,6 +3,7 @@ pub mod calendar;
 pub mod config;
 pub mod interactions;
 pub mod mascot;
+pub mod modals;
 pub mod music;
 pub mod navbar;
 pub mod notch;

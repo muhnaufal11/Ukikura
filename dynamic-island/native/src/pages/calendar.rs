@@ -109,8 +109,38 @@ pub fn draw_calendar_page(
         12.0 * scale,
         DWRITE_FONT_WEIGHT(700),
         accent_cyan,
-        agenda_w,
+        130.0 * scale,
         16.0 * scale,
+    )?;
+
+    // Tombol Buka Jadwal Kuliah Mingguan (#sched-modal)
+    let sched_btn_w = 90.0 * scale;
+    let sched_btn_x = right - 36.0 * scale - sched_btn_w;
+    let sched_btn_y = 36.0 * scale;
+    let sched_rect = D2D1_ROUNDED_RECT {
+        rect: D2D_RECT_F {
+            left: sched_btn_x,
+            top: sched_btn_y,
+            right: sched_btn_x + sched_btn_w,
+            bottom: sched_btn_y + 18.0 * scale,
+        },
+        radiusX: 5.0 * scale,
+        radiusY: 5.0 * scale,
+    };
+    unsafe {
+        let btn_bg = gpu.dc.CreateSolidColorBrush(&D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.12 }, None)?;
+        gpu.dc.FillRoundedRectangle(&sched_rect, &btn_bg);
+    }
+    text::draw_text(
+        gpu,
+        "📅 Jadwal Kuliah",
+        sched_btn_x + 6.0 * scale,
+        sched_btn_y + 2.5 * scale,
+        9.0 * scale,
+        DWRITE_FONT_WEIGHT(600),
+        white,
+        sched_btn_w - 8.0 * scale,
+        14.0 * scale,
     )?;
 
     let mut ag_y = 58.0 * scale;

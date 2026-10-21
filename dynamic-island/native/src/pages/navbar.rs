@@ -209,40 +209,58 @@ pub fn draw_header(
         16.0 * scale,
     )?;
 
-    // 3. Kanan (.hdr-actions): Tombol Pin & Tombol Tuck
-    let pin_x = right - 46.0 * scale;
-    let tuck_x = right - 22.0 * scale;
+    // 3. Kanan (.hdr-actions): WA, Sync, Login, Sound, Pin, Tuck (6 Tombol Bulat Khas Nusa)
     let btn_y = hdr_y + 10.0 * scale;
-    let btn_r = 10.0 * scale;
+    let btn_r = 9.5 * scale;
+    let btn_bg_normal = D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.12 };
+    let _wa_green = D2D1_COLOR_F { r: 0.15, g: 0.83, b: 0.40, a: 1.0 };
 
-    // Pin circle
-    let pin_bg_color = if pinned {
-        D2D1_COLOR_F { r: 0.18, g: 0.36, b: 1.0, a: 0.95 }
-    } else {
-        D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.12 }
-    };
+    let tuck_x = right - 20.0 * scale;
+    let pin_x = right - 44.0 * scale;
+    let sound_x = right - 68.0 * scale;
+    let login_x = right - 92.0 * scale;
+    let sync_x = right - 116.0 * scale;
+    let wa_x = right - 140.0 * scale;
+
     unsafe {
+        let bg_brush = gpu.dc.CreateSolidColorBrush(&btn_bg_normal, None)?;
+
+        // 3a. WhatsApp Quick
+        let wa_circle = D2D1_ELLIPSE { point: Vector2 { X: wa_x, Y: btn_y }, radiusX: btn_r, radiusY: btn_r };
+        gpu.dc.FillEllipse(&wa_circle, &bg_brush);
+        let _ = icons::draw_wa_icon(gpu, wa_x, btn_y, 11.0 * scale, white);
+
+        // 3b. Sync LMS
+        let sync_circle = D2D1_ELLIPSE { point: Vector2 { X: sync_x, Y: btn_y }, radiusX: btn_r, radiusY: btn_r };
+        gpu.dc.FillEllipse(&sync_circle, &bg_brush);
+        let _ = icons::draw_sync_icon(gpu, sync_x, btn_y, 11.0 * scale, white);
+
+        // 3c. Login LMS
+        let login_circle = D2D1_ELLIPSE { point: Vector2 { X: login_x, Y: btn_y }, radiusX: btn_r, radiusY: btn_r };
+        gpu.dc.FillEllipse(&login_circle, &bg_brush);
+        let _ = icons::draw_key_icon(gpu, login_x, btn_y, 11.0 * scale, white);
+
+        // 3d. Sound Modal Bell
+        let sound_circle = D2D1_ELLIPSE { point: Vector2 { X: sound_x, Y: btn_y }, radiusX: btn_r, radiusY: btn_r };
+        gpu.dc.FillEllipse(&sound_circle, &bg_brush);
+        let _ = icons::draw_bell_icon(gpu, sound_x, btn_y, 11.0 * scale, white);
+
+        // 3e. Pin
+        let pin_bg_color = if pinned {
+            D2D1_COLOR_F { r: 0.18, g: 0.36, b: 1.0, a: 0.95 }
+        } else {
+            btn_bg_normal
+        };
         let pin_brush = gpu.dc.CreateSolidColorBrush(&pin_bg_color, None)?;
-        let pin_circle = D2D1_ELLIPSE {
-            point: Vector2 { X: pin_x, Y: btn_y },
-            radiusX: btn_r,
-            radiusY: btn_r,
-        };
+        let pin_circle = D2D1_ELLIPSE { point: Vector2 { X: pin_x, Y: btn_y }, radiusX: btn_r, radiusY: btn_r };
         gpu.dc.FillEllipse(&pin_circle, &pin_brush);
-    }
-    icons::draw_pin(gpu, pin_x, btn_y, 11.0 * scale, white)?;
+        let _ = icons::draw_pin(gpu, pin_x, btn_y, 11.0 * scale, white);
 
-    // Tuck circle
-    unsafe {
-        let tuck_bg = gpu.dc.CreateSolidColorBrush(&D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.12 }, None)?;
-        let tuck_circle = D2D1_ELLIPSE {
-            point: Vector2 { X: tuck_x, Y: btn_y },
-            radiusX: btn_r,
-            radiusY: btn_r,
-        };
-        gpu.dc.FillEllipse(&tuck_circle, &tuck_bg);
+        // 3f. Tuck
+        let tuck_circle = D2D1_ELLIPSE { point: Vector2 { X: tuck_x, Y: btn_y }, radiusX: btn_r, radiusY: btn_r };
+        gpu.dc.FillEllipse(&tuck_circle, &bg_brush);
+        let _ = icons::draw_chevron_up(gpu, tuck_x, btn_y, 11.0 * scale, white);
     }
-    icons::draw_chevron_up(gpu, tuck_x, btn_y, 11.0 * scale, white)?;
 
     Ok(())
 }
@@ -363,7 +381,7 @@ pub fn hit_test_next_arrow(shape: &NotchShape, x: f32, y: f32, scale: f32) -> bo
 
 pub fn hit_test_pin(shape: &NotchShape, x: f32, y: f32, scale: f32) -> bool {
     let right = shape.center_x + shape.width / 2.0;
-    let btn_x = right - 46.0 * scale;
+    let btn_x = right - 44.0 * scale;
     let btn_y = 20.0 * scale;
     let dist = ((x - btn_x).powi(2) + (y - btn_y).powi(2)).sqrt();
     dist <= 14.0 * scale
@@ -371,7 +389,39 @@ pub fn hit_test_pin(shape: &NotchShape, x: f32, y: f32, scale: f32) -> bool {
 
 pub fn hit_test_tuck(shape: &NotchShape, x: f32, y: f32, scale: f32) -> bool {
     let right = shape.center_x + shape.width / 2.0;
-    let btn_x = right - 22.0 * scale;
+    let btn_x = right - 20.0 * scale;
+    let btn_y = 20.0 * scale;
+    let dist = ((x - btn_x).powi(2) + (y - btn_y).powi(2)).sqrt();
+    dist <= 14.0 * scale
+}
+
+pub fn hit_test_sound(shape: &NotchShape, x: f32, y: f32, scale: f32) -> bool {
+    let right = shape.center_x + shape.width / 2.0;
+    let btn_x = right - 68.0 * scale;
+    let btn_y = 20.0 * scale;
+    let dist = ((x - btn_x).powi(2) + (y - btn_y).powi(2)).sqrt();
+    dist <= 14.0 * scale
+}
+
+pub fn hit_test_login(shape: &NotchShape, x: f32, y: f32, scale: f32) -> bool {
+    let right = shape.center_x + shape.width / 2.0;
+    let btn_x = right - 92.0 * scale;
+    let btn_y = 20.0 * scale;
+    let dist = ((x - btn_x).powi(2) + (y - btn_y).powi(2)).sqrt();
+    dist <= 14.0 * scale
+}
+
+pub fn hit_test_sync(shape: &NotchShape, x: f32, y: f32, scale: f32) -> bool {
+    let right = shape.center_x + shape.width / 2.0;
+    let btn_x = right - 116.0 * scale;
+    let btn_y = 20.0 * scale;
+    let dist = ((x - btn_x).powi(2) + (y - btn_y).powi(2)).sqrt();
+    dist <= 14.0 * scale
+}
+
+pub fn hit_test_wa_quick(shape: &NotchShape, x: f32, y: f32, scale: f32) -> bool {
+    let right = shape.center_x + shape.width / 2.0;
+    let btn_x = right - 140.0 * scale;
     let btn_y = 20.0 * scale;
     let dist = ((x - btn_x).powi(2) + (y - btn_y).powi(2)).sqrt();
     dist <= 14.0 * scale

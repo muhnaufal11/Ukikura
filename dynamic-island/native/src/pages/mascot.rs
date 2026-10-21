@@ -149,11 +149,88 @@ impl Mascot {
         moving || is_blinking || active_mood
     }
 
-    pub fn draw(&self, gpu: &Gpu, shape: &NotchShape, scale: f32) -> Result<()> {
+    pub fn draw(
+        &self,
+        gpu: &Gpu,
+        shape: &NotchShape,
+        is_playing: bool,
+        unread_count: usize,
+        anim_time: f32,
+        scale: f32,
+    ) -> Result<()> {
+        let left = shape.center_x - shape.width / 2.0;
+        let right = shape.center_x + shape.width / 2.0;
         let cy_center = 12.5 * scale;
         let base_w = 9.0 * scale;
         let base_h = 12.8 * scale;
         let eye_offset_x = 11.5 * scale;
+
+        // 1. Equalizer Kiri 4-Bar (.pet-left-eq) Khas Nusa
+        let eq_color = if is_playing {
+            D2D1_COLOR_F { r: 0.20, g: 0.88, b: 0.48, a: 1.0 }
+        } else {
+            D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.25 }
+        };
+        let _ = crate::ui::icons::draw_eq_bars(
+            gpu,
+            left + 22.0 * scale,
+            cy_center,
+            4,
+            anim_time,
+            is_playing,
+            eq_color,
+            scale,
+        );
+
+        // 2. Lencana Notifikasi Kanan (.pet-badge) Khas Nusa
+        let badge_x = right - 24.0 * scale;
+        let badge_w = 28.0 * scale;
+        let badge_h = 15.0 * scale;
+        let badge_rect = D2D1_ROUNDED_RECT {
+            rect: D2D_RECT_F {
+                left: badge_x - badge_w / 2.0,
+                top: cy_center - badge_h / 2.0,
+                right: badge_x + badge_w / 2.0,
+                bottom: cy_center + badge_h / 2.0,
+            },
+            radiusX: 7.5 * scale,
+            radiusY: 7.5 * scale,
+        };
+        unsafe {
+            let badge_bg = gpu.dc.CreateSolidColorBrush(&D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.12 }, None)?;
+            gpu.dc.FillRoundedRectangle(&badge_rect, &badge_bg);
+
+            // Titik hijau WhatsApp / Notif
+            let dot_color = if unread_count > 0 {
+                D2D1_COLOR_F { r: 0.15, g: 0.83, b: 0.40, a: 1.0 }
+            } else {
+                D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.25 }
+            };
+            let dot_brush = gpu.dc.CreateSolidColorBrush(&dot_color, None)?;
+            let dot = D2D1_ELLIPSE {
+                point: windows_numerics::Vector2 {
+                    X: badge_x - 6.0 * scale,
+                    Y: cy_center,
+                },
+                radiusX: 2.2 * scale,
+                radiusY: 2.2 * scale,
+            };
+            gpu.dc.FillEllipse(&dot, &dot_brush);
+        }
+
+        let count_str = format!("{}", unread_count);
+        let count_color = D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.88 };
+        let _ = crate::ui::text::draw_text(
+            gpu,
+            &count_str,
+            badge_x - 1.0 * scale,
+            cy_center - 6.0 * scale,
+            9.5 * scale,
+            windows::Win32::Graphics::DirectWrite::DWRITE_FONT_WEIGHT(700),
+            count_color,
+            18.0 * scale,
+            12.0 * scale,
+        );
 
         let white = gpu.brush(1.0, 1.0, 1.0, 1.0)?;
         let glow_cyan = gpu.brush(0.47, 0.82, 1.0, 0.55)?;
@@ -332,4 +409,70 @@ impl Mascot {
 
         Ok(())
     }
+}
+
+pub fn draw_idle_bar(
+    gpu: &Gpu,
+    shape: &NotchShape,
+    title: &str,
+    is_playing: bool,
+    anim_time: f32,
+    _battery_pct: u8,
+    scale: f32,
+) -> Result<()> {
+    let left = shape.center_x - shape.width / 2.0;
+    let right = shape.center_x + shape.width / 2.0;
+    let cy = 12.5 * scale;
+
+    // 1. Ring baterai di kiri (.ring)
+    let ring_x = left + 18.0 * scale;
+    let ring_r = 7.0 * scale;
+    unsafe {
+        let ring_bg = gpu.dc.CreateSolidColorBrush(&D2D1_COLOR_F { r: 0.20, g: 0.88, b: 0.48, a: 0.25 }, None)?;
+        let ring_fill = gpu.dc.CreateSolidColorBrush(&D2D1_COLOR_F { r: 0.20, g: 0.88, b: 0.48, a: 1.0 }, None)?;
+        let ellipse = D2D1_ELLIPSE {
+            point: windows_numerics::Vector2 { X: ring_x, Y: cy },
+            radiusX: ring_r,
+            radiusY: ring_r,
+        };
+        gpu.dc.DrawEllipse(&ellipse, &ring_bg, 2.5 * scale, None);
+        let dot = D2D1_ELLIPSE {
+            point: windows_numerics::Vector2 { X: ring_x, Y: cy },
+            radiusX: 2.5 * scale,
+            radiusY: 2.5 * scale,
+        };
+        gpu.dc.FillEllipse(&dot, &ring_fill);
+    }
+
+    // 2. Judul di tengah (.idle-center)
+    let display_title = if title.is_empty() { "Ukikura Living Notch" } else { title };
+    let text_x = left + 34.0 * scale;
+    let text_w = shape.width - 68.0 * scale;
+    let white = D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.95 };
+    let _ = crate::ui::text::draw_text(
+        gpu,
+        display_title,
+        text_x,
+        cy - 6.5 * scale,
+        11.2 * scale,
+        windows::Win32::Graphics::DirectWrite::DWRITE_FONT_WEIGHT(600),
+        white,
+        text_w,
+        14.0 * scale,
+    );
+
+    // 3. 5-bar equalizer di kanan (.bars)
+    let eq_color = D2D1_COLOR_F { r: 0.37, g: 0.76, b: 1.0, a: 1.0 };
+    let _ = crate::ui::icons::draw_eq_bars(
+        gpu,
+        right - 20.0 * scale,
+        cy,
+        5,
+        anim_time,
+        is_playing,
+        eq_color,
+        scale,
+    );
+
+    Ok(())
 }
