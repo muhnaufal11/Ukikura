@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 57,
+  "versionCode": 58,
   "version": "1.0.6",
-  "fixCount": 57,
-  "displayVersion": "1.0.6 (Patch 57 - Zero-Latency Play/Pause Control, Sub-Second Lyrics Sync Lead & Complete 3-Tier Multilingual Hierarchy)",
+  "fixCount": 58,
+  "displayVersion": "1.0.6 (Patch 58 - Fullscreen Browser Tab Auto-Passthrough, 100% Click-Through & Intentional Dwell Expansion)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 57 - Zero-Latency Hardware SMTC Play/Pause, +0.42s Lead Lyrics Sync Lookahead & 100% 3-Tier Multilingual Display): 1) Memperbaiki tombol Play/Pause agar langsung berhenti/memutar tanpa delay dengan menghapus double-toggle bug (SendYouTubePlayPause) dan beralih ke TryTogglePlayPauseAsync hardware SMTC murni dengan fallback VK_MEDIA_PLAY_PAUSE. 2) Mengatasi keterlambatan tampilan lirik (lirik agak telat) dengan mempercepat polling hardware bridge ke 220ms dan menyetel lead lookahead +0.42s agar baris lirik berpindah presisi saat vokal dimulai. 3) Mengatasi masalah lirik multibahasa (ALiCE&u) yang terkadang hanya muncul 2 baris atau terkena lirik Korea asing: mengunci InnerTube iOS client resmi, menghubungkan track bahasa Jepang dan Indonesia YouTube TimedText secara lengkap, memadukan kanji/kana kanonikal dari database lirik ke Romaji bait Jepang dengan affinity matching semantik, serta menjamin 60 dari 60 baris selalu lengkap 3 hierarki bahasa (Vokal Utama + Romaji/Kanji + Sub Indo)."
+  "changelog": "Ukikura v1.0.6 (Patch 58 - Fullscreen Browser Tab Auto-Passthrough & 100% Click-Through): 1) Mengatasi masalah tab browser tertutup/tidak bisa diklik: mengimplementasikan deteksi otomatis barisan tab browser (y = 0..44px) yang seketika mengaktifkan mode Ghost Passthrough (opacity 0.08 dan pointer-events: none) serta setIgnoreMouseEvents(true), sehingga seluruh klik mouse jatuh 100% langsung ke tab browser di belakangnya tanpa halangan. 2) Menghilangkan pemicu klik bibir atas yang memblokir klik (touchingTopBezel y <= 3px) dan menggantinya dengan Intentional Hover Dwell (320ms) agar pengguna bebas beralih tab tanpa sengaja memicu pembukaan notch. 3) Mengintegrasikan pemantau jendela aktif native C++ (ForegroundWindowMonitor di ukikura-bridge.exe) untuk mendeteksi saat browser (Brave, Chrome, Edge, Firefox, dll.) sedang maximized/fullscreen, sehingga notch otomatis menjadi semi-transparan (opacity 0.35) agar judul tab di baliknya selalu terbaca dengan jelas."
 }

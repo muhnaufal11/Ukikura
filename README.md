@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch57-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch58-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -151,6 +151,10 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
     * **`30 FPS`**: Standar seimbang 30 FPS.
     * **`15 FPS`**: Mode hemat daya baterai 15 FPS.
   - Pilihan tersimpan secara persisten di `localStorage`.
+- **Auto-Passthrough Tab Browser Fullscreen, Bebas Halangan Klik Tab, & Intentional Hover Dwell (Patch 58)**:
+  - **Tembus Klik 100% pada Barisan Tab Browser**: Mengeliminasi kendala tab browser yang terhalang atau tidak merespon saat diklik di belakang kapsul Ukikura. Seluruh barisan tab (`y = 0..44px`) kini otomatis mengaktifkan mode *Ghost Passthrough* (`opacity: 0.08`, `pointer-events: none`, dan `setIgnoreMouseEvents(true, { forward: true })`), sehingga setiap klik mouse pada tab browser (Brave, Chrome, Edge, Firefox, dll.) langsung tembus 100% ke browser di belakangnya tanpa jeda.
+  - **Intentional Hover Dwell (320ms)**: Menghapus jebakan `touchingTopBezel` (`y <= 3px`) yang sebelumnya memblokir klik saat pengguna melempar kursor ke tepi atas layar. Pembukaan notch kini menggunakan *dwell timer* halus (320ms) saat pengguna sengaja berhenti diam di atas notch, menjamin aktivitas beralih tab atau klik tombol window tidak pernah terganggu.
+  - **Deteksi Otomatis Jendela Browser Maximized/Fullscreen (`ForegroundWindowMonitor`)**: Mengintegrasikan modul native C++ di `ukikura-bridge.exe` untuk mendeteksi apakah browser utama sedang maximized/fullscreen. Saat browser aktif di latar depan, notch otomatis menjadi semi-transparan elegan (`opacity: 0.35`) agar judul tab di baliknya selalu terbaca dengan jelas.
 - **Pemulihan Penuh Arsitektur Desktop Patch 44 & Hardware Bridge Native C++ (Patch 54)**:
   - **Pemulihan Total Arsitektur Desktop Patch 44**: Mengembalikan antarmuka desktop ke arsitektur Patch 44 berbasis Electron yang terbukti stabil, mulus, dan bebas cacat visual (tanpa masalah clipping, transparansi melayang murni tanpa kotak hitam, fisika maskot Nusa dengan 11 emosi, dan sinkronisasi lirik 3-tingkat Romaji/Kanji/Sub-Indo yang sempurna).
   - **Hardware Bridge Native C++ Murni (`ukikura-bridge.exe`)**: Menggantikan skrip PowerShell dan prototipe C# dengan biner C++ native yang dikompilasi langsung menggunakan LLVM-MinGW `clang++` (`-O3 -static`). Berjalan sangat ringan (~2 MB RAM, 0% CPU idle), startup instan (< 10ms), tanpa dependensi runtime eksternal (.NET/PowerShell). Mengintegrasikan:

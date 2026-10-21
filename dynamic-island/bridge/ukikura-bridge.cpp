@@ -1312,6 +1312,78 @@ public:
 };
 
 // ------------------------------------------------------------------------------
+// Foreground Window & Fullscreen Browser Monitor
+// ------------------------------------------------------------------------------
+class ForegroundWindowMonitor {
+private:
+    bool m_lastBrowserMaximized = false;
+    bool m_lastMaximized = false;
+    std::string m_lastApp = "";
+    int m_tick = 0;
+
+public:
+    void Poll() {
+        m_tick++;
+        HWND fg = GetForegroundWindow();
+        if (!fg) return;
+
+        bool isMaximized = false;
+        RECT rc;
+        if (GetWindowRect(fg, &rc)) {
+            int screenW = GetSystemMetrics(SM_CXSCREEN);
+            // Jika jendela menutupi area paling atas layar
+            if (rc.top <= 2 && (rc.right - rc.left) >= (screenW - 36)) {
+                isMaximized = true;
+            }
+        }
+        if (!isMaximized) {
+            DWORD dwStyle = (DWORD)GetWindowLongW(fg, GWL_STYLE);
+            if (dwStyle & WS_MAXIMIZE) isMaximized = true;
+        }
+
+        bool isBrowser = false;
+        std::string appName = "";
+        DWORD pid = 0;
+        GetWindowThreadProcessId(fg, &pid);
+        if (pid != 0) {
+            HANDLE hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+            if (hProc) {
+                wchar_t procPath[MAX_PATH] = {0};
+                DWORD sz = MAX_PATH;
+                if (QueryFullProcessImageNameW(hProc, 0, procPath, &sz)) {
+                    wchar_t *pSlash = wcsrchr(procPath, L'\\');
+                    std::wstring baseName = pSlash ? (pSlash + 1) : procPath;
+                    for (auto &c : baseName) c = towlower(c);
+                    appName = WideToUtf8(baseName);
+                    if (baseName == L"brave.exe" || baseName == L"chrome.exe" || 
+                        baseName == L"msedge.exe" || baseName == L"firefox.exe" || 
+                        baseName == L"opera.exe" || baseName == L"vivaldi.exe" || 
+                        baseName == L"zen.exe" || baseName == L"waterfox.exe" ||
+                        baseName == L"arc.exe") {
+                        isBrowser = true;
+                    }
+                }
+                CloseHandle(hProc);
+            }
+        }
+
+        bool browserMaximized = (isBrowser && isMaximized);
+        if (browserMaximized != m_lastBrowserMaximized || isMaximized != m_lastMaximized || (m_tick % 10 == 0)) {
+            m_lastBrowserMaximized = browserMaximized;
+            m_lastMaximized = isMaximized;
+            m_lastApp = appName;
+
+            std::ostringstream ss;
+            ss << "{\"type\":\"window_state\",\"browserMaximized\":" 
+               << (browserMaximized ? "true" : "false") 
+               << ",\"isMaximized\":" << (isMaximized ? "true" : "false")
+               << ",\"app\":\"" << appName << "\"}";
+            PrintJson(ss.str());
+        }
+    }
+};
+
+// ------------------------------------------------------------------------------
 // Background Stdin & File Command Reader
 // ------------------------------------------------------------------------------
 
@@ -1511,6 +1583,7 @@ int wmain(int argc, wchar_t *argv[]) {
     MediaController media;
     DevicePowerMonitor power;
     NotificationMonitor notifs;
+    ForegroundWindowMonitor fgWin;
 
     // Baca path temporary command files
     wchar_t tempPath[MAX_PATH] = {0};
@@ -1570,6 +1643,9 @@ int wmain(int argc, wchar_t *argv[]) {
 
         // 5. Polling Baterai Laptop & Perangkat Bluetooth
         power.Poll();
+
+        // 6. Polling Jendela Aktif (Browser Fullscreen / Maximized Detection)
+        fgWin.Poll();
 
         // 6. Cek perubahan volume sistem secara berkala
         if (tickCount % 4 == 0) {

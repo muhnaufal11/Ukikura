@@ -282,54 +282,56 @@ function startNusaHoverLoop() {
             }
         }
 
-        const halfClosedW = Math.round(CLOSED_NOTCH_W / 2) + 6;
+        const halfClosedW = Math.round(CLOSED_NOTCH_W / 2) + 12;
         const inHorizontalSpan = pt.x >= (centerX - halfClosedW) && pt.x <= (centerX + halfClosedW);
-        const inTabBarSpan = pt.x >= (centerX - halfClosedW - 36) && pt.x <= (centerX + halfClosedW + 36);
+        const inTabBarSpan = pt.x >= (centerX - halfClosedW - 48) && pt.x <= (centerX + halfClosedW + 48);
 
-        // 1. Sentuh bibir paling atas layar (y = 0..3px) di area tengah -> Buka Dynamic Island!
-        const touchingTopBezel = inHorizontalSpan && pt.y >= 0 && pt.y <= 3;
+        // Kursor berada di barisan Tab Browser (y = 0..44px):
+        // Seluruh barisan tab bebas diklik 100% tanpa halangan!
+        const hoveringBrowserTabs = inTabBarSpan && pt.y >= 0 && pt.y <= 44;
 
-        // 2. Kursor berada di barisan Tab Browser (y = 4..44px) -> Otomatis Tembus Pandang & Tembus Klik agar tab browser bebas diklik!
-        const hoveringBrowserTabs = !touchingTopBezel && inTabBarSpan && pt.y >= 4 && pt.y <= 44;
-
-        if (touchingTopBezel) {
-            if (lastPassthroughState) {
-                lastPassthroughState = false;
-                mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
+        if (hoveringBrowserTabs) {
+            // Segera aktifkan mode tembus pandang & tembus klik (passthrough)
+            if (!lastPassthroughState) {
+                lastPassthroughState = true;
+                mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'passthrough' });
             }
-            if (lastIgnoreState !== false) {
-                lastIgnoreState = false;
-                mainWindow.setIgnoreMouseEvents(false);
+            if (lastIgnoreState !== true) {
+                lastIgnoreState = true;
+                mainWindow.setIgnoreMouseEvents(true, { forward: true });
             }
-            if (!isTucked && !hoverOpenTimer) {
-                hoverOpenTimer = setTimeout(() => {
-                    hoverOpenTimer = null;
-                    if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
-                        isExpanded = true;
-                        lastIgnoreState = false;
-                        lastPassthroughState = false;
-                        mainWindow.setIgnoreMouseEvents(false);
-                        mainWindow.webContents.send('nusa-state', { expanded: true, mode: 'normal' });
-                    }
-                }, 110);
+
+            // Buka Dynamic Island hanya jika pengguna sengaja menahan kursor (dwell) di area notch selama >= 320ms
+            if (inHorizontalSpan && !isTucked) {
+                if (!hoverOpenTimer) {
+                    hoverOpenTimer = setTimeout(() => {
+                        hoverOpenTimer = null;
+                        if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
+                            isExpanded = true;
+                            lastIgnoreState = false;
+                            lastPassthroughState = false;
+                            mainWindow.setIgnoreMouseEvents(false);
+                            mainWindow.webContents.send('nusa-state', { expanded: true, mode: 'normal' });
+                        }
+                    }, 320);
+                }
+            } else if (hoverOpenTimer) {
+                clearTimeout(hoverOpenTimer);
+                hoverOpenTimer = null;
             }
         } else {
             if (hoverOpenTimer) {
                 clearTimeout(hoverOpenTimer);
                 hoverOpenTimer = null;
             }
-            // Selalu tembuskan semua klik ke tab browser di bawahnya!
+            if (lastPassthroughState) {
+                lastPassthroughState = false;
+                mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
+            }
+            // Selalu tembuskan semua klik ke aplikasi di bawahnya saat di luar notch
             if (lastIgnoreState !== true) {
                 lastIgnoreState = true;
                 mainWindow.setIgnoreMouseEvents(true, { forward: true });
-            }
-            // Buat transparan (ghost passthrough) saat kursor sedang memilih tab browser di sekitar notch
-            if (hoveringBrowserTabs !== lastPassthroughState) {
-                lastPassthroughState = hoveringBrowserTabs;
-                mainWindow.webContents.send('nusa-state', {
-                    expanded: false,
-                    mode: hoveringBrowserTabs ? 'passthrough' : 'normal'
-                });
             }
         }
     }, 60);

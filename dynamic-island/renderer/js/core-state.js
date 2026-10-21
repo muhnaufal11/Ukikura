@@ -239,6 +239,7 @@ document.querySelectorAll('[data-mcmd]').forEach(btn => {
 function expandIsland(targetPage) {
     isExpanded = true;
     window.isExpanded = true;
+    if (holderEl) holderEl.classList.add('is-expanded');
     if (targetPage && PAGES.includes(targetPage)) {
         currentPage = targetPage;
         window.currentPage = targetPage;
@@ -252,6 +253,7 @@ function expandIsland(targetPage) {
 function collapseIsland() {
     isExpanded = false;
     window.isExpanded = false;
+    if (holderEl) holderEl.classList.remove('is-expanded');
     if (peekTimer) {
         clearTimeout(peekTimer);
         peekTimer = null;
@@ -381,6 +383,7 @@ ipcRenderer.on('nusa-state', (event, state) => {
             peekTimer = null;
         }
         isExpanded = true;
+        if (holderEl) holderEl.classList.add('is-expanded');
         const eff = getEffectiveState();
         hdrTitleEl.innerHTML = PAGE_TITLES[eff] || PAGE_TITLES.todo;
         mnEl.dataset.s = eff;
@@ -390,6 +393,7 @@ ipcRenderer.on('nusa-state', (event, state) => {
     } else {
         isExpanded = false;
         isPinned = false;
+        if (holderEl) holderEl.classList.remove('is-expanded');
         btnPinEl.classList.remove('active');
         if (mnEl.dataset.s !== 'tucked') {
             mnEl.dataset.s = getClosedVisualMode();
@@ -397,6 +401,16 @@ ipcRenderer.on('nusa-state', (event, state) => {
         window.ensureLivingEyesLoop();
     }
         }
+    }
+});
+
+// Deteksi otomatis saat browser (Brave, Chrome, Edge) dalam mode fullscreen / maximized
+ipcRenderer.on('window-state', (event, state) => {
+    if (!state || !holderEl) return;
+    if (state.browserMaximized) {
+        holderEl.classList.add('browser-maximized');
+    } else {
+        holderEl.classList.remove('browser-maximized');
     }
 });
 

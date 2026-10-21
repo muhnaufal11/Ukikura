@@ -8,6 +8,7 @@ const { getCompleteSyncedLyrics } = require("../lyrics");
 let winrtProc = null;
 let lastLyricsTrackKey = "";
 let lastMediaThumb = "";
+let lastWindowState = null;
 let getMainWindow = () => null;
 const BRIDGE_DIR = path.join(__dirname, "../bridge");
 
@@ -96,6 +97,11 @@ function startWinRtBridge() {
                     } else if (msg.type === 'volume') {
                         const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
                             mainWindow.webContents.send('volume-update', msg);
+                        }
+                    } else if (msg.type === 'window_state') {
+                        lastWindowState = msg;
+                        const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
+                            mainWindow.webContents.send('window-state', msg);
                         }
                     }
                 } catch (_) {}
@@ -229,4 +235,6 @@ async function fetchSyncedLyrics(rawTitle, rawArtist, explicitDur = 0, forceNew 
     }
 }
 
-module.exports = { initWinRtClient, startWinRtBridge, sendMediaCommand, fetchSyncedLyrics, getWinRtProc, resetLyricsTrackKey, getLastLyricsPayload };
+function getLastWindowState() { return lastWindowState; }
+
+module.exports = { initWinRtClient, startWinRtBridge, sendMediaCommand, fetchSyncedLyrics, getWinRtProc, resetLyricsTrackKey, getLastLyricsPayload, getLastWindowState };
