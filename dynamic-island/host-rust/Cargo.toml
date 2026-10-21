@@ -18,5 +18,9 @@ winapi = { version = "0.3.9", features = [
     "handleapi",
     "winbase",
     "winreg",
-    "winnt"
+    "winnt",
+    "dwmapi",
+    "uxtheme",
+    "objbase",
+    "combaseapi"
 ] }

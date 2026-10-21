@@ -945,6 +945,11 @@ let smoothMid = 0;
 let smoothTreb = 0;
 
 async function initDesktopAudioVisualizer() {
+    if (window.__UKIKURA_RUST_NATIVE__ || typeof require === 'undefined') {
+        visualizerFailed = true;
+        visualizerInitializing = false;
+        return false;
+    }
     if (audioVisualizerStream && audioVisualizerAnalyser) return true;
     if (visualizerInitializing || visualizerFailed) return false;
     visualizerInitializing = true;

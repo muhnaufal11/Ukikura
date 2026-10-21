@@ -9,4 +9,7 @@ dynamic-island/GEMINI.md
 .agents/
 .claude/
 *.log
+Ukikura.exe
+WebView2Loader.dll
+dynamic-island/host-rust/target/
 

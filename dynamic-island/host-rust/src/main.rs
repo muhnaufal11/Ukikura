@@ -16,8 +16,12 @@ use serde_json::Value;
 use webview2::*;
 use winapi::shared::minwindef::*;
 use winapi::shared::windef::*;
+use winapi::um::combaseapi::*;
+use winapi::um::dwmapi::*;
 use winapi::um::libloaderapi::GetModuleHandleW;
+use winapi::um::objbase::*;
 use winapi::um::shellapi::*;
+use winapi::um::uxtheme::MARGINS;
 use winapi::um::winbase::CREATE_NO_WINDOW;
 use winapi::um::winnt::*;
 use winapi::um::winreg::*;
@@ -49,6 +53,25 @@ static BRIDGE_STDIN: Mutex<Option<ChildStdin>> = Mutex::new(None);
 static GLOBAL_HWND: Mutex<Option<usize>> = Mutex::new(None);
 static GLOBAL_CONTROLLER: Mutex<Option<SendSync<Controller>>> = Mutex::new(None);
 static GLOBAL_WEBVIEW: Mutex<Option<SendSync<WebView>>> = Mutex::new(None);
+
+fn log_debug(msg: &str) {
+    let p = std::env::temp_dir().join("ukikura_rust.log");
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&p)
+    {
+        let _ = writeln!(f, "[{}] {}", chrono_lite(), msg);
+        let _ = f.flush();
+    }
+}
+
+fn chrono_lite() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0)
+}
 
 fn to_wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(std::iter::once(0)).collect()
@@ -381,6 +404,7 @@ unsafe extern "system" fn window_proc(
     lparam: LPARAM,
 ) -> LRESULT {
     match msg {
+        WM_ERASEBKGND => 1,
         WM_CUSTOM_EXEC_SCRIPT => {
             if let Ok(mut queue) = SCRIPT_QUEUE.lock() {
                 let scripts: Vec<String> = queue.drain(..).collect();
@@ -452,13 +476,30 @@ unsafe extern "system" fn window_proc(
     }
 }
 
-fn main() {
-    env::set_var("WEBVIEW2_DEFAULT_BACKGROUND_COLOR", "00000000");
+fn set_dpi_aware() {
+    unsafe {
+        use winapi::um::libloaderapi::*;
+        let user32 = LoadLibraryA(b"user32.dll\0".as_ptr() as *const i8);
+        let set_thread_dpi = GetProcAddress(user32, b"SetThreadDpiAwarenessContext\0".as_ptr() as *const i8);
+        if !set_thread_dpi.is_null() {
+            let f: extern "system" fn(isize) -> isize = std::mem::transmute(set_thread_dpi);
+            f(-4); // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4
+            return;
+        }
+        SetProcessDPIAware();
+    }
+}
 
+fn main() {
+    set_dpi_aware();
+    log_debug("--- Ukikura Starting ---");
     let _node_proc = spawn_background_server();
     let _bridge_proc = spawn_bridge_process();
 
     unsafe {
+        let hr = CoInitializeEx(null_mut(), COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+        log_debug(&format!("CoInitializeEx result: 0x{:08X}", hr));
+
         let hinstance = GetModuleHandleW(null());
         let class_name = to_wide("UkikuraRustClass");
 
@@ -480,7 +521,7 @@ fn main() {
         let window_title = to_wide("Ukikura (浮倉) — Nusa Dynamic Island");
 
         let hwnd = CreateWindowExW(
-            WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED,
+            WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
             class_name.as_ptr(),
             window_title.as_ptr(),
             WS_POPUP | WS_VISIBLE,
@@ -495,11 +536,18 @@ fn main() {
         );
 
         if hwnd.is_null() {
-            eprintln!("[Ukikura Rust] Failed to create window");
+            log_debug("Failed to create window");
             return;
         }
+        log_debug(&format!("Window created successfully: HWND=0x{:X}", hwnd as usize));
 
-        SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
+        let margins = MARGINS {
+            cxLeftWidth: -1,
+            cxRightWidth: -1,
+            cyTopHeight: -1,
+            cyBottomHeight: -1,
+        };
+        DwmExtendFrameIntoClientArea(hwnd, &margins);
 
         if let Ok(mut guard) = GLOBAL_HWND.lock() {
             *guard = Some(hwnd as usize);
@@ -525,25 +573,28 @@ fn main() {
 
         let builder = Environment::builder();
         let builder = builder.with_user_data_folder(&user_data);
-
         let hwnd_usize = hwnd as usize;
 
+        log_debug("Calling Environment::builder().build(...)");
         builder
             .build(move |env_res| {
+                log_debug(&format!("Environment::build callback fired: is_ok={}", env_res.is_ok()));
                 let env = match env_res {
                     Ok(e) => e,
                     Err(err) => {
-                        eprintln!("[Ukikura Rust] Failed to create WebView2 environment: {:?}", err);
+                        log_debug(&format!("Failed to create WebView2 environment: {:?}", err));
                         return Ok(());
                     }
                 };
 
                 let hwnd = hwnd_usize as HWND;
+                log_debug(&format!("Calling env.create_controller with HWND=0x{:X}", hwnd_usize));
                 env.create_controller(hwnd, move |controller_res| {
+                    log_debug(&format!("create_controller callback fired: is_ok={}", controller_res.is_ok()));
                     let controller = match controller_res {
                         Ok(c) => c,
                         Err(err) => {
-                            eprintln!("[Ukikura Rust] Failed to create controller: {:?}", err);
+                            log_debug(&format!("Failed to create controller: {:?}", err));
                             return Ok(());
                         }
                     };
@@ -556,9 +607,15 @@ fn main() {
                     };
                     let _ = controller.put_bounds(rect);
 
-                    if let Ok(c2) = controller.get_controller2() {
-                        let transparent = webview2_sys::Color { a: 0, r: 0, g: 0, b: 0 };
-                        let _ = c2.put_default_background_color(transparent);
+                    match controller.get_controller2() {
+                        Ok(c2) => {
+                            let transparent = webview2_sys::Color { a: 0, r: 0, g: 0, b: 0 };
+                            let res = c2.put_default_background_color(transparent);
+                            log_debug(&format!("put_default_background_color result: {:?}", res));
+                        }
+                        Err(e) => {
+                            log_debug(&format!("get_controller2 failed: {:?}", e));
+                        }
                     }
 
                     if let Ok(guard) = GLOBAL_CONTROLLER.lock() {
@@ -649,7 +706,7 @@ fn main() {
                                             SetWindowPos(hwnd_capture as HWND, HWND_TOPMOST, x, 0, 580, h, SWP_NOACTIVATE);
                                         }
                                         "island-get-version" => {
-                                            let ver_script = "window.dispatchEvent(new CustomEvent('ipc-version-info', { detail: { versionName: '1.0.6', versionCode: 51, name: 'Ukikura (Rust Native)' } }));".to_string();
+                                            let ver_script = "window.dispatchEvent(new CustomEvent('ipc-version-info', { detail: { versionName: '1.0.6', versionCode: 52, name: 'Ukikura (Rust Native)' } }));".to_string();
                                             post_js_to_ui(ver_script);
                                         }
                                         "island-get-autostart" => {
@@ -691,10 +748,10 @@ fn main() {
 
                         if let Some(p) = html_path {
                             let uri = format!("file:///{}", p.to_string_lossy().replace('\\', "/"));
-                            println!("[Ukikura Rust] Navigating to: {}", uri);
+                            log_debug(&format!("[Ukikura Rust] Navigating to: {}", uri));
                             let _ = webview.navigate(&uri);
                         } else {
-                            eprintln!("[Ukikura Rust] Could not find renderer/index.html");
+                            log_debug("[Ukikura Rust] Could not find renderer/index.html");
                         }
                     }
 
@@ -730,7 +787,7 @@ fn main() {
                         if need_ignore != LAST_IGNORE_STATE.load(Ordering::Relaxed) {
                             LAST_IGNORE_STATE.store(need_ignore, Ordering::Relaxed);
                             let ex_style = GetWindowLongW(hwnd, GWL_EXSTYLE);
-                            SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style | (WS_EX_TRANSPARENT as i32));
+                            SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style | ((WS_EX_LAYERED | WS_EX_TRANSPARENT) as i32));
                         }
                         continue;
                     }
@@ -749,7 +806,7 @@ fn main() {
                             if need_ignore != LAST_IGNORE_STATE.load(Ordering::Relaxed) {
                                 LAST_IGNORE_STATE.store(need_ignore, Ordering::Relaxed);
                                 let ex_style = GetWindowLongW(hwnd, GWL_EXSTYLE);
-                                SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style & !(WS_EX_TRANSPARENT as i32));
+                                SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style & !((WS_EX_LAYERED | WS_EX_TRANSPARENT) as i32));
                             }
                         } else {
                             // Cursor left expanded area: auto collapse after 250ms
@@ -759,7 +816,7 @@ fn main() {
                                 set_island_size(hwnd, false);
                                 LAST_IGNORE_STATE.store(true, Ordering::Relaxed);
                                 let ex_style = GetWindowLongW(hwnd, GWL_EXSTYLE);
-                                SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style | (WS_EX_TRANSPARENT as i32));
+                                SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style | ((WS_EX_LAYERED | WS_EX_TRANSPARENT) as i32));
                             }
                         }
                     } else {
@@ -784,9 +841,9 @@ fn main() {
                             LAST_IGNORE_STATE.store(need_ignore, Ordering::Relaxed);
                             let ex_style = GetWindowLongW(hwnd, GWL_EXSTYLE);
                             if need_ignore {
-                                SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style | (WS_EX_TRANSPARENT as i32));
+                                SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style | ((WS_EX_LAYERED | WS_EX_TRANSPARENT) as i32));
                             } else {
-                                SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style & !(WS_EX_TRANSPARENT as i32));
+                                SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style & !((WS_EX_LAYERED | WS_EX_TRANSPARENT) as i32));
                             }
                         }
 
