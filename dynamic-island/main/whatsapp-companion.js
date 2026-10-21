@@ -87,17 +87,17 @@ function ensureWhatsAppWindow(showWindow = false) {
         }
     });
 
-    waWindow.on('closed', () => {
-        waWindow = null;
-        if (waPollTimer) {
-            clearInterval(waPollTimer);
-            waPollTimer = null;
+    waWindow.on('close', (e) => {
+        if (!app.isQuitting) {
+            e.preventDefault();
+            waWindow.hide();
+            try { waWindow.webContents.setAudioMuted(true); } catch (_) {}
         }
     });
 }
 
 async function pollWhatsAppUnread() {
-    if (!waWindow || waWindow.isDestroyed() || !waWindow.isVisible()) return;
+    if (!waWindow || waWindow.isDestroyed()) return;
     try {
         const chatItems = await waWindow.webContents.executeJavaScript(`
             (async function() {

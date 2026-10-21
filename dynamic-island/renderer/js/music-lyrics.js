@@ -493,7 +493,7 @@ function ensureMediaProgressLoop() {
         }
         const now = performance.now();
         const isInteractive = isExpanded || lyricsMode || (mnEl && mnEl.dataset.s === 'karaoke');
-        const delay = isInteractive ? 50 : 1000;
+        const delay = isInteractive ? 50 : 250;
         if (now - lastProgressTick < delay) return;
         lastProgressTick = now;
         updateMediaProgressUI();

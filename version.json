@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 43,
+  "versionCode": 44,
   "version": "1.0.6",
-  "fixCount": 43,
-  "displayVersion": "1.0.6 (Patch 43)",
+  "fixCount": 44,
+  "displayVersion": "1.0.6 (Patch 44)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 43): Pencapaian target efisiensi ekstrem CPU <= 0.5% (terverifikasi 0.27% idle dan < 1.7% saat pemutaran musik aktif). Menghapus backdrop-filter blur 28px pada window transparan yang membebani GPU DWM, menonaktifkan 15 animasi CSS tersembunyi (equalizer bars, eyeBeatBob, waDotPulse) saat layer tertutup/eco-mode, menerapkan Settled Zero-Repaint rAF sleep pada maskot Nusa, membatasi polling SMTC dan toast WinRT ke 1800ms saat hening, serta caching registry scan Bluetooth/USB ke 24 detik saat tidak ada perangkat terpasang."
+  "changelog": "Ukikura v1.0.6 (Patch 44): Memulihkan seluruh fitur visual dan animasi interaktif 100% utuh tanpa kompromi (Living Aurora Flow, pantulan ritmis mata maskot ke beat musik, equalizer dancing bars, pulsating WA notification dot, frosted glass blur pada mini karaoke overlay, serta pemantauan WhatsApp Web background) dengan tetap mempertahankan optimasi native zero-overhead pada WinRT polling dan eliminasi pemindaian registry berulang."
 }

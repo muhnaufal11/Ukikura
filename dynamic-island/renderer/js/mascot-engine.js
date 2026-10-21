@@ -142,12 +142,7 @@ function cycleMascotFps() {
 
 // Kedip natural & kedip ganda (Double Blink) berkala (hanya saat mata normal / tidak sedang ekspresi khusus)
 function scheduleNextBlink() {
-    let minDelay = 7500;
-    let extraDelay = 8000;
-    if (mascotFpsSetting === '60') { minDelay = 2200; extraDelay = 3000; }
-    else if (mascotFpsSetting === '30') { minDelay = 3800; extraDelay = 4000; }
-    else if (mascotFpsSetting === '15') { minDelay = 5500; extraDelay = 5000; }
-    const delay = minDelay + Math.random() * extraDelay;
+    const delay = 2200 + Math.random() * 3400;
     setTimeout(() => {
         if (currentMood) {
             scheduleNextBlink();
@@ -199,14 +194,9 @@ const EMOTION_SCENES = [
     { mood: 'mood-sleepy', duration: 2400, setup: () => { idleGazeX = 0; idleGazeY = 1.2; } }
 ];
 
-// Jadwalkan 1 emosi saat kursor diam (Eco mode tenang & hemat CPU, 60fps lebih sering)
+// Jadwalkan 1 emosi setiap 5.5 - 8.5 detik saat kursor diam, lalu kembali ke mata normal (tidak pernah muncul sekaligus)
 function scheduleNextEmotionScene() {
-    let minWait = 35000;
-    let extraWait = 25000;
-    if (mascotFpsSetting === '60') { minWait = 6000; extraWait = 4000; }
-    else if (mascotFpsSetting === '30') { minWait = 14000; extraWait = 9000; }
-    else if (mascotFpsSetting === '15') { minWait = 22000; extraWait = 14000; }
-    const waitMs = minWait + Math.random() * extraWait;
+    const waitMs = 5500 + Math.random() * 3000;
     setTimeout(() => {
         if (!eyesContainerEl) {
             scheduleNextEmotionScene();

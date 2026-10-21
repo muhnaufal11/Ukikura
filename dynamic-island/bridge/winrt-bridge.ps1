@@ -909,7 +909,7 @@ while ($true) {
         } catch {}
     }
     $isMediaPlaying = ($script:lastPlaybackStatus -eq 'Playing')
-    $sleepMs = if ($isMediaPlaying) { 650 } else { 1800 }
+    $sleepMs = if ($isMediaPlaying) { 650 } else { 1200 }
     Start-Sleep -Milliseconds $sleepMs
     Process-MediaCmd
 

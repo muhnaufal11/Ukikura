@@ -167,7 +167,9 @@
         --w: 480px;
         --h: 54px;
         --r: 22px;
-        background: rgba(12, 14, 20, 0.94);
+        background: rgba(12, 14, 20, 0.82);
+        backdrop-filter: blur(28px) saturate(180%);
+        -webkit-backdrop-filter: blur(28px) saturate(180%);
         box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.1);
         transition:
             width 0.48s cubic-bezier(0.34, 1.2, 0.45, 1),
@@ -261,27 +263,48 @@
         transition: opacity 0.15s ease !important;
     }
 
-    /* Cahaya Ambient Bawah Khas Nusa (Living Aurora Flow) - Zero-Repaint Composited */
+    /* Cahaya Ambient Bawah Khas Nusa (Living Aurora Flow) */
     .ambient {
         position: absolute;
         inset: auto -15% 0 -15%;
         height: 95%;
         pointer-events: none;
-        background: radial-gradient(ellipse 85% 65% at 50% 115%, #19b8ff 0%, #2d5bff 38%, #33e07a 65%, transparent 100%);
-        opacity: 0.92;
+        background: linear-gradient(110deg, #19b8ff 0%, #2d5bff 28%, #33e07a 54%, #7b4bff 80%, #19b8ff 100%);
+        background-size: 260% 200%;
+        animation: auroraFlow 5.2s ease-in-out infinite alternate, auroraBreathe 3.2s ease-in-out infinite alternate;
+        filter: saturate(1.18);
+        -webkit-mask: linear-gradient(to top, #000, rgba(0, 0, 0, 0.62) 34%, rgba(0, 0, 0, 0.16) 74%, transparent);
+                mask: linear-gradient(to top, #000, rgba(0, 0, 0, 0.62) 34%, rgba(0, 0, 0, 0.16) 74%, transparent);
     }
 
     .mn.urgent .ambient {
-        background: radial-gradient(ellipse 85% 65% at 50% 115%, #ff5a6e 0%, #ff2d55 45%, #ff8a00 75%, transparent 100%);
+        background: linear-gradient(110deg, #ff5a6e 0%, #ff2d55 35%, #ff8a00 68%, #ff2d55 100%);
+        background-size: 260% 200%;
     }
 
     .mn.has-wa .l-pet .ambient {
-        background: radial-gradient(ellipse 85% 65% at 50% 115%, #00d2ff 0%, #25d366 50%, #00f5a0 75%, transparent 100%);
+        background: linear-gradient(110deg, #00d2ff 0%, #19b8ff 26%, #25d366 58%, #00f5a0 84%, #19b8ff 100%);
+        background-size: 260% 200%;
+    }
+
+    @keyframes auroraFlow {
+        0% {
+            background-position: 0% 50%;
+            transform: translateX(-4%) scaleX(1.02);
+        }
+        50% {
+            background-position: 55% 50%;
+            transform: translateX(2%) scaleX(1.06);
+        }
+        100% {
+            background-position: 100% 50%;
+            transform: translateX(4%) scaleX(1.02);
+        }
     }
 
     @keyframes auroraBreathe {
-        0% { opacity: 0.82; }
-        100% { opacity: 1; }
+        0% { opacity: 0.82; height: 86%; }
+        100% { opacity: 1; height: 98%; }
     }
 
     /* Mata Maskot Hidup Khas Nusa (Living Eyes: Lirik Kursor + 11 Emosi + Beat Musik) */
@@ -297,26 +320,13 @@
         will-change: transform;
     }
 
-    .mn[data-s="pet"].playing:not(.fps-eco) .eyes {
+    .mn.playing .eyes {
         animation: eyeBeatBob 0.65s ease-in-out infinite alternate;
     }
 
-    .mn.fps-eco .eyes {
-        animation: none !important;
-    }
-
-    .mn.fps-eco .pet-wa-dot {
-        animation: none !important;
-        opacity: 0.95;
-    }
-
-    .mn.fps-eco .pet-left-eq i {
-        animation: none !important;
-    }
-
     @keyframes eyeBeatBob {
-        0% { transform: translate3d(var(--ex, 0px), calc(var(--ey, 0px) + 0.5px), 0) rotate(var(--etilt, 0deg)); }
-        100% { transform: translate3d(var(--ex, 0px), calc(var(--ey, 0px) - 2px), 0) rotate(var(--etilt, 0deg)); }
+        0% { margin-top: 0.5px; }
+        100% { margin-top: -2px; }
     }
 
     .eye {
@@ -402,7 +412,8 @@
         animation: moodHeartBeat 0.48s ease-in-out infinite alternate;
     }
     .l-pet.mood-love .ambient {
-        background: radial-gradient(ellipse 85% 65% at 50% 115%, #ff4b8b 0%, #ff7eb3 40%, #a855f7 70%, transparent 100%);
+        background: linear-gradient(110deg, #ff4b8b 0%, #ff7eb3 35%, #a855f7 70%, #ff4b8b 100%);
+        background-size: 260% 200%;
     }
 
     @keyframes moodHeartBeat {
@@ -609,22 +620,18 @@
 
     .mn.has-wa .pet-wa-dot {
         display: inline-block;
-        animation: waDotPulse 2.4s ease-in-out infinite;
+        animation: waDotPulse 1.8s ease-in-out infinite;
     }
 
     @keyframes waDotPulse {
         0%, 100% {
             transform: scale(0.95);
-            opacity: 0.82;
+            box-shadow: 0 0 4px var(--wa-green), 0 0 0 0 rgba(37, 211, 102, 0.55);
         }
         50% {
             transform: scale(1.18);
-            opacity: 1;
+            box-shadow: 0 0 9px var(--wa-green), 0 0 0 4px rgba(37, 211, 102, 0);
         }
-    }
-
-    .mn.has-wa .pet-wa-dot {
-        display: inline-block;
     }
 
     .mn.urgent .pet-badge {
@@ -668,21 +675,15 @@
         width: 2px;
         border-radius: 2px;
         background: #fff;
-        height: 100%;
-        transform: scaleY(0.28);
-        transform-origin: bottom;
-        animation: none;
-    }
-
-    .mn[data-s="idle"].playing .l-idle .bars i,
-    .mn[data-s="pet"].playing .l-pet .pet-left-eq i {
+        height: 30%;
         animation: eq 0.9s ease-in-out infinite alternate;
-        background: #5ec2ff;
+        animation-play-state: paused;
     }
 
-    .mn.fps-eco .bars i {
-        animation: none !important;
-        transform: scaleY(0.38) !important;
+    .mn.playing .bars i,
+    .mn.playing .pet-left-eq i {
+        animation-play-state: running;
+        background: #5ec2ff;
     }
 
     .bars i:nth-child(2) { animation-delay: -0.3s; }
@@ -691,8 +692,7 @@
     .bars i:nth-child(5) { animation-delay: -0.45s; }
 
     @keyframes eq {
-        0% { transform: scaleY(0.28); }
-        100% { transform: scaleY(1); }
+        to { height: 100%; }
     }
 
     /* Baris Tertutup (Idle Mode) */

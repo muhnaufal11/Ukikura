@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch43-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch44-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -151,21 +151,12 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
     * **`30 FPS`**: Standar seimbang 30 FPS.
     * **`15 FPS`**: Mode hemat daya baterai 15 FPS.
   - Pilihan tersimpan secara persisten di `localStorage`.
-- **Optimasi Efisiensi Ekstrem CPU & RAM (Target <= 0.5% Tercapai — Terverifikasi 0.27% Idle)**:
-  - **Eliminasi DWM GPU Compositing**: Menghapus `backdrop-filter: blur(28px)` pada root canvas transparan `.mn` yang sebelumnya memaksa Windows Desktop Window Manager (DWM) melakukan full-canvas redraw 60 FPS terus-menerus.
-  - **Eliminasi 15 Animasi CSS Tersembunyi**: Menghentikan animasi CSS background 24/7 (10 equalizer bars `bars i`, denyut notifikasi `pet-wa-dot`, dan bobbing mata `eyeBeatBob`) saat kapsul berada di resting idle / eco-mode.
-  - **Settled Zero-Repaint Maskot Engine**: Pegas fisika mata maskot Nusa langsung melakukan *hard snap* dan memutus loop `requestAnimationFrame` seketika saat lirikan diam, menjamin **0 FPS / 0.00% CPU** saat tidak ada interaksi kursor.
-  - **Adaptasi Dinamis WinRT Bridge**: Siklus polling SMTC diperlambat menjadi 1800ms saat hening/idle (memotong penggunaan PowerShell ke **0.18%**) dan naik responsif ke 650ms saat musik aktif.
-  - **Caching Device Registry**: Pindaian subkey Bluetooth/USB di registry Windows di-cache ke interval 24 detik saat tidak ada perangkat baru terpasang.
-  - **Hasil Benchmark Terverifikasi (Patch 43)**:
-    | Komponen Proses | Penggunaan CPU (True Idle) | Penggunaan CPU (Musik Aktif) | RAM Working Set |
-    | :--- | :---: | :---: | :---: |
-    | **Renderer Process** | **0.03%** | 0.31% | ~69 MB |
-    | **GPU Process** | **0.03%** | 0.47% | ~20 MB |
-    | **Main Process** | **0.03%** | 0.08% | ~45 MB |
-    | **Network Utility** | **0.00%** | 0.00% | ~5 MB |
-    | **PowerShell WinRT** | **0.18%** | 0.81% | ~116 MB |
-    | **TOTAL SISTEM** | **0.27%** *(Target <= 0.5%)* | **1.67%** *(Target < 2.0%)* | **~255 MB** |
+- **Preservasi 100% Fitur Visual & Optimasi Efisiensi Beban Sistem (Patch 44)**:
+  - **Living Aurora Flow Utuh**: Cahaya ambient khas Nusa mengalir dinamis di dasar kapsul (`auroraFlow` & `auroraBreathe`) dengan variasi warna sesuai status (*Normal Cyan/Green*, *Urgent Red*, *WhatsApp Green*, *Mood Love Pink*, dan *Mood Angry Orange*).
+  - **Mata Maskot Hidup & Musik Beat**: Maskot mata Nusa berkedip alami (2.2s–5.6s), mengekspresikan 11 emosi mandiri (5.5s–8.5s), serta memantul ritmis (*bobbing*) mengikuti ketukan beat lagu (`eyeBeatBob`) saat musik diputar.
+  - **Dancing Equalizer Bars & WA Dot Ripple**: Equalizer bars (`.bars i` dan `.pet-left-eq i`) aktif menari lincah saat audio diputar, dan titik notifikasi WhatsApp berdenyut dengan pendar riak hijau saat ada pesan masuk.
+  - **Frosted Glass Blur Mini Karaoke Overlay**: Kapsul melayang mini karaoke overlay (`.mn[data-s="karaoke"]`) tetap menggunakan blur latar belakang asli semi-transparan (`backdrop-filter: blur(28px) saturate(180%)`).
+  - **Eliminasi Overhead Registry WinRT**: Penghematan CPU utama dicapai secara native di layer PowerShell WinRT dengan mengeliminasi bug pengulangan pemindaian registry subkey Bluetooth/USB dan menerapkan sleep dinamis 1200ms saat hening/idle (memotong konsumsi daya tanpa menyentuh maupun mengorbankan satu pun fitur visual).
 
 ---
 

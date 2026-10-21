@@ -11,15 +11,6 @@ const { startKuraServer } = require("./main/kura-server");
 const { initAutoUpdater, checkGitHubForUpdates, getLastUpdateStatus, openUpdateDownloadPage, getLocalVersionInfo, setUpdateChannel } = require("./main/updater");
 const { initClipboardWatcher, getIsDraggingFile } = require("./main/clipboard-watcher");
 
-// Optimasi Memori & CPU Skala Penuh: batasi heap V8 dan nonaktifkan background telemetry Chromium
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=128');
-app.commandLine.appendSwitch('disable-background-networking');
-app.commandLine.appendSwitch('disable-component-update');
-app.commandLine.appendSwitch('disable-domain-reliability');
-app.commandLine.appendSwitch('disable-sync');
-app.commandLine.appendSwitch('disable-breakpad');
-app.commandLine.appendSwitch('renderer-process-limit', '2');
-
 let mainWindow = null;
 let loginWindow = null;
 let tray = null;
@@ -129,7 +120,7 @@ function createIslandWindow() {
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
-            backgroundThrottling: true
+            backgroundThrottling: false
         }
     });
 
@@ -682,6 +673,10 @@ if (!gotLock) {
         // Cek pembaruan versi Ukikura di direktori GitHub saat start & setiap 2 jam
         setTimeout(() => checkGitHubForUpdates(false), 6000);
         setInterval(() => checkGitHubForUpdates(false), 2 * 60 * 60 * 1000);
+
+        // Siapkan pemantau WhatsApp di background (otomatis mendeteksi jika sebelumnya sudah login QR)
+        setTimeout(() => ensureWhatsAppWindow(false), 3000);
+        setInterval(() => pollWhatsAppUnread(), 5000);
 
         // Jalankan background crawler LMS otomatis saat start & setiap 5 menit
         setTimeout(() => runHiddenLmsCrawler(), 4000);
