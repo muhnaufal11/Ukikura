@@ -250,6 +250,15 @@ document.getElementById('btn-toggle-closed-style').addEventListener('click', () 
     document.getElementById('closed-style-label').textContent = closedStyle === 'pet' ? 'Maskot' : 'Status Bar';
 });
 
+const btnMascotFpsEl = document.getElementById('btn-toggle-mascot-fps');
+if (btnMascotFpsEl) {
+    btnMascotFpsEl.addEventListener('click', () => {
+        if (typeof cycleMascotFps === 'function') {
+            cycleMascotFps();
+        }
+    });
+}
+
 // Pin / Sematkan tetap terbuka
 btnPinEl.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -304,6 +313,9 @@ ipcRenderer.on('nusa-state', (event, state) => {
         const eff = getEffectiveState();
         hdrTitleEl.innerHTML = PAGE_TITLES[eff] || PAGE_TITLES.todo;
         mnEl.dataset.s = eff;
+        if (typeof startAmbientVisualizerIfNeeded === 'function') {
+            startAmbientVisualizerIfNeeded();
+        }
     } else {
         isExpanded = false;
         isPinned = false;

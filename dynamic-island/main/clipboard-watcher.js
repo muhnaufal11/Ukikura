@@ -58,28 +58,50 @@ function pollClipboard() {
         if (!img.isEmpty()) {
             const size = img.getSize();
             if (size.width > 0 && size.height > 0) {
-                const dataUrl = img.toDataURL();
-                const hash = `${size.width}x${size.height}_${dataUrl.slice(-40)}`;
-                if (hash !== lastClipImageHash) {
-                    lastClipImageHash = hash;
-                    clipboardHistory = clipboardHistory.filter(item => item.hash !== hash);
-                    clipboardHistory.unshift({
-                        id: "clip_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-                        type: "image",
-                        content: dataUrl,
-                        hash,
-                        preview: `Screenshot (${size.width} × ${size.height} px)`,
-                        charCount: 0,
-                        timeStr: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
-                        timestamp: Date.now()
-                    });
-
-                    if (clipboardHistory.length > MAX_CLIP_ITEMS) {
-                        clipboardHistory = clipboardHistory.slice(0, MAX_CLIP_ITEMS);
+                // Optimasi CPU: Bangun fingerprint ringan dari dimensi & sample buffer raw bitmap
+                // JANGAN panggil img.toDataURL() sebelum tahu gambar ini benar-benar baru!
+                let sampleHash = "";
+                try {
+                    const bmp = (typeof img.getBitmap === "function") ? img.getBitmap() : ((typeof img.toBitmap === "function") ? img.toBitmap() : null);
+                    if (bmp && bmp.length > 0) {
+                        const len = bmp.length;
+                        const p1 = bmp.readUInt32LE(0);
+                        const p2 = bmp.readUInt32LE(Math.min(len - 4, Math.floor(len / 4)));
+                        const p3 = bmp.readUInt32LE(Math.min(len - 4, Math.floor(len / 2)));
+                        const p4 = bmp.readUInt32LE(Math.max(0, len - 4));
+                        sampleHash = `${size.width}x${size.height}_${len}_${p1}_${p2}_${p3}_${p4}`;
                     }
+                } catch (_) {}
 
-                    broadcastUpdate();
+                if (!sampleHash) {
+                    sampleHash = `${size.width}x${size.height}`;
                 }
+
+                // Jika fingerprint sama persis, lewati kompresi PNG (0% CPU footprint)
+                if (sampleHash === lastClipImageHash) {
+                    return;
+                }
+                lastClipImageHash = sampleHash;
+
+                // Hanya encode ke PNG dataURL saat gambar baru pertama kali disalin!
+                const dataUrl = img.toDataURL();
+                clipboardHistory = clipboardHistory.filter(item => item.hash !== sampleHash);
+                clipboardHistory.unshift({
+                    id: "clip_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+                    type: "image",
+                    content: dataUrl,
+                    hash: sampleHash,
+                    preview: `Screenshot (${size.width} × ${size.height} px)`,
+                    charCount: 0,
+                    timeStr: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
+                    timestamp: Date.now()
+                });
+
+                if (clipboardHistory.length > MAX_CLIP_ITEMS) {
+                    clipboardHistory = clipboardHistory.slice(0, MAX_CLIP_ITEMS);
+                }
+
+                broadcastUpdate();
             }
         }
     } catch (_) {}
@@ -100,7 +122,7 @@ function getIsDraggingFile() {
 function initClipboardWatcher(win) {
     targetWindow = win;
     if (watcherTimer) clearInterval(watcherTimer);
-    watcherTimer = setInterval(pollClipboard, 800);
+    watcherTimer = setInterval(pollClipboard, 1100);
 
     // Kirim state saat ini jika renderer meminta
     ipcMain.on("clipboard-get-history", (event) => {

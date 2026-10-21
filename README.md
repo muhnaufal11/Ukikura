@@ -141,6 +141,20 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
 - **Pantauan Baterai Lintas Perangkat**: Menampilkan persentase baterai Laptop, status pengisian daya (*Charging Peek*), baterai HP Android/iOS (via Windows Phone Link / Bluetooth), serta baterai TWS, Mouse, dan Keyboard Bluetooth.
 - **WhatsApp Companion**: Mendeteksi pesan dan stiker WhatsApp masuk secara *real-time* dan menampilkannya melalui *Peek Popup* tanpa harus membuka jendela browser penuh.
 
+### 4. Interaksi Kapsul, Maskot, & Pengaturan Hemat Daya (`mascot-engine.js` & `core-state.js`)
+- **Fisika Mata Maskot Nusa & 11 Emosi**: Maskot mata hidup dengan pelacakan kursor responsif, 11 ekspresi mandiri (*happy*, *love*, *wink*, *curious*, *surprised*, *angry*, *sad*, *sleepy*, *suspicious*, *starry*, *dizzy*), serta animasi kedip ganda (*double blink*).
+- **Pengaturan FPS Maskot & Arsitektur Settled Zero-Repaint (0% Idle CPU)**:
+  - Tersedia tombol konfigurasi FPS langsung pada Halaman Pengaturan (Halaman 6):
+    * **`Eco` (Default / Paling Hemat)**: Berjalan di 30 FPS saat kursor bergerak atau berkedip, dan otomatis berhenti total (**0 FPS / 0% CPU**) saat lirikan mata mencapai posisi istirahat.
+    * **`60 FPS`**: Animasi ultra mulus 60 FPS saat berinteraksi, otomatis istirahat saat diam.
+    * **`30 FPS`**: Standar seimbang 30 FPS.
+    * **`15 FPS`**: Mode hemat daya baterai 15 FPS.
+  - Pilihan tersimpan secara persisten di `localStorage`.
+- **Optimasi Efisiensi Beban Sistem (Zero-Overhead Watcher)**:
+  - Pemeriksaan screenshot clipboard menggunakan *fingerprint buffer sampling* instan tanpa kompresi PNG berulang.
+  - Visualizer audio canvas otomatis dijeda seketika saat kapsul tertutup, membebaskan GPU dan AudioService dari kalkulasi spektrum latar belakang.
+  - Serialisasi data thumbnail media WinRT menyusut 99.9% (hanya dikirim saat pergantian lagu).
+
 ---
 
 ## Mesin Lirik Multi-Sumber & Forced Alignment
@@ -272,6 +286,7 @@ Berikut daftar rencana fitur baru yang sedang disiapkan untuk pembaruan **Ukikur
 - [ ] **13. Peringatan Baterai Kritis Lintas Perangkat**: *Peek Popup* otomatis ketika baterai HP (via Phone Link) atau TWS Bluetooth turun di bawah **20%**, atau ketika baterai laptop mencapai **100%** (pengingat cabut cas).
 
 ### 5. Interaksi Kapsul, Maskot, & Kustomisasi (`core-state.js` & `mascot-engine.js`)
+- [x] **Pengaturan FPS Maskot & Zero-Repaint Settled Idle**: Pilihan frame rate animasi mata maskot (`Eco`, `60 FPS`, `30 FPS`, `15 FPS`) di Halaman Pengaturan dengan deteksi status diam (*settled state*) yang menghentikan mutasi CSS DOM sehingga konsumsi CPU berada di **0% saat idle**.
 - [ ] **14. Global Keyboard Hotkeys**: Pintasan keyboard dari aplikasi mana saja (`Alt + Space` untuk buka/tutup kapsul Ukikura, `Alt + L` untuk halaman **Synced Lyrics (`520px`)**, `Alt + S` untuk halaman **File Shelf & Clipboard**, dan `Alt + M` untuk *Play/Pause* musik instan).
 - [x] **15. Dynamic Album Art Ambient Theme**: Menyesuaikan palet 3 warna pendaran (*ambient glow*) di halaman Musik & Lirik yang diekstrak langsung dari sampul lagu yang sedang diputar.
 - [ ] **16. Reaksi Maskot terhadap Beat Musik & Cuaca/Waktu**: Mata maskot di mode `pet` ikut mengangguk mengikuti ketukan musik saat lagu diputar, atau menampilkan animasi mengantuk otomatis saat lewat pukul 00:00 malam.

@@ -507,6 +507,11 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 8px;
+        gap: 6px;
+    }
+    .cfg-bottom-row .pill {
+        padding: 0 8px;
+        font-size: 10px;
+        height: 23px;
     }
 

@@ -172,62 +172,123 @@ function scheduleNextEmotionScene() {
 }
 scheduleNextEmotionScene();
 
-// Loop fisika pegas 60fps untuk pergerakan mata maskot
+// ================= PENGATURAN FPS MASKOT (HEMAT DAYA & ULTRA RINGAN) =================
+let mascotFpsSetting = localStorage.getItem('ukikura_mascot_fps') || 'eco';
+
+function getMascotFpsInterval() {
+    if (mascotFpsSetting === '15') return 66.6;
+    if (mascotFpsSetting === '30') return 33.3;
+    if (mascotFpsSetting === '60') return 16.6;
+    return 33.3; // 'eco' default 30 FPS saat kursor bergerak
+}
+
+function updateMascotFpsLabel() {
+    const lbl = document.getElementById('mascot-fps-label');
+    if (!lbl) return;
+    if (mascotFpsSetting === 'eco') lbl.textContent = 'Eco';
+    else if (mascotFpsSetting === '15') lbl.textContent = '15 FPS';
+    else if (mascotFpsSetting === '30') lbl.textContent = '30 FPS';
+    else lbl.textContent = '60 FPS';
+}
+
+function cycleMascotFps() {
+    const sequence = ['eco', '60', '30', '15'];
+    const curIdx = sequence.indexOf(mascotFpsSetting);
+    mascotFpsSetting = sequence[(curIdx + 1) % sequence.length];
+    localStorage.setItem('ukikura_mascot_fps', mascotFpsSetting);
+    updateMascotFpsLabel();
+}
+
+// Loop fisika pegas adaptif untuk pergerakan mata maskot (Settled Zero-Repaint)
 let lastEyeTick = performance.now();
+let lastMascotRenderTime = 0;
+let lastRenderedStateKey = '';
+
 function stepLivingEyes(now) {
+    requestAnimationFrame(stepLivingEyes);
+
+    if (isExpanded || mnEl.dataset.s !== 'pet' || !eyesContainerEl) {
+        return;
+    }
+
+    const interval = getMascotFpsInterval();
+    if ((now - lastMascotRenderTime) < (interval - 1.5)) {
+        return;
+    }
+
     const dt = Math.min(0.05, (now - lastEyeTick) / 1000);
     lastEyeTick = now;
 
-    if (!isExpanded && mnEl.dataset.s === 'pet' && eyesContainerEl) {
-        const cursorActive = (now - lastCursorMoveAt) <= 1600;
-        const tx = cursorActive ? eyeTargetX : idleGazeX;
-        const ty = cursorActive ? eyeTargetY : idleGazeY;
+    const cursorActive = (now - lastCursorMoveAt) <= 1600;
+    const tx = cursorActive ? eyeTargetX : idleGazeX;
+    const ty = cursorActive ? eyeTargetY : idleGazeY;
 
-        // Spring damper
-        const stiffness = 145;
-        const damping = 16;
-        eyeVelX += (stiffness * (tx - eyeCurX) - damping * eyeVelX) * dt;
-        eyeVelY += (stiffness * (ty - eyeCurY) - damping * eyeVelY) * dt;
-        eyeCurX += eyeVelX * dt;
-        eyeCurY += eyeVelY * dt;
+    // Spring damper
+    const stiffness = 145;
+    const damping = 16;
+    eyeVelX += (stiffness * (tx - eyeCurX) - damping * eyeVelX) * dt;
+    eyeVelY += (stiffness * (ty - eyeCurY) - damping * eyeVelY) * dt;
+    eyeCurX += eyeVelX * dt;
+    eyeCurY += eyeVelY * dt;
 
-        // Batasi kemiringan agar mata tidak pernah terdistorsi miring berlebihan
-        const rawTilt = eyeCurX * 0.45 + (currentMood === 'mood-curious' ? -6 : (currentMood === 'mood-wink' ? 5 : 0));
-        const clampedTilt = Math.max(-8, Math.min(8, rawTilt));
-        const lx = (eyeCurX * 0.22).toFixed(2);
-        const rx = (eyeCurX * 0.28).toFixed(2);
+    // Deteksi apakah mata sudah sampai di tujuan dan diam (settled)
+    const isMoving = Math.abs(tx - eyeCurX) > 0.08 || Math.abs(ty - eyeCurY) > 0.08 || Math.abs(eyeVelX) > 0.08 || Math.abs(eyeVelY) > 0.08;
+    const isSpecialMood = (currentMood === 'mood-dizzy' || currentMood === 'mood-angry');
+    const isBlinking = (blinkFactor < 0.98);
 
-        // Gerakan orbit berlawanan khusus saat ekspresi Pusing (mood-dizzy)
-        let ly = 0;
-        let ry = 0;
-        if (currentMood === 'mood-dizzy') {
-            ly = Math.sin(now / 110) * 2.4;
-            ry = -Math.sin(now / 110) * 2.4;
-        } else if (currentMood === 'mood-angry') {
-            ly = 0.5;
-            ry = 0.5;
-        }
-
-        const effectiveBlink = ['mood-happy', 'mood-sleepy', 'mood-wink'].includes(currentMood) ? 1 : blinkFactor;
-        const lsy = (leftEyeScaleY * effectiveBlink).toFixed(3);
-        const rsy = (rightEyeScaleY * effectiveBlink).toFixed(3);
-
-        eyesContainerEl.style.setProperty('--ex', `${eyeCurX.toFixed(2)}px`);
-        eyesContainerEl.style.setProperty('--ey', `${eyeCurY.toFixed(2)}px`);
-        eyesContainerEl.style.setProperty('--etilt', `${clampedTilt.toFixed(2)}deg`);
-        eyesContainerEl.style.setProperty('--lx', `${lx}px`);
-        eyesContainerEl.style.setProperty('--rx', `${rx}px`);
-        eyesContainerEl.style.setProperty('--ly', `${ly.toFixed(2)}px`);
-        eyesContainerEl.style.setProperty('--ry', `${ry.toFixed(2)}px`);
-        eyesContainerEl.style.setProperty('--lsx', String(leftEyeScaleX));
-        eyesContainerEl.style.setProperty('--rsx', String(rightEyeScaleX));
-        eyesContainerEl.style.setProperty('--lsy', lsy);
-        eyesContainerEl.style.setProperty('--rsy', rsy);
+    // KUNCI PENGHEMAT CPU (0% IDLE):
+    // Jika mata sudah diam dan tidak berkedip, lewati seluruh mutasi CSS DOM!
+    if (!isMoving && !isSpecialMood && !isBlinking && lastRenderedStateKey === 'settled') {
+        return;
     }
 
-    requestAnimationFrame(stepLivingEyes);
+    lastMascotRenderTime = now;
+
+    // Batasi kemiringan agar mata tidak pernah terdistorsi miring berlebihan
+    const rawTilt = eyeCurX * 0.45 + (currentMood === 'mood-curious' ? -6 : (currentMood === 'mood-wink' ? 5 : 0));
+    const clampedTilt = Math.max(-8, Math.min(8, rawTilt));
+    const lx = (eyeCurX * 0.22).toFixed(2);
+    const rx = (eyeCurX * 0.28).toFixed(2);
+
+    // Gerakan orbit berlawanan khusus saat ekspresi Pusing (mood-dizzy)
+    let ly = 0;
+    let ry = 0;
+    if (currentMood === 'mood-dizzy') {
+        ly = Math.sin(now / 110) * 2.4;
+        ry = -Math.sin(now / 110) * 2.4;
+    } else if (currentMood === 'mood-angry') {
+        ly = 0.5;
+        ry = 0.5;
+    }
+
+    const effectiveBlink = ['mood-happy', 'mood-sleepy', 'mood-wink'].includes(currentMood) ? 1 : blinkFactor;
+    const lsy = (leftEyeScaleY * effectiveBlink).toFixed(3);
+    const rsy = (rightEyeScaleY * effectiveBlink).toFixed(3);
+
+    const stateKey = (!isMoving && !isSpecialMood && !isBlinking)
+        ? 'settled'
+        : `${eyeCurX.toFixed(1)}_${eyeCurY.toFixed(1)}_${clampedTilt.toFixed(1)}_${lsy}_${rsy}_${currentMood}`;
+
+    if (stateKey === lastRenderedStateKey && stateKey !== 'settled') {
+        return;
+    }
+    lastRenderedStateKey = stateKey;
+
+    eyesContainerEl.style.setProperty('--ex', `${eyeCurX.toFixed(2)}px`);
+    eyesContainerEl.style.setProperty('--ey', `${eyeCurY.toFixed(2)}px`);
+    eyesContainerEl.style.setProperty('--etilt', `${clampedTilt.toFixed(2)}deg`);
+    eyesContainerEl.style.setProperty('--lx', `${lx}px`);
+    eyesContainerEl.style.setProperty('--rx', `${rx}px`);
+    eyesContainerEl.style.setProperty('--ly', `${ly.toFixed(2)}px`);
+    eyesContainerEl.style.setProperty('--ry', `${ry.toFixed(2)}px`);
+    eyesContainerEl.style.setProperty('--lsx', String(leftEyeScaleX));
+    eyesContainerEl.style.setProperty('--rsx', String(rightEyeScaleX));
+    eyesContainerEl.style.setProperty('--lsy', lsy);
+    eyesContainerEl.style.setProperty('--rsy', rsy);
 }
 requestAnimationFrame(stepLivingEyes);
+
+updateMascotFpsLabel();
 
 loadConfig();
 fetchTasks();

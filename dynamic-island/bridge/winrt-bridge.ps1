@@ -507,6 +507,7 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
                 if ($trackChanged) {
                     $script:lastThumbB64 = ""
                     $script:lastThumbIsAppIcon = $false
+                    $script:thumbJustLoaded = $true
                 }
 
                 $needThumb = $trackChanged -or ((-not $FastOnly) -and (-not $script:lastThumbB64 -or $script:lastThumbIsAppIcon))
@@ -525,6 +526,7 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
                                         if (-not $isAppLogo -or -not $script:lastThumbB64) {
                                             $script:lastThumbB64 = [Convert]::ToBase64String($arr)
                                             $script:lastThumbIsAppIcon = $isAppLogo
+                                            $script:thumbJustLoaded = $true
                                         }
                                     }
                                     $ms.Dispose()
@@ -562,6 +564,15 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
                     if ($curVol -ge 0) { $volPct = [math]::Round($curVol * 100) }
                 } catch {}
 
+                # Optimasi Payload: Hanya kirim base64 gambar saat baru dimuat / lagu baru
+                # Polling reguler 200ms cukup kirim metadata ringan (180 bytes vs 300KB)
+                $thumbToSend = if ($trackChanged -or $script:thumbJustLoaded) {
+                    $script:thumbJustLoaded = $false
+                    $script:lastThumbB64
+                } else {
+                    $null
+                }
+
                 $mediaPayload = @{
                     type = "media"
                     active = ($script:lastMediaTitle.Length -gt 0)
@@ -574,7 +585,7 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
                     dur = $dur
                     volume = $volPct
                     app = $appId
-                    thumb = $script:lastThumbB64
+                    thumb = $thumbToSend
                     isAppIcon = [bool]$script:lastThumbIsAppIcon
                 } | ConvertTo-Json -Compress
                 [Console]::WriteLine($mediaPayload)
@@ -797,69 +808,6 @@ while ($true) {
                     }
                 }
             } catch {}
-
-            # Fallback tambahan dari jendela Phone Link hanya jika StartMenuCompanion.json tidak tersedia
-            if ($plBat -lt 0) {
-                try {
-                    Add-Type -AssemblyName UIAutomationClient -ErrorAction SilentlyContinue
-                    Add-Type -AssemblyName UIAutomationTypes -ErrorAction SilentlyContinue
-                    $desk = [System.Windows.Automation.AutomationElement]::RootElement
-                    if ($desk) {
-                        $topWins = $desk.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)
-                        $plWin = $null
-                        foreach ($w in $topWins) {
-                            $wn = [string]$w.Current.Name
-                            if ($wn -match 'Phone Link|Koneksi ke Windows|Your Phone') {
-                                $plWin = $w
-                                break
-                            }
-                        }
-                        if ($plWin) {
-                            $allEls = $plWin.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
-                            $seenPhoneHeader = $false
-                            $uiBatFound = $false
-                            foreach ($el in $allEls) {
-                                $nm = ([string]$el.Current.Name).Trim()
-                                $aid = ([string]$el.Current.AutomationId).Trim()
-                                if (-not $nm -and -not $aid) { continue }
-
-                                if ($nm -match 'Redmi|Xiaomi|Galaxy|iPhone|OPPO|Vivo|Realme|Infinix|POCO|Pixel') {
-                                    $seenPhoneHeader = $true
-                                }
-
-                                if ($nm -match '(?i)charging|mengisi daya' -and $nm -notmatch '(?i)not charging|tidak mengisi') {
-                                    $plCharging = $true
-                                }
-
-                                if (-not $uiBatFound) {
-                                    if ($aid -match 'Battery' -or $nm -match '(?:Battery|Baterai|daya)[^0-9]*(\d{1,3})\s*%') {
-                                        $endMatch = [regex]::Match($nm, '(\d{1,3})\s*%')
-                                        if ($endMatch.Success) {
-                                            $val = [int]$endMatch.Groups[1].Value
-                                            if ($val -ge 1 -and $val -le 100) {
-                                                $plBat = $val
-                                                $plOnline = $true
-                                                $uiBatFound = $true
-                                            }
-                                        }
-                                    } elseif ($seenPhoneHeader -and $nm -match '^(\d{1,3})\s*%$') {
-                                        $val = [int]$Matches[1]
-                                        if ($val -ge 1 -and $val -le 100) {
-                                            $plBat = $val
-                                            $plOnline = $true
-                                            $uiBatFound = $true
-                                        }
-                                    }
-                                }
-
-                                if ($nm -match '^(?:Offline|Terputus|Disconnected)$' -or $nm -match 'Current status:\s*Offline') {
-                                    $plOnline = $false
-                                }
-                            }
-                        }
-                    }
-                } catch {}
-            }
 
             if ($plBat -ge 0) {
                 $foundPhone = $false

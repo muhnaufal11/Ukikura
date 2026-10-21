@@ -214,13 +214,16 @@ function updateMediaProgressUI() {
     const pct = dur > 0 ? Math.min(100, Math.max(0, (pos / dur) * 100)) : (mediaState.status === 'Playing' ? 68 : 0);
     const rem = dur > 0 ? Math.max(0, dur - pos) : 0;
 
-    document.getElementById('music-pos-1').textContent = formatMediaTime(pos);
-    document.getElementById('music-rem-1').textContent = `-${formatMediaTime(rem)}`;
-    document.getElementById('music-prog-1').style.width = `${pct.toFixed(1)}%`;
+    const isMusicVisible = isExpanded && (currentPage === 'music' || currentPage === 'lyrics');
+    if (isMusicVisible) {
+        const p1 = document.getElementById('music-pos-1'); if (p1) p1.textContent = formatMediaTime(pos);
+        const r1 = document.getElementById('music-rem-1'); if (r1) r1.textContent = `-${formatMediaTime(rem)}`;
+        const pr1 = document.getElementById('music-prog-1'); if (pr1) pr1.style.width = `${pct.toFixed(1)}%`;
 
-    document.getElementById('music-pos-2').textContent = formatMediaTime(pos);
-    document.getElementById('music-rem-2').textContent = `-${formatMediaTime(rem)}`;
-    document.getElementById('music-prog-2').style.width = `${pct.toFixed(1)}%`;
+        const p2 = document.getElementById('music-pos-2'); if (p2) p2.textContent = formatMediaTime(pos);
+        const r2 = document.getElementById('music-rem-2'); if (r2) r2.textContent = `-${formatMediaTime(rem)}`;
+        const pr2 = document.getElementById('music-prog-2'); if (pr2) pr2.style.width = `${pct.toFixed(1)}%`;
+    }
 
     if (syncedLyrics.length > 0) {
         const basePeriod = getBaseLyricLoopPeriod();
@@ -472,11 +475,16 @@ if (lKaraokeEl) {
     });
 }
 
+let lastProgressTick = 0;
 setInterval(() => {
-    if (mediaState.active && mediaState.status === 'Playing') {
-        updateMediaProgressUI();
-    }
-}, 50);
+    if (!mediaState.active || mediaState.status !== 'Playing') return;
+    const now = performance.now();
+    const isInteractive = isExpanded || lyricsMode || (mnEl && mnEl.dataset.s === 'karaoke');
+    const delay = isInteractive ? 50 : 250;
+    if (now - lastProgressTick < delay) return;
+    lastProgressTick = now;
+    updateMediaProgressUI();
+}, 40);
 
 ipcRenderer.on('media-update', (event, msg) => {
     if (!msg) return;
@@ -1094,27 +1102,16 @@ function applyAmbientToDOM(bass, mid, treb, wavePoints) {
 
 function updateAmbientVisualizer() {
     const isPlaying = mediaState.active && mediaState.status === 'Playing';
-    const isMusicOrLyrics = (typeof currentPage !== 'undefined') && (currentPage === 'music' || currentPage === 'lyrics');
+    const isMusicVisible = isExpanded && (typeof currentPage !== 'undefined') && (currentPage === 'music' || currentPage === 'lyrics');
 
-    if (!isPlaying || !isMusicOrLyrics) {
-        // Peluruhan halus saat musik dijeda atau keluar halaman
-        smoothBass *= 0.82;
-        smoothMid *= 0.82;
-        smoothTreb *= 0.82;
-        for (let i = 0; i < 8; i++) smoothWavePoints[i] *= 0.82;
-
-        applyAmbientToDOM(smoothBass, smoothMid, smoothTreb, smoothWavePoints);
-
-        if (smoothBass < 0.005 && smoothMid < 0.005 && smoothTreb < 0.005) {
-            smoothBass = 0;
-            smoothMid = 0;
-            smoothTreb = 0;
-            for (let i = 0; i < 8; i++) smoothWavePoints[i] = 0;
-            applyAmbientToDOM(0, 0, 0, smoothWavePoints);
-            visualizerAnimId = null;
-            return;
-        }
-        visualizerAnimId = requestAnimationFrame(updateAmbientVisualizer);
+    if (!isPlaying || !isMusicVisible) {
+        // Hentikan seketika saat notch tertutup atau keluar halaman (0% CPU canvas loop!)
+        smoothBass = 0;
+        smoothMid = 0;
+        smoothTreb = 0;
+        for (let i = 0; i < 8; i++) smoothWavePoints[i] = 0;
+        applyAmbientToDOM(0, 0, 0, smoothWavePoints);
+        visualizerAnimId = null;
         return;
     }
 
@@ -1161,8 +1158,8 @@ function updateAmbientVisualizer() {
 
 function startAmbientVisualizerIfNeeded() {
     const isPlaying = mediaState.active && mediaState.status === 'Playing';
-    const isMusicOrLyrics = (typeof currentPage !== 'undefined') && (currentPage === 'music' || currentPage === 'lyrics');
-    if (isPlaying && isMusicOrLyrics) {
+    const isMusicVisible = isExpanded && (typeof currentPage !== 'undefined') && (currentPage === 'music' || currentPage === 'lyrics');
+    if (isPlaying && isMusicVisible) {
         if (!audioVisualizerAnalyser && !visualizerInitializing) {
             initDesktopAudioVisualizer().then(ok => {
                 if (ok && !visualizerAnimId) {

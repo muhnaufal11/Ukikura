@@ -159,6 +159,14 @@ async function pollWhatsAppUnread() {
                     window.Notification = WrappedNotif;
                 }
 
+                // Fast-Path Penghemat CPU: Jika belum login atau tidak ada pesan belum dibaca, langsung keluar (0ms, 0% CPU)!
+                const pane = document.querySelector('#pane-side, [data-testid="chat-list"]');
+                if (!pane) return [];
+                const unreadBadges = pane.querySelectorAll('span[aria-label*="unread" i], span[aria-label*="belum dibaca" i], [data-testid="icon-unread-count"]');
+                if (!unreadBadges || unreadBadges.length === 0) {
+                    return [];
+                }
+
                 const blobToDataUrl = (blob) => new Promise((resolve) => {
                     try {
                         const reader = new FileReader();
@@ -360,12 +368,13 @@ async function pollWhatsAppUnread() {
                     return false;
                 };
 
-                const rows = Array.from(document.querySelectorAll('[role="listitem"], [data-testid="cell-frame-container"]'));
+                const rows = Array.from(unreadBadges).map(b => b.closest('[role="listitem"], [data-testid="cell-frame-container"]')).filter(Boolean);
+                if (rows.length === 0) return [];
                 let index = 0;
                 for (const row of rows) {
                     const rowIdx = index;
                     const unreadBadge = row.querySelector('span[aria-label*="unread" i], span[aria-label*="belum dibaca" i], [data-testid="icon-unread-count"]');
-                    let isUnread = Boolean(unreadBadge);
+                    let isUnread = true;
 
                     const spans = Array.from(row.querySelectorAll('span[dir="auto"], span[dir="ltr"], span[title]'));
                     const cleanTexts = [];

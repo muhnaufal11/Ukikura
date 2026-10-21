@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 38,
+  "versionCode": 39,
   "version": "1.0.6",
-  "fixCount": 38,
-  "displayVersion": "1.0.6 (Patch 38)",
+  "fixCount": 39,
+  "displayVersion": "1.0.6 (Patch 39)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 38): Mengunci permanen tampilan lirik ALiCE&u dengan 3 tingkatan bahasa utuh (vokal asli Inggris di baris 1, Romaji alami + aksara Jepang Kanji/Kana di baris 2, dan Sub Indo resmi di baris 3). Menjamin video ID kanonikal resmi langsung di-query tanpa terhambat timeout web search, mencegah emisi dini single-language database Fast LRC pada lagu asing/multilingual, meningkatkan in-flight timeout WinRT ke 18 detik, serta menyempurnakan batasan delimiter Romaji agar transliterasi ReoNa Amore dan lagu Jepang tampil alami tanpa pemisahan morfem janggal."
+  "changelog": "Ukikura v1.0.6 (Patch 39): Optimasi performa CPU & GPU besar-besaran (0% idle CPU) serta penambahan opsi pengaturan FPS animasi maskot Nusa (Eco, 60 FPS, 30 FPS, 15 FPS). Menghentikan mutasi CSS variabel DOM saat mata maskot diam (settled zero-repaint), mengoptimalkan pengecekan screenshot clipboard dengan fingerprint buffer ringan tanpa kompresi PNG berulang, mematikan loop visualizer canvas dan pemindaian UIAutomation berat saat notch tertutup, menyusutkan payload serialisasi media PowerShell hingga 99.9%, dan mengoptimalkan unread scanner WhatsApp Web."
 }

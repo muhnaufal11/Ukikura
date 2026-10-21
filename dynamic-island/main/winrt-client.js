@@ -7,6 +7,7 @@ const { getCompleteSyncedLyrics } = require("../lyrics");
 
 let winrtProc = null;
 let lastLyricsTrackKey = "";
+let lastMediaThumb = "";
 let getMainWindow = () => null;
 const BRIDGE_DIR = path.join(__dirname, "../bridge");
 
@@ -46,6 +47,11 @@ function startWinRtBridge() {
                 try {
                     const msg = JSON.parse(trimmed);
                     if (msg.type === 'media') {
+                        if (msg.thumb) {
+                            lastMediaThumb = msg.thumb;
+                        } else if (lastMediaThumb && msg.active) {
+                            msg.thumb = lastMediaThumb;
+                        }
                         lastMediaPayload = msg;
                         const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
                             mainWindow.webContents.send('media-update', msg);

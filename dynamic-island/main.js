@@ -227,8 +227,8 @@ function startNusaHoverLoop() {
             return;
         }
 
-        // Kirim posisi relatif kursor untuk animasi lirikan mata maskot
-        if (!isTucked && (Math.abs(pt.x - lastPtX) > 2 || Math.abs(pt.y - lastPtY) > 2)) {
+        // Kirim posisi relatif kursor untuk animasi lirikan mata maskot (hanya saat mode tertutup & bergerak > 4px)
+        if (!isTucked && !isExpanded && (Math.abs(pt.x - lastPtX) > 4 || Math.abs(pt.y - lastPtY) > 4)) {
             lastPtX = pt.x;
             lastPtY = pt.y;
             mainWindow.webContents.send('nusa-cursor', {
@@ -645,7 +645,7 @@ if (!gotLock) {
 
         // Siapkan pemantau WhatsApp di background (otomatis mendeteksi jika sebelumnya sudah login QR)
         setTimeout(() => ensureWhatsAppWindow(false), 2000);
-        setInterval(() => pollWhatsAppUnread(), 1600);
+        setInterval(() => pollWhatsAppUnread(), 5000);
 
         // Jalankan background crawler LMS otomatis saat start & setiap 5 menit
         setTimeout(() => runHiddenLmsCrawler(), 4000);
