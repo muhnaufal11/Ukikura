@@ -19,14 +19,14 @@ function setPeekMode(modeName, durationMs = 4800) {
     if (peekTimer) clearTimeout(peekTimer);
     peekTimer = setTimeout(() => {
         peekTimer = null;
+        // Selalu laporkan peek selesai ke proses utama (walau mode tampilan sudah berganti)
+        ipcRenderer.send('island-peek-active', false);
         if (!isExpanded && mnEl.dataset.s === modeName) {
             mnEl.dataset.s = getClosedVisualMode();
             mnEl.classList.remove('has-reply');
-            ipcRenderer.send('island-peek-active', false);
         } else if (isExpanded) {
             mnEl.dataset.s = getEffectiveState();
             mnEl.classList.remove('has-reply');
-            ipcRenderer.send('island-peek-active', false);
         }
     }, durationMs);
 }
