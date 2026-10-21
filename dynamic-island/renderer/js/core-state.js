@@ -209,10 +209,16 @@ document.getElementById('btn-close-lyrics').addEventListener('click', (e) => {
 });
 
 // Kontrol Musik (Play/Pause/Prev/Next)
+let lastMediaCmdTime = 0;
 document.querySelectorAll('[data-mcmd]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const cmd = btn.getAttribute('data-mcmd');
+        const now = Date.now();
+        if ((cmd === 'PLAYPAUSE' || cmd === 'PLAY' || cmd === 'PAUSE') && (now - lastMediaCmdTime < 280)) {
+            return;
+        }
+        lastMediaCmdTime = now;
         if (cmd === 'PLAYPAUSE' || cmd === 'PLAY' || cmd === 'PAUSE') {
             if (typeof mediaState !== 'undefined' && mediaState.active) {
                 if (cmd === 'PLAYPAUSE') {

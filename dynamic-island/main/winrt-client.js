@@ -116,23 +116,27 @@ function startWinRtBridge() {
 function sendMediaCommand(cmd) {
     const val = String(cmd || '').trim();
     if (!val) return;
+    let written = false;
     if (winrtProc && winrtProc.stdin && !winrtProc.stdin.destroyed) {
         try {
-            winrtProc.stdin.write(val + '\n');
+            written = winrtProc.stdin.write(val + '\n');
         } catch (_) {}
     }
-    const os = require('os');
-    const tmpFile = path.join(os.tmpdir(), 'ukikura-media.cmd');
-    const localFile = path.join(BRIDGE_DIR, '.media-cmd');
-    try {
-        fs.appendFileSync(tmpFile, val + '\n', 'utf8');
-    } catch (_) {
-        try { fs.writeFileSync(tmpFile, val + '\n', 'utf8'); } catch (_) {}
-    }
-    try {
-        fs.appendFileSync(localFile, val + '\n', 'utf8');
-    } catch (_) {
-        try { fs.writeFileSync(localFile, val + '\n', 'utf8'); } catch (_) {}
+    // HANYA gunakan file fallback jika stdin tidak tersedia / gagal
+    if (!written) {
+        const os = require('os');
+        const tmpFile = path.join(os.tmpdir(), 'ukikura-media.cmd');
+        const localFile = path.join(BRIDGE_DIR, '.media-cmd');
+        try {
+            fs.appendFileSync(tmpFile, val + '\n', 'utf8');
+        } catch (_) {
+            try { fs.writeFileSync(tmpFile, val + '\n', 'utf8'); } catch (_) {}
+        }
+        try {
+            fs.appendFileSync(localFile, val + '\n', 'utf8');
+        } catch (_) {
+            try { fs.writeFileSync(localFile, val + '\n', 'utf8'); } catch (_) {}
+        }
     }
 }
 

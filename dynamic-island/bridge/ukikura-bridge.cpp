@@ -904,20 +904,53 @@ public:
             IGlobalSystemMediaTransportControlsSession *session = nullptr;
             if (SUCCEEDED(m_manager->GetCurrentSession(&session)) && session) {
                 if (upperCmd == "PLAYPAUSE") {
-                    void *op = nullptr;
-                    if (SUCCEEDED(session->TryTogglePlayPauseAsync(&op)) && op) {
-                        bool res = false;
-                        if (AwaitAsync(op, 800)) {
-                            ((IAsyncOperation_Bool*)op)->GetResults(&res);
-                        }
-                        ((IUnknown*)op)->Release();
-                        handled = res;
+                    IGlobalSystemMediaTransportControlsSessionPlaybackInfo *pbInfo = nullptr;
+                    int pbStatus = 0;
+                    if (SUCCEEDED(session->GetPlaybackInfo(&pbInfo)) && pbInfo) {
+                        pbInfo->get_PlaybackStatus(&pbStatus);
+                        pbInfo->Release();
                     }
+                    bool isPlaying = (pbStatus == 4) || (pbStatus == 0 && m_lastPlaybackStatus == "Playing");
+
+                    void *op = nullptr;
+                    if (isPlaying) {
+                        if (SUCCEEDED(session->TryPauseAsync(&op)) && op) {
+                            bool res = false;
+                            if (AwaitAsync(op, 800)) {
+                                ((IAsyncOperation_Bool*)op)->GetResults(&res);
+                            }
+                            ((IUnknown*)op)->Release();
+                            handled = res;
+                        }
+                    } else {
+                        if (SUCCEEDED(session->TryPlayAsync(&op)) && op) {
+                            bool res = false;
+                            if (AwaitAsync(op, 800)) {
+                                ((IAsyncOperation_Bool*)op)->GetResults(&res);
+                            }
+                            ((IUnknown*)op)->Release();
+                            handled = res;
+                        }
+                    }
+
+                    if (!handled) {
+                        void *toggleOp = nullptr;
+                        if (SUCCEEDED(session->TryTogglePlayPauseAsync(&toggleOp)) && toggleOp) {
+                            bool res = false;
+                            if (AwaitAsync(toggleOp, 800)) {
+                                ((IAsyncOperation_Bool*)toggleOp)->GetResults(&res);
+                            }
+                            ((IUnknown*)toggleOp)->Release();
+                            handled = res;
+                        }
+                    }
+
                     if (!handled) {
                         keybd_event(VK_MEDIA_PLAY_PAUSE, 0, 0, 0);
                         keybd_event(VK_MEDIA_PLAY_PAUSE, 0, KEYEVENTF_KEYUP, 0);
                         handled = true;
                     }
+                    Sleep(50);
                     Poll(true);
                 } else if (upperCmd == "PLAY") {
                     void *op = nullptr;
@@ -934,6 +967,7 @@ public:
                         keybd_event(VK_MEDIA_PLAY_PAUSE, 0, KEYEVENTF_KEYUP, 0);
                         handled = true;
                     }
+                    Sleep(50);
                     Poll(true);
                 } else if (upperCmd == "PAUSE") {
                     void *op = nullptr;
@@ -950,6 +984,7 @@ public:
                         keybd_event(VK_MEDIA_PLAY_PAUSE, 0, KEYEVENTF_KEYUP, 0);
                         handled = true;
                     }
+                    Sleep(50);
                     Poll(true);
                 } else if (upperCmd == "NEXT") {
                     void *op = nullptr;
