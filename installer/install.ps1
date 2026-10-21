@@ -11,10 +11,24 @@ Write-Host "======================================================" -ForegroundC
 Write-Host "  Ukikura (浮倉) — Windows 11 Dynamic Island Installer" -ForegroundColor Cyan
 Write-Host "======================================================" -ForegroundColor Cyan
 
-$setupUrl = "https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.5/Ukikura-Setup-v1.0.5.exe"
-$tempExe = Join-Path $env:TEMP "Ukikura-Setup-v1.0.5.exe"
+$repo = "muhnaufal11/Ukikura"
+$setupUrl = "https://github.com/$repo/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe"
+$fileName = "Ukikura-Setup-v1.0.6.exe"
 
-Write-Host "[1/3] Mengunduh Ukikura-Setup-v1.0.5.exe dari GitHub Release..." -ForegroundColor Yellow
+try {
+    $latest = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/latest" -UseBasicParsing -TimeoutSec 10
+    $exeAsset = $latest.assets | Where-Object { $_.name -like "Ukikura-Setup-*.exe" } | Select-Object -First 1
+    if ($exeAsset) {
+        $setupUrl = $exeAsset.browser_download_url
+        $fileName = $exeAsset.name
+    }
+} catch {
+    # Fallback ke default v1.0.6 jika API unreachable
+}
+
+$tempExe = Join-Path $env:TEMP $fileName
+
+Write-Host "[1/3] Mengunduh $fileName dari GitHub Release ($setupUrl)..." -ForegroundColor Yellow
 Invoke-WebRequest -Uri $setupUrl -OutFile $tempExe -UseBasicParsing
 
 Write-Host "[2/3] Menghapus blokir SmartScreen (Zone.Identifier)..." -ForegroundColor Yellow

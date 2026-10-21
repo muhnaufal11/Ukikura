@@ -9,8 +9,8 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.5-10b981.svg?style=flat-square)](./version.json)
-[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.5.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.5/Ukikura-Setup-v1.0.5.exe)
+[![Version](https://img.shields.io/badge/Version-1.0.6-10b981.svg?style=flat-square)](./version.json)
+[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
 [Instalasi Langsung (Tanpa Compile)](#instalasi-langsung-tanpa-compile) · [Pratinjau Antarmuka](#pratinjau-antarmuka-100-identik) · [Integrasi AI LMS Assistant](#integrasi-dengan-telu-lms-quiz-assistant-ai--seb-proxy) · [Mesin Lirik & Forced Alignment](#mesin-lirik-multi-sumber--forced-alignment) · [Arsitektur Modular](#arsitektur-modular) · [Fitur Mendatang (Roadmap)](#rencana-pengembangan-fitur-mendatang-roadmap) · [Auto-Updater GitHub](#sistem-deteksi-pembaruan-github-auto-updater)
@@ -24,8 +24,8 @@
 File installer resmi hasil kompilasi **Inno Setup 6** tersedia langsung di repositori ini dan halaman **GitHub Releases** sehingga pengguna baru dapat langsung menginstal tanpa perlu memasang Node.js atau melakukan kompilasi ulang:
 
 ### Cara 1 — Unduh & Jalankan File `.exe` Langsung (Paling Umum)
-1. Unduh file installer **[`Ukikura-Setup-v1.0.5.exe` (GitHub Release Resmi)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.5/Ukikura-Setup-v1.0.5.exe)** (atau melalui folder [`installer/Ukikura-Setup-v1.0.5.exe`](./installer/Ukikura-Setup-v1.0.5.exe)).
-2. Klik dua kali file **`Ukikura-Setup-v1.0.5.exe`**.
+1. Unduh file installer **[`Ukikura-Setup-v1.0.6.exe` (GitHub Release Resmi)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)** (atau melalui folder [`installer/Ukikura-Setup-v1.0.6.exe`](./installer/Ukikura-Setup-v1.0.6.exe)).
+2. Klik dua kali file **`Ukikura-Setup-v1.0.6.exe`**.
    > [!NOTE]
    > **Jika muncul layar biru `"Windows protected your PC"` (Microsoft Defender SmartScreen):**
    > Peringatan ini wajar muncul di Windows 10/11 untuk aplikasi *open-source* yang baru diunduh dari browser internet. Cara melewatinya:
@@ -41,7 +41,7 @@ Jika Anda ingin menginstal langsung tanpa memunculkan jendela biru *Windows Smar
 irm https://raw.githubusercontent.com/muhnaufal11/Ukikura/main/installer/install.ps1 | iex
 ```
 
-Skrip [`installer/install.ps1`](./installer/install.ps1) akan mengunduh `Ukikura-Setup-v1.0.5.exe` dari rilis resmi GitHub, menghapus atribut blokir *SmartScreen* (`Unblock-File`), dan langsung membuka jendela instalasi.
+Skrip [`installer/install.ps1`](./installer/install.ps1) akan mengunduh `Ukikura-Setup-v1.0.6.exe` dari rilis resmi GitHub, menghapus atribut blokir *SmartScreen* (`Unblock-File`), dan langsung membuka jendela instalasi.
 
 ---
 
@@ -119,12 +119,16 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
 ## Fitur Utama
 
 ### 1. Mesin Lirik Multi-Sumber & Forced Alignment (`dynamic-island/lyrics/`)
-- **Dual-Sub Lirik Tersinkronisasi**: Menampilkan teks utama (Kanji/Original) di baris pertama, Romaji di baris kedua, dan terjemahan Bahasa Indonesia di baris ketiga (dari `tlyric` NetEase / CC YouTube) dengan tombol beralih cepat `[SUB: ON]` / `[SUB: OFF]`.
-- **Mini Floating Karaoke Overlay (`480px x 54px`)**: Mode pin ramping mengambang bebas di atas layar dengan latar belakang blur semi-transparan (`backdrop-filter: blur(28px)`), menampilkan 2 baris lirik aktif + berikutnya atau terjemahan, mini artwork, kontrol putar/jeda, serta *click-through passthrough* otomatis saat kursor berada di luar kapsul.
-- **Ekstraksi Subtitle Asli YouTube (`.srv3` TimedText)**: Mengambil trek *Manual CC* maupun *Auto-Generated ASR* langsung dari aliran video YouTube (mendukung cover lagu, VTuber, dan live akustik) dengan presisi milidetik per kata.
-- **Audio-to-Text Forced Alignment & RANSAC Global Offset**: Mencocokkan teks lirik resmi dari database lirik terhadap stempel waktu vokal penyanyi menggunakan algoritma *Dynamic Programming Needleman-Wunsch* dan regresi *RANSAC* untuk menghilangkan pergeseran waktu (*intro offset* dan *tempo drift*).
+- **Hierarki Lirik Multibahasa 3 Tingkat (Romaji, Aksara Asli, & Sub Indo)**:
+  - **Baris 1 (`.lyr-main`)**: Alfabet Latin **Romaji** (pada lagu Jepang) atau vokal asli yang dinyanyikan (pada lagu multibahasa seperti *ALiCE&u*).
+  - **Baris 2 (`.lyr-sub`)**: Aksara asli Jepang (**Kanji / Katakana / Hiragana**) + transliterasi Romaji alami beraksen lembut.
+  - **Baris 3 (`.lyr-trans`)**: **Terjemahan Bahasa Indonesia (Sub Indo)** resmi dari TimedText YouTube maupun database terjemahan berirama emas lembut (*italic*).
+  - Dilengkapi tombol beralih cepat `[SUB: ON]` / `[SUB: OFF]` di bilah kontrol musik.
+- **Mini Floating Karaoke Overlay (`480px x 54px`)**: Mode pin ramping mengambang bebas di atas layar dengan latar belakang blur semi-transparan (`backdrop-filter: blur(28px)`), menampilkan baris vokal/Romaji aktif di atas dan aksara asli beserta terjemahan di bawah, mini artwork, kontrol putar/jeda, serta *click-through passthrough* otomatis saat kursor berada di luar kapsul.
+- **Audio-to-Text Forced Alignment untuk Lagu Cover, Remix, & Koplo**: Mengambil lirik versi kanonikal bersih dari database (NetEase, LRCLIB, KuGou) tanpa penalti kemiripan (*similarity penalty*), lalu menyinkronkan ketukan teks resmi tersebut menggunakan algoritma *Needleman-Wunsch Dynamic Programming* dan regresi *RANSAC* langsung ke aliran audio vokal cover/remix yang sedang berputar.
+- **Ekstraksi Subtitle Asli YouTube (`.srv3` TimedText) & Anti-Pemotongan Frasa**: Mengambil trek *Manual CC* resmi (selalu diprioritaskan di atas Auto-ASR) maupun *Auto-Generated ASR* langsung dari video YouTube, dengan proteksi otomatis terhadap pemotongan kata sambung/preposisi menggantung (`dan`, `yang`, `untuk`, dll.).
+- **Transliterasi Alami Romaji & Kana/Kanji**: Mesin transliterasi morfem tersegmen rapi (`Kimi ni aitai` alih-alih `kimi niaita i`) dengan kamus frasa lengkap.
 - **4 Database Lirik Dunia & Indonesia**: Menggabungkan **NetEase Cloud Music**, **LRCLIB**, **KuGou Music**, dan **YouTube Captions** untuk cakupan lagu Jepang (J-Pop/Anime/Vocaloid), Indonesia, Barat, dan Korea.
-- **Transliterasi Otomatis Jepang ke Romaji**: Mengonversi lirik Kanji, Hiragana, dan Katakana ke alfabet **Romaji** sehingga mudah dinyanyikan tanpa mengubah sinkronisasi waktu.
 - **Interpolasi Waktu Hardware SMTC Anti-Drift**: Menghitung posisi pemutaran langsung dari stempel waktu perangkat keras Windows (`Position + (Date.now() - LastUpdatedTime)`) dan melakukan *periodic re-anchor* setiap 5 detik agar lirik tidak pernah terlambat meskipun lagu diputar berjam-jam tanpa jeda.
 
 ### 2. Gudang Akademik & Produktivitas (`Kura Engine`)
@@ -163,7 +167,7 @@ Seluruh kode sumber **Ukikura** dirancang secara modular di bawah direktori `dyn
 ```text
 Ukikura/
 ├── installer/
-│   ├── Ukikura-Setup-v1.0.0.exe     # Installer Windows siap pakai (langsung instal tanpa compile)
+│   ├── Ukikura-Setup-v1.0.6.exe     # Installer Windows siap pakai (langsung instal tanpa compile)
 │   ├── Ukikura-Setup.iss            # Skrip konfigurasi Inno Setup 6
 │   └── Build-Ukikura-Installer.ps1  # Skrip pembaruan installer (opsional untuk pengembang)
 ├── main.js                          # Entry point utama Electron (Window, Hover Loop, Tray, IPC)
@@ -219,7 +223,7 @@ npm install
 # 2. Jalankan Ukikura Dynamic Island
 npm start
 
-# 3. (Opsional) Bangun ulang file installer Ukikura-Setup-v1.0.0.exe setelah mengedit kode
+# 3. (Opsional) Bangun ulang file installer Ukikura-Setup-v1.0.6.exe setelah mengedit kode
 npm run dist
 ```
 
@@ -231,7 +235,7 @@ Ukikura memiliki modul pendeteksi versi baru otomatis di [`dynamic-island/main/u
 
 1. **Pemeriksaan Otomatis & Manual**:
    - Otomatis memeriksa pembaruan **12 detik** setelah aplikasi berjalan dan setiap **4 jam** di latar belakang.
-   - Pengguna juga dapat menekan tombol **`v1.0.1 · Cek Update`** pada halaman **Pengaturan (Halaman 7)** di dalam kapsul Dynamic Island.
+   - Pengguna juga dapat menekan tombol **`v1.0.6 · Cek Update`** pada halaman **Pengaturan (Halaman 7)** di dalam kapsul Dynamic Island.
 2. **Mekanisme Deteksi Dual-Endpoint**:
    - Memeriksa **GitHub Releases API** (`/repos/<owner>/<repo>/releases/latest`) untuk mencari paket `Ukikura-Setup-vX.Y.Z.exe`.
    - Jika belum ada *GitHub Release*, otomatis memeriksa file [`version.json`](./version.json) pada cabang utama (`main`/`master`) di GitHub dan mengarahkan unduhan langsung ke `installer/Ukikura-Setup-vX.Y.Z.exe`.
@@ -245,7 +249,7 @@ Berikut daftar rencana fitur baru yang sedang disiapkan untuk pembaruan **Ukikur
 ### 1. Modul Musik, Audio, & Lirik (`music-lyrics.js` & `lyrics/`)
 - [x] **1. Interactive Seek Bar & Volume Wheel**: Klik atau geser (*drag*) langsung pada garis durasi lagu (`#music-prog-1` / `#music-prog-2`) untuk melompat ke menit tertentu via perintah WinRT `TryChangePlaybackPositionAsync`, serta *scroll* roda mouse di atas sampul album untuk mengatur volume aplikasi pemutar musik secara langsung.
 - [x] **2. Real-Time Audio Ambient Visualizer (WASAPI Loopback)**: Mesin visualisasi Canvas 2D audio-reaktif (*3 fluid morphing color orbs* + undulasi pita gelombang audio di dasar notch) yang bergerak dinamis mengikuti frekuensi bass dan vokal asli dari output audio Windows secara *real-time*.
-- [x] **3. Dual-Sub Lirik (Romaji + Kanji + Terjemahan Indonesia)**: Teks utama (Kanji/Original) di atas, baris Romaji di bawahnya, dan baris terjemahan Bahasa Indonesia di bawah Romaji (dari `tlyric` NetEase / CC YouTube). Dilengkapi tombol toggle `[SUB: ON]` / `[SUB: OFF]` di bilah kontrol musik.
+- [x] **3. Hierarki Lirik Multibahasa 3 Tingkat (Romaji + Aksara Asli Jepang + Terjemahan Indonesia)**: Romaji di baris utama (lagu Jepang) atau vokal asli (lagu multibahasa seperti *ALiCE&u*), aksara Jepang di baris kedua, dan Sub Indo resmi di baris ketiga. Dilengkapi Audio-to-Text Forced Alignment untuk lagu Cover/Remix/Koplo serta tombol toggle `[SUB: ON]` / `[SUB: OFF]`.
 - [x] **4. Mini Floating Karaoke Overlay (Mode Pin Transparan)**: Mode khusus kapsul ramping melayang (`480px x 54px`, radius `22px`) semi-transparan dengan blur latar belakang (`backdrop-filter`) yang menampilkan 2 baris lirik (baris aktif + berikutnya / terjemahan), mini sampul lagu, tombol play/pause mini, tombol toggle sub `[≡]`, tombol perluas lirik `[⤢]`, dan tombol close `[✕]`.
 
 ### 2. Modul Kura Vault, File Shelf, & Akademik (`shelf-actions.js`, `lms-pomodoro.js`, & `smart-calendar.js`)
