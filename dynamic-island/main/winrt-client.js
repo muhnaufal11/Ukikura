@@ -18,18 +18,28 @@ function getLastLyricsPayload() { return lastLyricsPayload; }
 
 function startWinRtBridge() {
     if (winrtProc) return;
+    const exePath = path.join(BRIDGE_DIR, 'ukikura-bridge.exe');
     const scriptPath = path.join(BRIDGE_DIR, 'winrt-bridge.ps1');
+    const useExe = fs.existsSync(exePath);
     try {
-        winrtProc = spawn('powershell.exe', [
-            '-NoProfile',
-            '-ExecutionPolicy', 'Bypass',
-            '-WindowStyle', 'Hidden',
-            '-File', scriptPath
-        ], {
-            cwd: BRIDGE_DIR,
-            windowsHide: true,
-            stdio: ['ignore', 'pipe', 'pipe']
-        });
+        if (useExe) {
+            winrtProc = spawn(exePath, [], {
+                cwd: BRIDGE_DIR,
+                windowsHide: true,
+                stdio: ['pipe', 'pipe', 'pipe']
+            });
+        } else {
+            winrtProc = spawn('powershell.exe', [
+                '-NoProfile',
+                '-ExecutionPolicy', 'Bypass',
+                '-WindowStyle', 'Hidden',
+                '-File', scriptPath
+            ], {
+                cwd: BRIDGE_DIR,
+                windowsHide: true,
+                stdio: ['pipe', 'pipe', 'pipe']
+            });
+        }
 
         winrtProc.stderr.on('data', (errChunk) => {
             const errStr = errChunk.toString('utf8').trim();
@@ -106,6 +116,11 @@ function startWinRtBridge() {
 function sendMediaCommand(cmd) {
     const val = String(cmd || '').trim();
     if (!val) return;
+    if (winrtProc && winrtProc.stdin && !winrtProc.stdin.destroyed) {
+        try {
+            winrtProc.stdin.write(val + '\n');
+        } catch (_) {}
+    }
     const os = require('os');
     const tmpFile = path.join(os.tmpdir(), 'ukikura-media.cmd');
     const localFile = path.join(BRIDGE_DIR, '.media-cmd');
@@ -120,6 +135,13 @@ function sendMediaCommand(cmd) {
         try { fs.writeFileSync(localFile, val + '\n', 'utf8'); } catch (_) {}
     }
 }
+
+app.on('before-quit', () => {
+    if (winrtProc) {
+        try { winrtProc.kill(); } catch (_) {}
+        winrtProc = null;
+    }
+});
 
 let lastMediaPayload = null;
 let lastLyricsPayload = null;

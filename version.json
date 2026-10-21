@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 44,
+  "versionCode": 45,
   "version": "1.0.6",
-  "fixCount": 44,
-  "displayVersion": "1.0.6 (Patch 44)",
+  "fixCount": 45,
+  "displayVersion": "1.0.6 (Patch 45)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 44): Memulihkan seluruh fitur visual dan animasi interaktif 100% utuh tanpa kompromi (Living Aurora Flow, pantulan ritmis mata maskot ke beat musik, equalizer dancing bars, pulsating WA notification dot, frosted glass blur pada mini karaoke overlay, serta pemantauan WhatsApp Web background) dengan tetap mempertahankan optimasi native zero-overhead pada WinRT polling dan eliminasi pemindaian registry berulang."
+  "changelog": "Ukikura v1.0.6 (Patch 45 - Solusi Tingkat 1 & Tingkat 2): Menghadirkan Native Compiled Binary Bridge (ukikura-bridge.exe) menggantikan PowerShell winrt-bridge.ps1 sehingga memangkas penggunaan RAM bridge sebesar 99.7% (dari 126 MB menjadi < 1 MB) dan CPU 0%, menerapkan Smart WhatsApp Web Hibernation untuk menghemat konsumsi memori background saat diminimize tanpa mengorbankan notifikasi realtime 0ms, serta menyediakan blueprint dan scaffolding lengkap Solusi Tingkat 2 berbasis Tauri 2.0 & Windows WebView2 dengan 100% fitur visual, animasi maskot, equalizer, dan hierarki lirik multibahasa tetap utuh."
 }

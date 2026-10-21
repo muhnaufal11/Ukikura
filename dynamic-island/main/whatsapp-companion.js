@@ -14,12 +14,19 @@ let initialWaPass = true;
 let waClickAttempts = new Map();
 let waPollTimer = null;
 
+function updateWaPollInterval(isForeground) {
+    if (waPollTimer) clearInterval(waPollTimer);
+    const ms = isForeground ? 5000 : 35000;
+    waPollTimer = setInterval(() => pollWhatsAppUnread(), ms);
+}
+
 function ensureWhatsAppWindow(showWindow = false) {
     if (waWindow && !waWindow.isDestroyed()) {
         if (showWindow) {
             waWindow.show();
             waWindow.focus();
             try { waWindow.webContents.setAudioMuted(false); } catch (_) {}
+            updateWaPollInterval(true);
         }
         return;
     }
@@ -46,9 +53,7 @@ function ensureWhatsAppWindow(showWindow = false) {
     waWindow.webContents.setUserAgent(chromeUA);
     waWindow.loadURL('https://web.whatsapp.com/');
 
-    if (!waPollTimer) {
-        waPollTimer = setInterval(() => pollWhatsAppUnread(), 5000);
-    }
+    updateWaPollInterval(Boolean(showWindow));
 
     // Tangkap event notifikasi instan langsung saat WhatsApp Web memanggil new window.Notification()
     waWindow.webContents.on('console-message', (event, level, message) => {
@@ -92,6 +97,7 @@ function ensureWhatsAppWindow(showWindow = false) {
             e.preventDefault();
             waWindow.hide();
             try { waWindow.webContents.setAudioMuted(true); } catch (_) {}
+            updateWaPollInterval(false);
         }
     });
 }
