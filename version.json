@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 66,
+  "versionCode": 67,
   "version": "1.0.6",
-  "fixCount": 66,
-  "displayVersion": "1.0.6 (Patch 66 - Lipat Khusus Browser Maximized & Buka Island Khusus Garis Lipatan)",
+  "fixCount": 67,
+  "displayVersion": "1.0.6 (Patch 67 - Masuk Island Khusus Ditekan/Diklik & Nol Auto-Open Liar)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 66): 1) Fitur lipat otomatis hanya aktif saat browser dalam mode maximized/fullscreen: Saat di desktop atau window normal, pulau tetap dalam mode normal dan tidak melipat otomatis. 2) Masuk island dari mode lipat kini khusus dipicu ketika kursor benar-benar didekatkan ke atas sekali tepat di garis lipatan bezel (y <= 7px): Tidak ada lagi auto-open yang tidak disengaja saat kursor bergerak di area tab (y = 8..40px) atau dagu/bookmarks (y > 40px). Tab browser dan address bar 100% bebas diklik tanpa khawatir pulau terbuka tiba-tiba."
+  "changelog": "Ukikura v1.0.6 (Patch 67): 1) Masuk island dikembalikan sepenuhnya ke interaksi klik/tekan (di tekan) tanpa auto-open hover yang mengganggu: Klik pada garis lipatan bezel (y <= 7px) saat browser maximized langsung membuka pulau, dan klik pada kapsul notch (y <= 26px) saat di desktop juga langsung membuka pulau. 2) Menghilangkan seluruh timer auto-open hover liar saat memilih tab atau bookmarks sehingga tab browser 100% damai dan bebas dipilih."
 }

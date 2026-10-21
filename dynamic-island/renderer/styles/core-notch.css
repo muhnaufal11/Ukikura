@@ -53,14 +53,15 @@
     }
 
     /* AUTO-LIPAT (ghost-passthrough): Saat kursor mendekati tab di belakang notch,
-       kapsul otomatis melipat menjadi garis tipis (seperti mode Tucked) & tembus klik,
-       lalu kembali normal saat kursor menjauh. */
+       kapsul otomatis melipat menjadi garis tipis (seperti mode Tucked) & tembus klik ke tab di baliknya,
+       tetapi garis lipatan tetap menerima klik (pointer-events: auto) agar bisa DITEKAN untuk masuk island! */
     .mn-holder.ghost-passthrough:not(.is-expanded) .mn {
         --w: 140px !important;
         --h: 6px !important;
         --r: 6px !important;
         --e: 6px !important;
-        pointer-events: none !important;
+        cursor: pointer !important;
+        pointer-events: auto !important;
         transition:
             width 0.18s cubic-bezier(0.25, 1, 0.35, 1),
             height 0.18s cubic-bezier(0.25, 1, 0.35, 1),
@@ -143,12 +144,15 @@
 
     /* Mode Terlipat Tipis (Tucked) */
     .mn[data-s="tucked"],
-    .mn-holder .mn[data-s="tucked"],
-    .mn[data-s="tucked"] * {
+    .mn-holder .mn[data-s="tucked"] {
         --w: 140px;
         --h: 6px;
         --r: 6px;
         cursor: pointer;
+        pointer-events: auto !important;
+    }
+
+    .mn[data-s="tucked"] * {
         pointer-events: none !important;
     }
 
