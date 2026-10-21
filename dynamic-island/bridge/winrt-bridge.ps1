@@ -113,6 +113,18 @@ public class BtBatteryReader {
     [DllImport("psapi.dll")]
     public static extern int EmptyWorkingSet(IntPtr hwProc);
 
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT { public int Left, Top, Right, Bottom; }
+
+    [DllImport("user32.dll")]
+    public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
     public static void SendMediaKey(byte vk) {
         keybd_event(vk, 0, 0, UIntPtr.Zero);
         keybd_event(vk, 0, 2, UIntPtr.Zero);
@@ -634,6 +646,40 @@ while ($true) {
 
     # 2. Baca status musik / media yang sedang diputar di Windows (presisi milidetik)
     Poll-MediaSession $false
+
+    # 2b. Baca status jendela aktif latar depan (Fullscreen / Browser Maximized Detection)
+    try {
+        $fgHwnd = [BtBatteryReader]::GetForegroundWindow()
+        if ($fgHwnd -ne [IntPtr]::Zero) {
+            $fgPid = 0
+            [BtBatteryReader]::GetWindowThreadProcessId($fgHwnd, [ref]$fgPid) | Out-Null
+            $fgProc = Get-Process -Id $fgPid -ErrorAction SilentlyContinue
+            $procName = if ($fgProc) { $fgProc.ProcessName.ToLowerInvariant() } else { "" }
+            if ($procName -and $procName -notmatch "electron|ukikura") {
+                $rc = New-Object BtBatteryReader+RECT
+                $isMax = $false
+                if ([BtBatteryReader]::GetWindowRect($fgHwnd, [ref]$rc)) {
+                    $screenW = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width
+                    if ($rc.Top -le 2 -and ($rc.Right - $rc.Left) -ge ($screenW - 40)) {
+                        $isMax = $true
+                    }
+                }
+                $isBrowser = ($procName -match "brave|chrome|edge|firefox|opera|vivaldi|zen|waterfox|arc")
+                $bMax = ($isBrowser -and $isMax)
+                if ($bMax -ne $script:lastBMax -or $isMax -ne $script:lastIsMax -or ($tickCount % 10 -eq 0)) {
+                    $script:lastBMax = $bMax
+                    $script:lastIsMax = $isMax
+                    $winPayload = @{
+                        type = "window_state"
+                        browserMaximized = [bool]$bMax
+                        isMaximized = [bool]$isMax
+                        app = $procName
+                    } | ConvertTo-Json -Compress
+                    [Console]::WriteLine($winPayload)
+                }
+            }
+        }
+    } catch {}
 
     # 3. Baca notifikasi masuk (setiap 3 detik untuk menghemat CPU WinRT)
     if (($tickCount % 3) -eq 0) {

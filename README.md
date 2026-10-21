@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch61-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch62-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -151,6 +151,11 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
     * **`30 FPS`**: Standar seimbang 30 FPS.
     * **`15 FPS`**: Mode hemat daya baterai 15 FPS.
   - Pilihan tersimpan secara persisten di `localStorage`.
+- **Auto-Hide Ghost Passthrough Tab Browser & 100% Tembus Klik Tab Tanpa Halangan (Patch 62)**:
+  - **Seketika Transparan & 100% Tembus Klik saat Dekat Tab (`y: 0..38px`)**: Memperbaiki masalah pulau menghalangi tab browser saat fullscreen atau maximized. Begitu kursor diarahkan ke area tab browser di belakang pulau, kapsul Ukikura seketika berubah menjadi transparan tipis (`opacity: 0.02`, `transform: translateY(-8px)`) dan mata maskot disembunyikan seketika. Seluruh interaksi klik (klik kiri, klik kanan, klik tengah tutup tab) 100% tembus langsung ke tab browser di belakangnya tanpa jeda.
+  - **Bebas dari Gangguan Auto-Expand Tiba-Tiba**: Menghilangkan timer auto-expand saat kursor berada di zona tab browser, sehingga pengguna dapat leluasa membaca judul tab atau memilih tab tanpa khawatir pulau tiba-tiba membesar menutupi layar.
+  - **Interaksi Buka Sengaja via Dagu Pulau (`y: 39..68px`) & Menu Tray**: Untuk membuka pulau saat fullscreen, pengguna cukup mengarahkan kursor tepat di dagu pulau di bawah barisan tab (y: 39..68px) atau mengklik menu Tray Icon.
+  - **Perbaikan Total Mode Minimize (Tucked)**: Memperbaiki masalah di mana saat pulau di-minimize (tucked), klik pada tab di belakangnya sebelumnya tetap tertahan oleh kanvas Electron. Kini seluruh area tab browser 100% tembus klik saat dalam mode tucked.
 - **Auto-Passthrough Tab Browser Fullscreen, Bebas Halangan Klik Tab, & Intentional Hover Dwell (Patch 58)**:
   - **Tembus Klik 100% pada Barisan Tab Browser**: Mengeliminasi kendala tab browser yang terhalang atau tidak merespon saat diklik di belakang kapsul Ukikura. Seluruh barisan tab (`y = 0..44px`) kini otomatis mengaktifkan mode *Ghost Passthrough* (`opacity: 0.08`, `pointer-events: none`, dan `setIgnoreMouseEvents(true, { forward: true })`), sehingga setiap klik mouse pada tab browser (Brave, Chrome, Edge, Firefox, dll.) langsung tembus 100% ke browser di belakangnya tanpa jeda.
   - **Intentional Hover Dwell (320ms)**: Menghapus jebakan `touchingTopBezel` (`y <= 3px`) yang sebelumnya memblokir klik saat pengguna melempar kursor ke tepi atas layar. Pembukaan notch kini menggunakan *dwell timer* halus (320ms) saat pengguna sengaja berhenti diam di atas notch, menjamin aktivitas beralih tab atau klik tombol window tidak pernah terganggu.

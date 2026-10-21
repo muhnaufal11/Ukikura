@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 61,
+  "versionCode": 62,
   "version": "1.0.6",
-  "fixCount": 61,
-  "displayVersion": "1.0.6 (Patch 61 - High-Priority Topmost Screen-Saver, Dual-Zone Fullscreen Tab Passthrough & Direct Click Recovery)",
+  "fixCount": 62,
+  "displayVersion": "1.0.6 (Patch 62 - Fullscreen Tab Auto-Hide Ghost, 100% Tab Click-Through & Tucked Passthrough Fix)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 61 - High-Priority Topmost Screen-Saver, Dual-Zone Fullscreen Tab Passthrough & Direct Click Recovery): 1) Memperbaiki masalah pulau tertindih di belakang tab browser dan tidak bisa diklik: Mengembalikan level Z-order paling atas ke 'screen-saver' murni serta mempertahankan focusable: true, sehingga Windows DWM tidak pernah menurunkan posisi jendela ke belakang titlebar/tabstrip browser yang sedang aktif atau maximized. 2) Dual-Zone Fullscreen Tab Passthrough & Direct Click: Saat browser fullscreen/maximized, area tab atas (y <= 24px) tetap menjadi transparan tipis (ghost mode) dan 100% tembus klik ke tab browser di belakangnya (bisa klik, pindah, atau tutup tab), namun hovering >= 320ms akan membuka pulau secara otomatis. Sementara pada dagu/bibir bawah pulau (y: 25..38px), interaksi klik langsung dipulihkan seketika untuk membuka pulau tanpa hambatan. 3) Menambahkan opsi 'Buka / Kembangkan Dynamic Island' langsung pada menu Tray Icon sebagai shortcut cepat."
+  "changelog": "Ukikura v1.0.6 (Patch 62 - Fullscreen Tab Auto-Hide Ghost, 100% Tab Click-Through & Tucked Passthrough Fix): 1) Memperbaiki masalah pulau menghalangi tab browser saat fullscreen / maximized: Kapsul Dynamic Island seketika berubah menjadi transparan tipis (ghost mode opacity 0.02) dan tergeser naik ke bezel saat kursor didekatkan ke area tab browser (y: 0..38px), serta 100% tembus klik langsung ke tab browser di belakangnya (bisa klik, pilih, pindah, atau tutup tab bebas hambatan). 2) Tidak ada lagi auto-expand tiba-tiba yang mengganggu saat hovering pada tab browser: Untuk membuka pulau secara sengaja saat fullscreen, pengguna cukup menyentuh dagu pulau di bawah tab (y: 39..68px) atau mengklik menu Tray Icon. 3) Memperbaiki masalah saat pulau di-minimize (tucked mode): Seluruh area tab browser kini 100% tembus klik langsung tanpa pernah tertahan oleh kanvas Electron."
 }

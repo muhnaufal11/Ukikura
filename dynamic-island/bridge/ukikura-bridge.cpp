@@ -1356,6 +1356,12 @@ public:
                     std::wstring baseName = pSlash ? (pSlash + 1) : procPath;
                     for (auto &c : baseName) c = towlower(c);
                     appName = WideToUtf8(baseName);
+                    // Jangan timpa status jendela jika jendela latar depan aktif adalah Ukikura / Electron itu sendiri
+                    if (baseName.find(L"ukikura") != std::wstring::npos ||
+                        baseName.find(L"electron") != std::wstring::npos) {
+                        CloseHandle(hProc);
+                        return;
+                    }
                     if (baseName.find(L"brave") != std::wstring::npos ||
                         baseName.find(L"chrome") != std::wstring::npos || 
                         baseName.find(L"edge") != std::wstring::npos || 
@@ -1692,7 +1698,7 @@ int wmain(int argc, wchar_t *argv[]) {
         }
 
         bool isPlaying = (media.GetPlaybackStatus() == "Playing");
-        DWORD sleepMs = isPlaying ? 220 : 900;
+        DWORD sleepMs = isPlaying ? 220 : 250;
         WaitForSingleObject(g_hWakeEvent, sleepMs);
     }
 

@@ -62,10 +62,15 @@
        Seketika transparan tipis + tembus klik agar tab di belakang terlihat jelas & bebas diklik 100%! */
     .mn-holder.ghost-passthrough:not(.is-expanded) .mn,
     .mn-holder.passthrough:not(.is-expanded) .mn {
-        opacity: 0.05 !important;
-        transform: scale(0.96);
+        opacity: 0.02 !important;
+        transform: translateY(-8px) scale(0.96);
         pointer-events: none !important;
-        transition: opacity 0.12s ease, transform 0.14s ease;
+        transition: opacity 0.1s ease, transform 0.12s ease;
+    }
+
+    .mn-holder.ghost-passthrough:not(.is-expanded) .eyes,
+    .mn-holder.passthrough:not(.is-expanded) .eyes {
+        opacity: 0 !important;
     }
 
     /* Saat notch sedang terbuka (expanded), selalu 100% tajam dan jelas */
