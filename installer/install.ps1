@@ -16,7 +16,7 @@ $setupUrl = "https://github.com/$repo/releases/download/v1.0.6/Ukikura-Setup-v1.
 $fileName = "Ukikura-Setup-v1.0.6.exe"
 
 try {
-    $latest = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/latest" -UseBasicParsing -TimeoutSec 10
+    $latest = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/latest" -Headers @{ "User-Agent" = "Ukikura-Installer" } -UseBasicParsing -TimeoutSec 10
     $exeAsset = $latest.assets | Where-Object { $_.name -like "Ukikura-Setup-*.exe" } | Select-Object -First 1
     if ($exeAsset) {
         $setupUrl = $exeAsset.browser_download_url
@@ -29,7 +29,7 @@ try {
 $tempExe = Join-Path $env:TEMP $fileName
 
 Write-Host "[1/3] Mengunduh $fileName dari GitHub Release ($setupUrl)..." -ForegroundColor Yellow
-Invoke-WebRequest -Uri $setupUrl -OutFile $tempExe -UseBasicParsing
+Invoke-WebRequest -Uri $setupUrl -OutFile $tempExe -Headers @{ "User-Agent" = "Ukikura-Installer" } -UseBasicParsing
 
 Write-Host "[2/3] Menghapus blokir SmartScreen (Zone.Identifier)..." -ForegroundColor Yellow
 Unblock-File -Path $tempExe -ErrorAction SilentlyContinue
