@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 47,
+  "versionCode": 48,
   "version": "1.0.6",
-  "fixCount": 47,
-  "displayVersion": "1.0.6 (Patch 47 - Native WebView2)",
+  "fixCount": 48,
+  "displayVersion": "1.0.6 (Patch 48 - Ultra-Low RAM & Native Offline Runtime)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 47 - Solusi Tingkat 2 Native WebView2 Execution): Migrasi penuh ke arsitektur non-Electron menggunakan native Windows Edge WebView2 host (Ukikura.exe) mandiri berukuran 16 KB. Mengeliminasi unduhan runtime Electron (0 MB download saat instalasi), memangkas penggunaan RAM hingga 90% (menjadi ~50 MB), CPU 0.0%, dengan seluruh aset visual, maskot 60 FPS, equalizer, dan lirik multibahasa 100% utuh."
+  "changelog": "Ukikura v1.0.6 (Patch 48 - Eliminasi Bug Black Box, Offline Bundled Runtime & Ultra-Low Resource Bridge): Mengembalikan visual 100% transparan tanpa bug black box dengan DirectComposition swapchain per-pixel alpha Electron teroptimasi. Membundel runtime Electron mandiri secara penuh ke dalam installer (100% instalasi offline tanpa unduh internet), ditenagai ukikura-bridge.exe C# native (< 1 MB RAM, 0% CPU) dan WhatsApp Web on-demand (~120 MB total RAM, idle CPU 0.0%-0.2%)."
 }

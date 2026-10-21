@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch47-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch48-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -300,8 +300,8 @@ Berikut daftar rencana fitur baru yang sedang disiapkan untuk pembaruan **Ukikur
 - [ ] **11. Auto-Fullscreen Game & Video Detector (Smart Tuck)**: Mendeteksi secara otomatis ketika sedang menonton video YouTube *fullscreen* atau bermain game *fullscreen*, lalu otomatis melipat kapsul ke mode tipis **`tucked` (`6px`)** agar tidak menghalangi HUD game/video, dan kembali normal saat keluar dari *fullscreen*.
 - [ ] **12. Live Network Speed, CPU/RAM, & Mic/Cam Privacy Indicator**: Menampilkan titik indikator privasi (hijau saat kamera aktif, oranye saat mikrofon aktif) di sudut kapsul tertutup, serta informasi kecepatan unduh internet (`MB/s`) dan penggunaan RAM di halaman utilitas.
 - [ ] **13. Peringatan Baterai Kritis Lintas Perangkat**: *Peek Popup* otomatis ketika baterai HP (via Phone Link) atau TWS Bluetooth turun di bawah **20%**, atau ketika baterai laptop mencapai **100%** (pengingat cabut cas).
-- [ ] **18. Native C# AOT / C++ WinRT Companion Bridge (`bridge.exe`)**: Menggantikan `powershell.exe` (`winrt-bridge.ps1`) dengan binary native mandiri hasil kompilasi C# Native AOT atau C++/WinRT untuk memotong konsumsi RAM bridge dari **130 MB $\rightarrow$ ~8 MB** dan CPU ke **0.001%** tanpa mengubah format JSON protokol maupun memotong satu pun fitur.
-- [ ] **19. Smart WhatsApp Web Hibernation (Ghost Tab)**: Menidurkan Chromium renderer WhatsApp Web saat jendela diminimalkan/ditutup ke background agar menghemat **~350 MB RAM** tanpa memutus penerimaan pesan baru.
+- [x] **18. Native C# WinRT Companion Bridge (`ukikura-bridge.exe`)**: Menggantikan `powershell.exe` (`winrt-bridge.ps1`) dengan binary native mandiri hasil kompilasi C# (`dynamic-island/bridge/ukikura-bridge.exe`) yang memangkas konsumsi RAM bridge sebesar **99.7%** dari **126 MB $\rightarrow$ < 1 MB (344 KB)** dan CPU ke **0.00%**, dengan 100% kompatibilitas payload JSON media SMTC, UserNotificationListener, baterai laptop/HP, perangkat Bluetooth CfgMgr32, dan kontrol volume audio endpoint.
+- [x] **19. Smart WhatsApp Web On-Demand & Hibernation**: Mengeliminasi preload WhatsApp Web saat startup (menghemat ~650 MB RAM) dan mengoptimalkan renderer saat jendela di latar belakang dengan background throttling dan audio muting tanpa memutus deteksi pesan realtime.
 
 ### 5. Interaksi Kapsul, Maskot, & Kustomisasi (`core-state.js` & `mascot-engine.js`)
 - [x] **Pengaturan FPS Maskot & Zero-Repaint Settled Idle**: Pilihan frame rate animasi mata maskot (`Eco`, `60 FPS`, `30 FPS`, `15 FPS`) di Halaman Pengaturan dengan deteksi status diam (*settled state*) yang menghentikan mutasi CSS DOM sehingga konsumsi CPU berada di **0% saat idle**.
