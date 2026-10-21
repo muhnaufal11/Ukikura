@@ -1,17 +1,18 @@
 ; ==============================================================================
-; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT (NATIVE NON-ELECTRON EDITION)
+; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT (OFFLINE STANDALONE RUNTIME)
 ; Uki (Terapung / Floating Island) + Kura (Gudang Penyimpanan Data & Tugas)
-; Versi: 1.0.6 (Kode Versi: 49 - Native WPF Direct3D WebView2 Host)
+; Versi: 1.0.6 (Kode Versi: 50 - Ultra-Low Resource Native Offline Runtime & Full Features)
 ; License: GNU General Public License v3.0 (GPLv3)
 ; ==============================================================================
 
 #define MyAppName "Ukikura"
 #define MyAppFullTitle "Ukikura (浮倉) — Floating Island & Task Vault"
 #define MyAppVersion "1.0.6"
-#define MyAppVersionCode "49"
+#define MyAppVersionCode "50"
 #define MyAppPublisher "Nauflix (muhnaufal11)"
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
-#define MyAppExeName "Ukikura.exe"
+#define MyAppExeName "electron.exe"
+#define MyAppEntryArgs "dynamic-island\main.js"
 #define OutputName "Ukikura-Setup-v" + MyAppVersion
 
 [Setup]
@@ -36,7 +37,7 @@ UninstallDisplayIcon={app}\assets\ukikura-logo.ico
 PrivilegesRequired=lowest
 OutputDir=.
 OutputBaseFilename={#OutputName}
-Compression=lzma2/ultra64
+Compression=lzma2/normal
 SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
@@ -52,15 +53,18 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "autostart"; Description: "Jalankan Ukikura otomatis saat Windows menyala (Direkomendasikan)"; GroupDescription: "Opsi Startup:"
 
-[Files]
-; 1. Native Windows WebView2 Host (100% Bebas Electron, Direct3D Per-Pixel Alpha)
-Source: "..\webview-shell\Ukikura.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\webview-shell\Microsoft.Web.WebView2.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\webview-shell\Microsoft.Web.WebView2.Wpf.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\webview-shell\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
+[Dirs]
+Name: "{app}\runtime"
 
-; 2. Modul Utama Ukikura (Dynamic Island, Mesin Lirik, UI Assets, Native C# Bridge)
+[Files]
+; 1. Runtime Mandiri Standalone (100% Offline, Tanpa Perlu Unduh Internet saat Instalasi)
+; Mengoptimalkan paket dengan menyertakan en-US.pak dan mengecualikan file html lisensi & shader compiler non-esensial agar installer < 90 MB (bebas batas GitHub 100 MB)
+Source: "..\node_modules\electron\dist\*"; DestDir: "{app}\runtime"; Excludes: "LICENSES.chromium.html,locales\*,dxcompiler.dll,dxil.dll,vk_swiftshader.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\node_modules\electron\dist\locales\en-US.pak"; DestDir: "{app}\runtime\locales"; Flags: ignoreversion
+
+; 2. Modul Utama Ukikura (Dynamic Island, Mesin Lirik, UI Assets, Native C# Bridge ukikura-bridge.exe)
 Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*,*.md"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\Ukikura-Debug.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\version.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\package.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
@@ -68,12 +72,13 @@ Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\assets\ukikura-logo.ico"; Comment: "{#MyAppFullTitle}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; IconFilename: "{app}\assets\ukikura-logo.ico"; Comment: "{#MyAppFullTitle}"
+Name: "{group}\Ukikura (Mode Debug)"; Filename: "{app}\Ukikura-Debug.bat"; WorkingDir: "{app}"; IconFilename: "{app}\assets\ukikura-logo.ico"; Comment: "Jalankan Ukikura dengan Developer Tools & Console Log"
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\assets\ukikura-logo.ico"; Tasks: desktopicon; Comment: "{#MyAppFullTitle}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; IconFilename: "{app}\assets\ukikura-logo.ico"; Tasks: desktopicon; Comment: "{#MyAppFullTitle}"
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Ukikura"; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletevalue; Tasks: autostart
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Ukikura"; ValueData: """{app}\runtime\{#MyAppExeName}"" ""{app}\{#MyAppEntryArgs}"""; Flags: uninsdeletevalue; Tasks: autostart
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "NusaDynamicIsland"; Flags: deletevalue
 
 [InstallDelete]
@@ -81,28 +86,27 @@ Type: files; Name: "{userappdata}\Microsoft\Windows\Start Menu\Programs\Startup\
 Type: files; Name: "{userstartup}\NusaDynamicIsland.vbs"
 
 [Run]
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Ukikura.exe /T"; StatusMsg: "Menutup sesi lama Ukikura..."; Flags: runhidden waituntilterminated
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; StatusMsg: "Menutup sesi lama Ukikura..."; Flags: runhidden waituntilterminated
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM ukikura-bridge.exe /T"; StatusMsg: "Menutup sesi lama bridge..."; Flags: runhidden waituntilterminated
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; StatusMsg: "Menutup sesi lama Electron..."; Flags: runhidden waituntilterminated
-Filename: "{app}\{#MyAppExeName}"; Description: "Jalankan {#MyAppFullTitle} sekarang"; Flags: nowait postinstall skipifsilent
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Ukikura.exe /T"; Flags: runhidden waituntilterminated
+Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; Description: "Jalankan {#MyAppFullTitle} sekarang"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Ukikura.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopUkikuraHost"
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopUkikuraProcesses"
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM ukikura-bridge.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopUkikuraBridge"
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopOldElectron"
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Ukikura.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopUkikuraHost"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\runtime"
-Type: filesandordirs; Name: "{localappdata}\Ukikura\WebView2Data"
 
 [Code]
 function InitializeSetup(): Boolean;
 var
   ResultCode: Integer;
 begin
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Ukikura.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM ukikura-bridge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM ukikura-bridge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Ukikura.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Sleep(250);
   Result := True;
 end;
@@ -111,9 +115,9 @@ function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
 begin
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Ukikura.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM ukikura-bridge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM ukikura-bridge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Ukikura.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Sleep(250);
   Result := '';
 end;

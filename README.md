@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch49-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch50-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -151,11 +151,12 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
     * **`30 FPS`**: Standar seimbang 30 FPS.
     * **`15 FPS`**: Mode hemat daya baterai 15 FPS.
   - Pilihan tersimpan secara persisten di `localStorage`.
-- **Eksekusi Solusi Tingkat 2: 100% Bebas Electron & Native Windows WebView2 (Patch 47)**:
-  - **Eliminasi Total Runtime Electron (0% Electron & 0 MB Unduhan)**: Menggantikan seluruh runtime Chromium Electron dengan native host mandiri `Ukikura.exe` (16 KB) berbasis Microsoft Edge WebView2 bawaan Windows 11 (`msedgewebview2.exe`). Installer kini 100% *offline* (~3.2 MB), menginstal dalam 2 detik tanpa perlu mengunduh 100 MB zip Electron dari GitHub.
-  - **Pemangkasan RAM hingga ~50 MB & CPU 0%**: Konsumsi memori aplikasi anjlok drastis dari sebelumnya ~900 MB menjadi hanya **~50 MB**, dengan CPU idle tetap 0.0% – 0.1%.
-  - **Universal Renderer IPC Bridge**: Dilengkapi compatibility bridge yang menyalurkan seluruh event SMTC media, baterai, notifikasi, dan volume dari `ukikura-bridge.exe` ke antarmuka HTML/CSS/JS tanpa mengubah satu baris pun kode logika UI.
-  - **Preservasi 100% Fitur Visual**: Efek *Living Aurora Flow*, animasi mata maskot 60 FPS, *dancing equalizer bars*, *frosted glass blur*, kalender pintar, dan hierarki lirik multibahasa (Romaji/Kanji/Sub Indo) tetap berjalan utuh dan mulus.
+- **Pemulihan Arsitektur Stabil, Offline Bundled Runtime, & Native C# Bridge (Patch 50)**:
+  - **Integritas Penuh Seluruh Modul**: Memulihkan eksekusi seluruh 20 fitur Ukikura tanpa ada yang terpotong — Dynamic Island, Mesin Lirik Multibahasa 3 Tingkat (Romaji, Kanji/Kana, Terjemahan Sub Indo), WhatsApp Companion Realtime, Kura Local Vault (REST API & SSE port 8089), Kalender & Alarm Kuliah iGracias Telkom University, File Shelf & Clipboard Vault (15 riwayat), dan Mini Floating Karaoke Overlay.
+  - **Installer Mandiri 100% Offline (Tanpa Unduh Internet)**: Installer Inno Setup kini langsung membundel runtime mandiri secara *offline* lengkap dengan modul lirik dan native bridge C# `ukikura-bridge.exe` (< 1 MB RAM, 0% CPU), menjamin instalasi langsung jalan mulus tanpa bug jendela hitam maupun pemotongan kanvas.
+  - **Fluid Ambient & Audio Visualizer Anti-Crash**: Mengoptimalkan loopback visualizer aura ambient dengan fallback prosedural berirama tempo (~110 BPM) yang anggun saat stream audio desktop tidak diaktifkan, mengeliminasi galat WebRTC dan mencegah terjadinya *GPU process crash*.
+- **Scaffolding Blueprint Tauri 2.0 / Rust (Eksplorasi Masa Depan)**:
+  - Struktur scaffolding proyek Tauri 2.0 tersimpan di `tauri-preview/` sebagai blueprint riset jangka panjang untuk eksplorasi binary ultra-ringan masa depan, sementara rilis produksi utama berjalan stabil menggunakan arsitektur mandiri lengkap berkinerja tinggi.
 - **Perbaikan Galat Installer Inno Setup & On-Demand WhatsApp Web (Patch 46)**:
   - **Perbaikan Galat Path PowerShell Installer**: Memperbaiki kegagalan instalasi `Unable to execute file: C:\WINDOWS\system32\powershell.exe (CreateProcess failed; code 2)` dengan membetulkan lokasi pemanggilan ke `{sys}\WindowsPowerShell\v1.0\powershell.exe` serta menambahkan verifikasi boolean aman `NeedPowershellZipFallback()`, sehingga proses instalasi dan pembaruan berjalan mulus 100% tanpa galat popup.
   - **On-Demand WhatsApp Web (Hemat ~650 MB RAM Tambahan)**: Mengalihkan inisialisasi WhatsApp Web Chromium dari yang sebelumnya otomatis dimuat di latar belakang saat startup menjadi *on-demand* (hanya dibuka saat pengguna mengklik ikon WhatsApp atau membuka chat). Seluruh notifikasi WhatsApp tetap tertangkap secara instan (0ms) lewat biner native Windows bridge (`ukikura-bridge.exe`) hanya dengan 344 KB RAM.

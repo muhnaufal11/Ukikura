@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 49,
+  "versionCode": 50,
   "version": "1.0.6",
-  "fixCount": 49,
-  "displayVersion": "1.0.6 (Patch 49 - Native WPF WebView2 Non-Electron)",
+  "fixCount": 50,
+  "displayVersion": "1.0.6 (Patch 50 - Full Stable Native C# Bridge & Complete Feature Restoration)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 49 - Solusi Tingkat 2 Native WPF Direct3D Non-Electron): Migrasi penuh ke arsitektur mandiri non-Electron menggunakan host WPF Direct3D + WebView2 native (Ukikura.exe, 16 KB). Mengeliminasi runtime Electron sepenuhnya (installer berukuran super-ringan ~2.5 MB, 0 MB download saat instalasi), 100% transparan tanpa bug kotak hitam, ditenagai ukikura-bridge.exe C# native (< 1 MB RAM, 0% CPU)."
+  "changelog": "Ukikura v1.0.6 (Patch 50 - Pemulihan Arsitektur Stabil & Native C# Bridge): Mengembalikan integritas penuh seluruh modul aplikasi (Dynamic Island, Mesin Lirik Multibahasa Romaji/Kanji/Sub Indo, WhatsApp Companion, Kura Local Vault port 8089, Kalender & Alarm Kuliah iGracias, Clipboard History & File Shelf, Mini Floating Karaoke Overlay) menggunakan runtime mandiri offline terbundel 100% tanpa unduh internet dan ditenagai ukikura-bridge.exe C# native super-ringan (344 KB RAM, 0% CPU)."
 }

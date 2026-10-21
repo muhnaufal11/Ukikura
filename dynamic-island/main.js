@@ -129,13 +129,19 @@ function createIslandWindow() {
     mainWindow.setIgnoreMouseEvents(true, { forward: true });
 
     // Request handler untuk loopback audio desktop real-time (WASAPI Loopback)
-    session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-        desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-            callback({ video: sources[0], audio: 'loopback' });
-        }).catch(() => {
-            callback({});
+    try {
+        session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+            desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+                if (sources && sources.length > 0) {
+                    callback({ video: sources[0], audio: 'loopback' });
+                } else {
+                    callback({});
+                }
+            }).catch(() => {
+                callback({});
+            });
         });
-    });
+    } catch (_) {}
 
     // Kunci posisi vertikal agar selalu menyatu dengan frame atas (y = 0)
     mainWindow.on('moved', () => {

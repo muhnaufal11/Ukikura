@@ -927,15 +927,21 @@ let audioVisualizerAnalyser = null;
 let audioVisualizerData = null;
 let visualizerAnimId = null;
 let visualizerInitializing = false;
+let visualizerFailed = false;
 let smoothBass = 0;
 let smoothMid = 0;
 let smoothTreb = 0;
 
 async function initDesktopAudioVisualizer() {
     if (audioVisualizerStream && audioVisualizerAnalyser) return true;
-    if (visualizerInitializing) return false;
+    if (visualizerInitializing || visualizerFailed) return false;
     visualizerInitializing = true;
     try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            visualizerFailed = true;
+            visualizerInitializing = false;
+            return false;
+        }
         const stream = await navigator.mediaDevices.getDisplayMedia({
             audio: true,
             video: true
@@ -959,6 +965,7 @@ async function initDesktopAudioVisualizer() {
         visualizerInitializing = false;
         return true;
     } catch (_) {
+        visualizerFailed = true;
         visualizerInitializing = false;
         return false;
     }
@@ -1167,10 +1174,18 @@ function updateAmbientVisualizer() {
         smoothMid += (targetMid - smoothMid) * (targetMid > smoothMid ? 0.30 : 0.10);
         smoothTreb += (targetTreb - smoothTreb) * (targetTreb > smoothTreb ? 0.28 : 0.10);
     } else {
-        smoothBass *= 0.88;
-        smoothMid *= 0.88;
-        smoothTreb *= 0.88;
-        for (let i = 0; i < 8; i++) smoothWavePoints[i] *= 0.85;
+        const t = Date.now() / 1000;
+        const beat = (Math.sin(t * 3.6) + 1) * 0.5;
+        const subBeat = (Math.cos(t * 7.2) + 1) * 0.5;
+        const targetBass = beat * 0.38;
+        const targetMid = subBeat * 0.30;
+        const targetTreb = beat * 0.22;
+        smoothBass += (targetBass - smoothBass) * 0.16;
+        smoothMid += (targetMid - smoothMid) * 0.16;
+        smoothTreb += (targetTreb - smoothTreb) * 0.16;
+        for (let i = 0; i < 8; i++) {
+            smoothWavePoints[i] = (Math.sin(t * 2.8 + i * 0.78) + 1) * 0.20;
+        }
     }
 
     applyAmbientToDOM(smoothBass, smoothMid, smoothTreb, smoothWavePoints);
