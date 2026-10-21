@@ -192,6 +192,9 @@ function collapseIsland() {
         peekTimer = null;
     }
     mnEl.dataset.s = getClosedVisualMode();
+    if (typeof window.ensureLivingEyesLoop === 'function') {
+        window.ensureLivingEyesLoop();
+    }
     ipcRenderer.send('island-resize', false);
 }
 
@@ -286,6 +289,9 @@ mnEl.addEventListener('click', () => {
     if (mnEl.dataset.s === 'tucked') {
         ipcRenderer.send('island-tuck', false);
         mnEl.dataset.s = getClosedVisualMode();
+    if (typeof window.ensureLivingEyesLoop === 'function') {
+        window.ensureLivingEyesLoop();
+    }
     }
 });
 
@@ -322,6 +328,9 @@ ipcRenderer.on('nusa-state', (event, state) => {
         btnPinEl.classList.remove('active');
         if (mnEl.dataset.s !== 'tucked') {
             mnEl.dataset.s = getClosedVisualMode();
+    if (typeof window.ensureLivingEyesLoop === 'function') {
+        window.ensureLivingEyesLoop();
+    }
         }
     }
 });
@@ -330,6 +339,9 @@ ipcRenderer.on('toggle-tuck', () => {
     if (mnEl.dataset.s === 'tucked') {
         ipcRenderer.send('island-tuck', false);
         mnEl.dataset.s = getClosedVisualMode();
+    if (typeof window.ensureLivingEyesLoop === 'function') {
+        window.ensureLivingEyesLoop();
+    }
     } else {
         isExpanded = false;
         mnEl.dataset.s = 'tucked';

@@ -62,6 +62,13 @@ function logDebug(...args) {
     } catch (_) {}
 }
 
+process.on('uncaughtException', (err) => {
+    logDebug('UNCAUGHT EXCEPTION:', err && err.stack ? err.stack : err);
+});
+process.on('unhandledRejection', (reason) => {
+    logDebug('UNHANDLED REJECTION:', reason && reason.stack ? reason.stack : reason);
+});
+
 function checkServerAlive() {
     return new Promise((resolve) => {
         const req = http.get(`${SERVER_BASE}/__qbot__/config`, { timeout: 1200 }, (res) => {
@@ -121,7 +128,8 @@ function createIslandWindow() {
         focusable: true,
         webPreferences: {
             nodeIntegration: true,
-            contextIsolation: false
+            contextIsolation: false,
+            backgroundThrottling: true
         }
     });
 
@@ -325,7 +333,7 @@ function startNusaHoverLoop() {
                 });
             }
         }
-    }, 40);
+    }, 60);
 }
 
 function setIslandExpanded(expand) {

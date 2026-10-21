@@ -484,6 +484,13 @@ $lastMediaTitle = ""
 $lastMediaArtist = ""
 $lastMediaDur = 0
 $lastThumbIsAppIcon = $false
+$lastMediaActive = $false
+$lastPlaybackStatus = "Closed"
+$lastMediaAppId = ""
+$lastLaptopPct = -1
+$lastCharging = $false
+$lastBtDevices = @()
+$hasInitialBtScanned = $false
 
 function Poll-MediaSession([bool]$FastOnly = $false) {
     try {
@@ -494,23 +501,36 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
             $session = $script:mediaMgr.GetCurrentSession()
             if ($session) {
                 $pb = $session.GetPlaybackInfo()
-                $tl = $session.GetTimelineProperties()
                 $status = if ($pb) { $pb.PlaybackStatus.ToString() } else { "Closed" }
-                $dur = if ($tl) { [math]::Round($tl.EndTime.TotalSeconds, 3) } else { 0 }
                 $appId = if ($session.SourceAppUserModelId) { [string]$session.SourceAppUserModelId } else { "" }
+                $appChanged = ($appId -ne $script:lastMediaAppId)
 
-                $info = Await ($session.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
-                $newTitle = if ($info -and $info.Title) { [string]$info.Title } else { "" }
-                $newArtist = if ($info -and $info.Artist) { [string]$info.Artist } else { "" }
-                $trackChanged = ($newTitle -ne $script:lastMediaTitle) -or ($newArtist -ne $script:lastMediaArtist)
-                $script:lastMediaTitle = $newTitle
-                $script:lastMediaArtist = $newArtist
-                $script:lastMediaDur = $dur
+                $isPausedOrClosed = ($status -ne 'Playing')
+                if ($isPausedOrClosed -and ($status -eq $script:lastPlaybackStatus) -and (-not $appChanged) -and ($tickCount % 10 -ne 0)) {
+                    return
+                }
+                $script:lastMediaAppId = $appId
 
-                if ($trackChanged) {
-                    $script:lastThumbB64 = ""
-                    $script:lastThumbIsAppIcon = $false
-                    $script:thumbJustLoaded = $true
+                $tl = $session.GetTimelineProperties()
+                $dur = if ($tl) { [math]::Round($tl.EndTime.TotalSeconds, 3) } else { 0 }
+
+                $needProperties = (-not $script:lastMediaTitle) -or ($dur -ne $script:lastMediaDur) -or $appChanged -or ($tickCount % 12 -eq 0)
+                if ($needProperties) {
+                    $info = Await ($session.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
+                    $newTitle = if ($info -and $info.Title) { [string]$info.Title } else { "" }
+                    $newArtist = if ($info -and $info.Artist) { [string]$info.Artist } else { "" }
+                    $trackChanged = ($newTitle -ne $script:lastMediaTitle) -or ($newArtist -ne $script:lastMediaArtist)
+                    $script:lastMediaTitle = $newTitle
+                    $script:lastMediaArtist = $newArtist
+                    $script:lastMediaDur = $dur
+
+                    if ($trackChanged) {
+                        $script:lastThumbB64 = ""
+                        $script:lastThumbIsAppIcon = $false
+                        $script:thumbJustLoaded = $true
+                    }
+                } else {
+                    $trackChanged = $false
                 }
 
                 $needThumb = $trackChanged -or ((-not $FastOnly) -and (-not $script:lastThumbB64 -or $script:lastThumbIsAppIcon))
@@ -576,9 +596,11 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
                     $null
                 }
 
+                $script:lastMediaActive = ($script:lastMediaTitle.Length -gt 0)
+                $script:lastPlaybackStatus = $status
                 $mediaPayload = @{
                     type = "media"
-                    active = ($script:lastMediaTitle.Length -gt 0)
+                    active = $script:lastMediaActive
                     title = $script:lastMediaTitle
                     artist = $script:lastMediaArtist
                     status = $status
@@ -593,8 +615,14 @@ function Poll-MediaSession([bool]$FastOnly = $false) {
                 } | ConvertTo-Json -Compress
                 [Console]::WriteLine($mediaPayload)
             } else {
-                $script:lastMediaTitle = ""
-                [Console]::WriteLine('{"type":"media","active":false}')
+                if ($script:lastMediaActive) {
+                    $script:lastMediaActive = $false
+                    $script:lastMediaTitle = ""
+                    $script:lastMediaArtist = ""
+                    $script:lastPlaybackStatus = "Closed"
+                    $script:lastMediaAppId = ""
+                    [Console]::WriteLine('{"type":"media","active":false}')
+                }
             }
         }
     } catch {}
@@ -607,72 +635,89 @@ while ($true) {
     # 2. Baca status musik / media yang sedang diputar di Windows (presisi milidetik)
     Poll-MediaSession $false
 
-    # 3. Baca notifikasi masuk (WhatsApp, Phone Link / Koneksi ke Windows HP, Telegram, dll.)
-    try {
-        if ($notifAccess -eq 'Allowed') {
-            $notifs = Await ($notifListener.GetNotificationsAsync([Windows.UI.Notifications.NotificationKinds]::Toast)) ([System.Collections.Generic.IReadOnlyList[Windows.UI.Notifications.UserNotification]])
-            if ($notifs) {
-                $newItems = @()
-                foreach ($n in $notifs) {
-                    $nid = [string]$n.Id
-                    if (-not $seenNotifIds.ContainsKey($nid)) {
-                        $seenNotifIds[$nid] = $true
-                        $appName = ""
-                        try { $appName = [string]$n.AppInfo.DisplayInfo.DisplayName } catch {}
-                        if ($appName -match 'Antigravity|Snipping Tool|Security|Windows Defender') {
-                            continue
+    # 3. Baca notifikasi masuk (setiap 3 detik untuk menghemat CPU WinRT)
+    if (($tickCount % 3) -eq 0) {
+        try {
+            if ($notifAccess -eq 'Allowed') {
+                $notifs = Await ($notifListener.GetNotificationsAsync([Windows.UI.Notifications.NotificationKinds]::Toast)) ([System.Collections.Generic.IReadOnlyList[Windows.UI.Notifications.UserNotification]])
+                if ($notifs -and $notifs.Count -gt 0) {
+                    $hasNew = $false
+                    for ($idx = $notifs.Count - 1; $idx -ge 0; $idx--) {
+                        if (-not $seenNotifIds.ContainsKey([string]$notifs[$idx].Id)) {
+                            $hasNew = $true
+                            break
                         }
-                        $binding = $n.Notification.Visual.GetBinding([Windows.UI.Notifications.KnownNotificationBindings]::ToastGeneric)
-                        $texts = @()
-                        if ($binding) {
-                            foreach ($t in $binding.GetTextElements()) {
-                                if ($t.Text) { $texts += [string]$t.Text }
+                    }
+                    if ($hasNew -or $initialNotifPass) {
+                        $newItems = @()
+                        foreach ($n in $notifs) {
+                            $nid = [string]$n.Id
+                            if (-not $seenNotifIds.ContainsKey($nid)) {
+                                $seenNotifIds[$nid] = $true
+                                $appName = ""
+                                try { $appName = [string]$n.AppInfo.DisplayInfo.DisplayName } catch {}
+                                if ($appName -match 'Antigravity|Snipping Tool|Security|Windows Defender') {
+                                    continue
+                                }
+                                $binding = $n.Notification.Visual.GetBinding([Windows.UI.Notifications.KnownNotificationBindings]::ToastGeneric)
+                                $texts = @()
+                                if ($binding) {
+                                    foreach ($t in $binding.GetTextElements()) {
+                                        if ($t.Text) { $texts += [string]$t.Text }
+                                    }
+                                }
+                                if ($texts.Count -gt 0) {
+                                    $sender = $texts[0]
+                                    if ($sender -match 'Deadline LMS Mendesak') { continue }
+                                    $msg = if ($texts.Count -gt 1) { ($texts[1..($texts.Count - 1)] -join ' ') } else { "" }
+                                    $lowApp = $appName.ToLowerInvariant()
+                                    $lowSender = $sender.ToLowerInvariant()
+                                    $isWa = ($lowApp -match 'whatsapp|electron') -or ($lowSender -match 'whatsapp') -or ($msg.ToLowerInvariant() -match 'whatsapp')
+                                    if ($lowApp -eq 'electron') {
+                                        $appName = "WhatsApp"
+                                    }
+                                    $isPhone = ($lowApp -match 'phone|koneksi|link to windows|yourphone|crossdevice')
+                                    $newItems += @{
+                                        id = $nid
+                                        app = if ($isWa) { "WhatsApp" } elseif ($appName) { $appName } else { "Notifikasi" }
+                                        sender = $sender
+                                        message = $msg
+                                        isWhatsApp = [bool]$isWa
+                                        isPhone = [bool]$isPhone
+                                        time = $n.CreationTime.ToUnixTimeMilliseconds()
+                                        isNew = (-not $initialNotifPass)
+                                    }
+                                }
                             }
                         }
-                        if ($texts.Count -gt 0) {
-                            $sender = $texts[0]
-                            if ($sender -match 'Deadline LMS Mendesak') { continue }
-                            $msg = if ($texts.Count -gt 1) { ($texts[1..($texts.Count - 1)] -join ' ') } else { "" }
-                            $lowApp = $appName.ToLowerInvariant()
-                            $lowSender = $sender.ToLowerInvariant()
-                            $isWa = ($lowApp -match 'whatsapp|electron') -or ($lowSender -match 'whatsapp') -or ($msg.ToLowerInvariant() -match 'whatsapp')
-                            if ($lowApp -eq 'electron') {
-                                $appName = "WhatsApp"
-                            }
-                            $isPhone = ($lowApp -match 'phone|koneksi|link to windows|yourphone|crossdevice')
-                            $newItems += @{
-                                id = $nid
-                                app = if ($isWa) { "WhatsApp" } elseif ($appName) { $appName } else { "Notifikasi" }
-                                sender = $sender
-                                message = $msg
-                                isWhatsApp = [bool]$isWa
-                                isPhone = [bool]$isPhone
-                                time = $n.CreationTime.ToUnixTimeMilliseconds()
-                                isNew = (-not $initialNotifPass)
-                            }
+                        $initialNotifPass = $false
+                        if ($newItems.Count -gt 0) {
+                            $notifPayload = @{
+                                type = "notifs"
+                                items = @($newItems | Select-Object -Last 8)
+                            } | ConvertTo-Json -Compress -Depth 4
+                            [Console]::WriteLine($notifPayload)
                         }
                     }
                 }
-                $initialNotifPass = $false
-                if ($newItems.Count -gt 0) {
-                    $notifPayload = @{
-                        type = "notifs"
-                        items = @($newItems | Select-Object -Last 8)
-                    } | ConvertTo-Json -Compress -Depth 4
-                    [Console]::WriteLine($notifPayload)
-                }
             }
-        }
-    } catch {}
+        } catch {}
+    }
 
     # 4. Baca Baterai Laptop, Status Cas, Baterai HP (Redmi Note 13 Pro+ 5G, dll.) & TWS/Headset Bluetooth
-    if (($tickCount % 5) -eq 0) {
-        try {
-            $ps = [System.Windows.Forms.SystemInformation]::PowerStatus
-            $laptopPct = [math]::Round($ps.BatteryLifePercent * 100)
-            if ($laptopPct -gt 100) { $laptopPct = 100 }
-            $isCharging = ($ps.PowerLineStatus -eq [System.Windows.Forms.PowerLineStatus]::Online)
+    $ps = [System.Windows.Forms.SystemInformation]::PowerStatus
+    $laptopPct = [math]::Round($ps.BatteryLifePercent * 100)
+    if ($laptopPct -gt 100) { $laptopPct = 100 }
+    $isCharging = ($ps.PowerLineStatus -eq [System.Windows.Forms.PowerLineStatus]::Online)
 
+    $powerChanged = ($laptopPct -ne $script:lastLaptopPct) -or ($isCharging -ne $script:lastCharging)
+    $needDeepScan = (-not $script:hasInitialBtScanned) -or $powerChanged -or (($tickCount % 20) -eq 0)
+
+    if ($needDeepScan) {
+        $script:hasInitialBtScanned = $true
+        $script:lastLaptopPct = $laptopPct
+        $script:lastCharging = $isCharging
+        try {
             # 1) Kumpulkan persentase baterai Bluetooth dari HFP (0000111*) dan BLE GATT Battery (0000180f*) berdasarkan MAC
             $btBatByMac = @{}
             $hfpKeys = Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Enum\BTHENUM\{0000111*" -ErrorAction SilentlyContinue
@@ -833,6 +878,14 @@ while ($true) {
                 }
             }
 
+            $script:lastBtDevices = $devices
+        } catch {}
+    } else {
+        $devices = $script:lastBtDevices
+    }
+
+    if ($powerChanged -or (($tickCount % 8) -eq 0)) {
+        try {
             $powerPayload = @{
                 type = "power"
                 laptop = @{
@@ -855,30 +908,28 @@ while ($true) {
             }
         } catch {}
     }
-    for ($w = 0; $w -lt 18; $w++) {
-        Start-Sleep -Milliseconds 50
-        Process-MediaCmd
-        if ($w -eq 4 -or $w -eq 8 -or $w -eq 12 -or $w -eq 16) {
-            Poll-MediaSession $true
-        }
-        if ($w -eq 0 -or $w -eq 9) {
-            try {
-                $curV = [AudioMaster]::GetVolume()
-                $curM = [AudioMaster]::GetMute()
-                if ($curV -ge 0) {
-                    $lvl = [math]::Round($curV * 100)
-                    if ($lvl -ne $script:lastReportedVol -or [bool]$curM -ne [bool]$script:lastReportedMute) {
-                        $script:lastReportedVol = $lvl
-                        $script:lastReportedMute = [bool]$curM
-                        $volPayload = @{
-                            type = "volume"
-                            level = $lvl
-                            muted = [bool]$curM
-                        } | ConvertTo-Json -Compress
-                        [Console]::WriteLine($volPayload)
-                    }
+    $isMediaPlaying = ($script:lastPlaybackStatus -eq 'Playing')
+    $sleepMs = if ($isMediaPlaying) { 650 } else { 1800 }
+    Start-Sleep -Milliseconds $sleepMs
+    Process-MediaCmd
+
+    if (($tickCount % 6) -eq 0) {
+        try {
+            $curV = [AudioMaster]::GetVolume()
+            $curM = [AudioMaster]::GetMute()
+            if ($curV -ge 0) {
+                $lvl = [math]::Round($curV * 100)
+                if ($lvl -ne $script:lastReportedVol -or [bool]$curM -ne [bool]$script:lastReportedMute) {
+                    $script:lastReportedVol = $lvl
+                    $script:lastReportedMute = [bool]$curM
+                    $volPayload = @{
+                        type = "volume"
+                        level = $lvl
+                        muted = [bool]$curM
+                    } | ConvertTo-Json -Compress
+                    [Console]::WriteLine($volPayload)
                 }
-            } catch {}
-        }
+            }
+        } catch {}
     }
 }

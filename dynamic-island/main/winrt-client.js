@@ -47,6 +47,9 @@ function startWinRtBridge() {
                 try {
                     const msg = JSON.parse(trimmed);
                     if (msg.type === 'media') {
+                        if (!msg.active && lastMediaPayload && !lastMediaPayload.active) {
+                            return;
+                        }
                         if (msg.thumb) {
                             lastMediaThumb = msg.thumb;
                         } else if (lastMediaThumb && msg.active) {

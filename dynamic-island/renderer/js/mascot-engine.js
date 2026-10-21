@@ -59,6 +59,7 @@ function setMascotEmotion(moodName, durationMs = 1800) {
     if (currentMood) {
         eyesContainerEl.classList.add(currentMood);
         lPetEl.classList.add(currentMood);
+        ensureLivingEyesLoop();
         // Setelah menampilkan 1 emosi, otomatis kembali ke mata normal yang tenang agar tidak menumpuk sekaligus
         moodResetTimer = setTimeout(() => {
             if (!eyesContainerEl || !lPetEl) return;
@@ -67,12 +68,14 @@ function setMascotEmotion(moodName, durationMs = 1800) {
             currentMood = '';
             idleGazeX = 0;
             idleGazeY = 0;
+            ensureLivingEyesLoop();
         }, durationMs);
     }
 }
 
 ipcRenderer.on('nusa-cursor', (event, pt) => {
     if (!pt) return;
+    ensureLivingEyesLoop();
     const now = performance.now();
     const deltaDx = pt.dx - lastCursorDx;
     if (Math.abs(deltaDx) > 38 && Math.sign(deltaDx) !== Math.sign(lastCursorDx)) {
@@ -99,9 +102,52 @@ ipcRenderer.on('nusa-cursor', (event, pt) => {
     }
 });
 
+// ================= PENGATURAN FPS MASKOT (HEMAT DAYA & ULTRA RINGAN) =================
+let mascotFpsSetting = localStorage.getItem('ukikura_mascot_fps') || 'eco';
+
+function getMascotFpsInterval() {
+    if (mascotFpsSetting === '15') return 66.6;
+    if (mascotFpsSetting === '30') return 33.3;
+    if (mascotFpsSetting === '60') return 16.6;
+    return 33.3; // 'eco' default 30 FPS saat kursor bergerak
+}
+
+function applyMascotFpsClass() {
+    if (mnEl) {
+        mnEl.classList.toggle('fps-eco', mascotFpsSetting === 'eco');
+        mnEl.classList.toggle('fps-15', mascotFpsSetting === '15');
+        mnEl.classList.toggle('fps-30', mascotFpsSetting === '30');
+        mnEl.classList.toggle('fps-60', mascotFpsSetting === '60');
+    }
+}
+
+function updateMascotFpsLabel() {
+    applyMascotFpsClass();
+    const lbl = document.getElementById('mascot-fps-label');
+    if (!lbl) return;
+    if (mascotFpsSetting === 'eco') lbl.textContent = 'Eco';
+    else if (mascotFpsSetting === '15') lbl.textContent = '15 FPS';
+    else if (mascotFpsSetting === '30') lbl.textContent = '30 FPS';
+    else lbl.textContent = '60 FPS';
+}
+
+function cycleMascotFps() {
+    const sequence = ['eco', '60', '30', '15'];
+    const curIdx = sequence.indexOf(mascotFpsSetting);
+    mascotFpsSetting = sequence[(curIdx + 1) % sequence.length];
+    localStorage.setItem('ukikura_mascot_fps', mascotFpsSetting);
+    updateMascotFpsLabel();
+    ensureLivingEyesLoop();
+}
+
 // Kedip natural & kedip ganda (Double Blink) berkala (hanya saat mata normal / tidak sedang ekspresi khusus)
 function scheduleNextBlink() {
-    const delay = 2200 + Math.random() * 3400;
+    let minDelay = 7500;
+    let extraDelay = 8000;
+    if (mascotFpsSetting === '60') { minDelay = 2200; extraDelay = 3000; }
+    else if (mascotFpsSetting === '30') { minDelay = 3800; extraDelay = 4000; }
+    else if (mascotFpsSetting === '15') { minDelay = 5500; extraDelay = 5000; }
+    const delay = minDelay + Math.random() * extraDelay;
     setTimeout(() => {
         if (currentMood) {
             scheduleNextBlink();
@@ -109,13 +155,17 @@ function scheduleNextBlink() {
         }
         const isDouble = Math.random() < 0.35;
         blinkFactor = 0.14;
+        ensureLivingEyesLoop();
         setTimeout(() => {
             blinkFactor = 1;
+            ensureLivingEyesLoop();
             if (isDouble) {
                 setTimeout(() => {
                     blinkFactor = 0.14;
+                    ensureLivingEyesLoop();
                     setTimeout(() => {
                         blinkFactor = 1;
+                        ensureLivingEyesLoop();
                         scheduleNextBlink();
                     }, 85);
                 }, 110);
@@ -149,9 +199,14 @@ const EMOTION_SCENES = [
     { mood: 'mood-sleepy', duration: 2400, setup: () => { idleGazeX = 0; idleGazeY = 1.2; } }
 ];
 
-// Jadwalkan 1 emosi setiap 5.5 - 8 detik saat kursor diam, lalu kembali ke mata normal (tidak pernah muncul sekaligus)
+// Jadwalkan 1 emosi saat kursor diam (Eco mode tenang & hemat CPU, 60fps lebih sering)
 function scheduleNextEmotionScene() {
-    const waitMs = 5200 + Math.random() * 3200;
+    let minWait = 35000;
+    let extraWait = 25000;
+    if (mascotFpsSetting === '60') { minWait = 6000; extraWait = 4000; }
+    else if (mascotFpsSetting === '30') { minWait = 14000; extraWait = 9000; }
+    else if (mascotFpsSetting === '15') { minWait = 22000; extraWait = 14000; }
+    const waitMs = minWait + Math.random() * extraWait;
     setTimeout(() => {
         if (!eyesContainerEl) {
             scheduleNextEmotionScene();
@@ -172,47 +227,28 @@ function scheduleNextEmotionScene() {
 }
 scheduleNextEmotionScene();
 
-// ================= PENGATURAN FPS MASKOT (HEMAT DAYA & ULTRA RINGAN) =================
-let mascotFpsSetting = localStorage.getItem('ukikura_mascot_fps') || 'eco';
-
-function getMascotFpsInterval() {
-    if (mascotFpsSetting === '15') return 66.6;
-    if (mascotFpsSetting === '30') return 33.3;
-    if (mascotFpsSetting === '60') return 16.6;
-    return 33.3; // 'eco' default 30 FPS saat kursor bergerak
-}
-
-function updateMascotFpsLabel() {
-    const lbl = document.getElementById('mascot-fps-label');
-    if (!lbl) return;
-    if (mascotFpsSetting === 'eco') lbl.textContent = 'Eco';
-    else if (mascotFpsSetting === '15') lbl.textContent = '15 FPS';
-    else if (mascotFpsSetting === '30') lbl.textContent = '30 FPS';
-    else lbl.textContent = '60 FPS';
-}
-
-function cycleMascotFps() {
-    const sequence = ['eco', '60', '30', '15'];
-    const curIdx = sequence.indexOf(mascotFpsSetting);
-    mascotFpsSetting = sequence[(curIdx + 1) % sequence.length];
-    localStorage.setItem('ukikura_mascot_fps', mascotFpsSetting);
-    updateMascotFpsLabel();
-}
-
 // Loop fisika pegas adaptif untuk pergerakan mata maskot (Settled Zero-Repaint)
 let lastEyeTick = performance.now();
 let lastMascotRenderTime = 0;
 let lastRenderedStateKey = '';
+let isLivingEyesRunning = false;
+
+function ensureLivingEyesLoop() {
+    if (isLivingEyesRunning) return;
+    isLivingEyesRunning = true;
+    lastEyeTick = performance.now();
+    requestAnimationFrame(stepLivingEyes);
+}
 
 function stepLivingEyes(now) {
-    requestAnimationFrame(stepLivingEyes);
-
     if (isExpanded || mnEl.dataset.s !== 'pet' || !eyesContainerEl) {
+        isLivingEyesRunning = false;
         return;
     }
 
     const interval = getMascotFpsInterval();
     if ((now - lastMascotRenderTime) < (interval - 1.5)) {
+        if (isLivingEyesRunning) requestAnimationFrame(stepLivingEyes);
         return;
     }
 
@@ -231,14 +267,24 @@ function stepLivingEyes(now) {
     eyeCurX += eyeVelX * dt;
     eyeCurY += eyeVelY * dt;
 
+    if (Math.abs(tx - eyeCurX) < 0.12 && Math.abs(eyeVelX) < 0.25) {
+        eyeCurX = tx;
+        eyeVelX = 0;
+    }
+    if (Math.abs(ty - eyeCurY) < 0.12 && Math.abs(eyeVelY) < 0.25) {
+        eyeCurY = ty;
+        eyeVelY = 0;
+    }
+
     // Deteksi apakah mata sudah sampai di tujuan dan diam (settled)
     const isMoving = Math.abs(tx - eyeCurX) > 0.08 || Math.abs(ty - eyeCurY) > 0.08 || Math.abs(eyeVelX) > 0.08 || Math.abs(eyeVelY) > 0.08;
     const isSpecialMood = (currentMood === 'mood-dizzy' || currentMood === 'mood-angry');
     const isBlinking = (blinkFactor < 0.98);
 
     // KUNCI PENGHEMAT CPU (0% IDLE):
-    // Jika mata sudah diam dan tidak berkedip, lewati seluruh mutasi CSS DOM!
+    // Jika mata sudah diam dan tidak berkedip, hentikan loop rAF sepenuhnya!
     if (!isMoving && !isSpecialMood && !isBlinking && lastRenderedStateKey === 'settled') {
+        isLivingEyesRunning = false;
         return;
     }
 
@@ -270,6 +316,7 @@ function stepLivingEyes(now) {
         : `${eyeCurX.toFixed(1)}_${eyeCurY.toFixed(1)}_${clampedTilt.toFixed(1)}_${lsy}_${rsy}_${currentMood}`;
 
     if (stateKey === lastRenderedStateKey && stateKey !== 'settled') {
+        if (isLivingEyesRunning) requestAnimationFrame(stepLivingEyes);
         return;
     }
     lastRenderedStateKey = stateKey;
@@ -285,8 +332,15 @@ function stepLivingEyes(now) {
     eyesContainerEl.style.setProperty('--rsx', String(rightEyeScaleX));
     eyesContainerEl.style.setProperty('--lsy', lsy);
     eyesContainerEl.style.setProperty('--rsy', rsy);
+
+    if (isMoving || isSpecialMood || isBlinking || stateKey !== 'settled') {
+        requestAnimationFrame(stepLivingEyes);
+    } else {
+        isLivingEyesRunning = false;
+    }
 }
-requestAnimationFrame(stepLivingEyes);
+ensureLivingEyesLoop();
+window.ensureLivingEyesLoop = ensureLivingEyesLoop;
 
 updateMascotFpsLabel();
 

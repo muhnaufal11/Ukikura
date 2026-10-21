@@ -248,6 +248,11 @@ function updateMediaProgressUI() {
 }
 
 function scrollLyricsToActive() {
+    const isLyricsVisible = (isExpanded && (currentPage === 'lyrics' || currentPage === 'music')) || (mnEl && mnEl.dataset.s === 'karaoke');
+    if (!isLyricsVisible) {
+        return;
+    }
+
     const items = lyrListEl.querySelectorAll('li');
     if (!items.length) {
         if (typeof updateKaraokeOverlay === 'function') updateKaraokeOverlay();
@@ -476,21 +481,37 @@ if (lKaraokeEl) {
 }
 
 let lastProgressTick = 0;
-setInterval(() => {
-    if (!mediaState.active || mediaState.status !== 'Playing') return;
-    const now = performance.now();
-    const isInteractive = isExpanded || lyricsMode || (mnEl && mnEl.dataset.s === 'karaoke');
-    const delay = isInteractive ? 50 : 250;
-    if (now - lastProgressTick < delay) return;
-    lastProgressTick = now;
-    updateMediaProgressUI();
-}, 40);
+let mediaProgressTimer = null;
+
+function ensureMediaProgressLoop() {
+    if (mediaProgressTimer) return;
+    mediaProgressTimer = setInterval(() => {
+        if (!mediaState.active || mediaState.status !== 'Playing') {
+            clearInterval(mediaProgressTimer);
+            mediaProgressTimer = null;
+            return;
+        }
+        const now = performance.now();
+        const isInteractive = isExpanded || lyricsMode || (mnEl && mnEl.dataset.s === 'karaoke');
+        const delay = isInteractive ? 50 : 1000;
+        if (now - lastProgressTick < delay) return;
+        lastProgressTick = now;
+        updateMediaProgressUI();
+    }, 40);
+}
 
 ipcRenderer.on('media-update', (event, msg) => {
     if (!msg) return;
     const wasPlaying = mediaState.status === 'Playing';
     const isNowPlaying = msg.active && msg.status === 'Playing';
     const trackChanged = msg.title !== mediaState.title;
+
+    if (isNowPlaying) {
+        ensureMediaProgressLoop();
+    } else if (mediaProgressTimer) {
+        clearInterval(mediaProgressTimer);
+        mediaProgressTimer = null;
+    }
 
     mediaState = {
         active: Boolean(msg.active),

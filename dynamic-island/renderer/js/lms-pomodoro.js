@@ -111,50 +111,64 @@ function updateLiveMetrics() {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    document.getElementById('js-time').textContent = timeStr;
-    document.getElementById('js-date').textContent = `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+    const dateStr = `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+    const timeEl = document.getElementById('js-time');
+    const dateEl = document.getElementById('js-date');
+    if (timeEl && timeEl.textContent !== timeStr) timeEl.textContent = timeStr;
+    if (dateEl && dateEl.textContent !== dateStr) dateEl.textContent = dateStr;
 
     const { pending, nearest } = getNearestPendingTask(now);
     const urgentList = pending.filter(t => t.dueTimestamp !== null && (t.dueTimestamp - now) <= urgentThresholdHours * 3600 * 1000);
     const lapPct = Math.max(0, Math.min(100, Math.round(Number(powerState.laptop.battery) || 100)));
 
-    idleRingEl.style.setProperty('--p', `${lapPct}%`);
-    hdrRingEl.style.setProperty('--p', `${lapPct}%`);
-    petCountEl.textContent = String(pending.length);
+    const lapPctStr = `${lapPct}%`;
+    if (idleRingEl && idleRingEl.style.getPropertyValue('--p') !== lapPctStr) {
+        idleRingEl.style.setProperty('--p', lapPctStr);
+    }
+    if (hdrRingEl && hdrRingEl.style.getPropertyValue('--p') !== lapPctStr) {
+        hdrRingEl.style.setProperty('--p', lapPctStr);
+    }
+    const pendingCountStr = String(pending.length);
+    if (petCountEl && petCountEl.textContent !== pendingCountStr) {
+        petCountEl.textContent = pendingCountStr;
+    }
 
-    if (urgentList.length > 0) {
-        mnEl.classList.add('urgent');
-        if (nearest && !notifiedUrgentIds.has(nearest.id)) {
-            notifiedUrgentIds.add(nearest.id);
-            try {
-                new Notification('Deadline LMS Mendesak', {
-                    body: `${nearest.title} (${nearest.courseName}) — ${formatRealtimeCountdown(nearest.dueTimestamp - now)}`
-                });
-            } catch (_) {}
-            if (typeof window.playAudioAlert === 'function') {
-                window.playAudioAlert('deadline');
-            }
+    const isUrgent = (urgentList.length > 0);
+    if (isUrgent !== mnEl.classList.contains('urgent')) {
+        mnEl.classList.toggle('urgent', isUrgent);
+    }
+    if (isUrgent && nearest && !notifiedUrgentIds.has(nearest.id)) {
+        notifiedUrgentIds.add(nearest.id);
+        try {
+            new Notification('Deadline LMS Mendesak', {
+                body: `${nearest.title} (${nearest.courseName}) — ${formatRealtimeCountdown(nearest.dueTimestamp - now)}`
+            });
+        } catch (_) {}
+        if (typeof window.playAudioAlert === 'function') {
+            window.playAudioAlert('deadline');
         }
-    } else {
-        mnEl.classList.remove('urgent');
     }
 
     // Peringatan Khusus Kuis LMS Sisa <= 5 Jam (Peek Popup + Suara Alert + Desktop Toast)
     check5HourQuizAlerts(pending, now);
 
     // Update Closed Bar Text: Prioritaskan Judul Musik bila sedang diputar
+    let newIdleText = '';
     if (mediaState.active && mediaState.status === 'Playing' && mediaState.title) {
-        idleCenterEl.textContent = mediaState.artist
+        newIdleText = mediaState.artist
             ? `${mediaState.title} · ${mediaState.artist}`
             : mediaState.title;
     } else if (nearest && nearest.dueTimestamp !== null) {
-        idleCenterEl.textContent = formatRealtimeCountdown(nearest.dueTimestamp - now);
+        newIdleText = formatRealtimeCountdown(nearest.dueTimestamp - now);
     } else {
-        idleCenterEl.textContent = pending.length > 0 ? `${pending.length} Tugas` : timeStr;
+        newIdleText = pending.length > 0 ? `${pending.length} Tugas` : timeStr;
+    }
+    if (idleCenterEl && idleCenterEl.textContent !== newIdleText) {
+        idleCenterEl.textContent = newIdleText;
     }
 
-    // Update progress musik & lirik secara halus
-    if (mediaState.active) {
+    // Update progress musik & lirik secara halus hanya saat musik diputar
+    if (mediaState.active && mediaState.status === 'Playing') {
         updateMediaProgressUI();
     }
 
