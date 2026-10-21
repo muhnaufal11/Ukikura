@@ -1297,10 +1297,129 @@ void ProcessFileCommands(MediaController &media, const std::wstring &cmdFile, co
 }
 
 // ------------------------------------------------------------------------------
-// Main Entry Point
+// Main Entry Point & PE Resource Patcher
 // ------------------------------------------------------------------------------
 
-int main() {
+#pragma pack(push, 2)
+struct ICONDIRENTRY {
+    BYTE bWidth;
+    BYTE bHeight;
+    BYTE bColorCount;
+    BYTE bReserved;
+    WORD wPlanes;
+    WORD wBitCount;
+    DWORD dwBytesInRes;
+    DWORD dwImageOffset;
+};
+
+struct ICONDIR {
+    WORD idReserved;
+    WORD idType;
+    WORD idCount;
+};
+
+struct GRPICONDIRENTRY {
+    BYTE bWidth;
+    BYTE bHeight;
+    BYTE bColorCount;
+    BYTE bReserved;
+    WORD wPlanes;
+    WORD wBitCount;
+    DWORD dwBytesInRes;
+    WORD nID;
+};
+
+struct GRPICONDIR {
+    WORD idReserved;
+    WORD idType;
+    WORD idCount;
+};
+#pragma pack(pop)
+
+bool PatchUkikuraExe(const std::wstring &exePath, const std::wstring &icoPath) {
+    // 1. Ganti string Description & ProductName di binary dari Electron ke Ukikura
+    {
+        HANDLE hFile = CreateFileW(exePath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (hFile != INVALID_HANDLE_VALUE) {
+            DWORD fileSize = GetFileSize(hFile, NULL);
+            if (fileSize > 0) {
+                HANDLE hMap = CreateFileMappingW(hFile, NULL, PAGE_READWRITE, 0, 0, NULL);
+                if (hMap) {
+                    char *pData = (char*)MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+                    if (pData) {
+                        const wchar_t oldStr[] = L"Electron\0";
+                        const wchar_t newStr[] = L"Ukikura\0\0";
+                        size_t matchLen = sizeof(oldStr);
+                        for (size_t i = 0; i + matchLen <= fileSize; ++i) {
+                            if (memcmp(pData + i, oldStr, matchLen) == 0) {
+                                memcpy(pData + i, newStr, matchLen);
+                            }
+                        }
+                        UnmapViewOfFile(pData);
+                    }
+                    CloseHandle(hMap);
+                }
+            }
+            CloseHandle(hFile);
+        }
+    }
+
+    // 2. Ganti RT_GROUP_ICON dan RT_ICON di file EXE
+    {
+        HANDLE hIco = CreateFileW(icoPath.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (hIco == INVALID_HANDLE_VALUE) return false;
+        DWORD icoSize = GetFileSize(hIco, NULL);
+        if (icoSize < sizeof(ICONDIR)) { CloseHandle(hIco); return false; }
+
+        std::vector<char> icoData(icoSize);
+        DWORD bytesRead = 0;
+        ReadFile(hIco, icoData.data(), icoSize, &bytesRead, NULL);
+        CloseHandle(hIco);
+
+        ICONDIR *pIconDir = (ICONDIR*)icoData.data();
+        if (pIconDir->idType != 1 || pIconDir->idCount == 0) return false;
+
+        HANDLE hUpdate = BeginUpdateResourceW(exePath.c_str(), FALSE);
+        if (!hUpdate) return false;
+
+        size_t grpSize = sizeof(GRPICONDIR) + pIconDir->idCount * sizeof(GRPICONDIRENTRY);
+        std::vector<char> grpData(grpSize);
+        GRPICONDIR *pGrpDir = (GRPICONDIR*)grpData.data();
+        pGrpDir->idReserved = 0;
+        pGrpDir->idType = 1;
+        pGrpDir->idCount = pIconDir->idCount;
+
+        GRPICONDIRENTRY *pGrpEntries = (GRPICONDIRENTRY*)(grpData.data() + sizeof(GRPICONDIR));
+        ICONDIRENTRY *pIcoEntries = (ICONDIRENTRY*)(icoData.data() + sizeof(ICONDIR));
+
+        for (WORD i = 0; i < pIconDir->idCount; ++i) {
+            pGrpEntries[i].bWidth = pIcoEntries[i].bWidth;
+            pGrpEntries[i].bHeight = pIcoEntries[i].bHeight;
+            pGrpEntries[i].bColorCount = pIcoEntries[i].bColorCount;
+            pGrpEntries[i].bReserved = pIcoEntries[i].bReserved;
+            pGrpEntries[i].wPlanes = pIcoEntries[i].wPlanes;
+            pGrpEntries[i].wBitCount = pIcoEntries[i].wBitCount;
+            pGrpEntries[i].dwBytesInRes = pIcoEntries[i].dwBytesInRes;
+            pGrpEntries[i].nID = i + 1;
+
+            if (pIcoEntries[i].dwImageOffset + pIcoEntries[i].dwBytesInRes <= icoData.size()) {
+                void *imgData = icoData.data() + pIcoEntries[i].dwImageOffset;
+                UpdateResourceW(hUpdate, RT_ICON, MAKEINTRESOURCEW(i + 1), MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), imgData, pIcoEntries[i].dwBytesInRes);
+            }
+        }
+
+        UpdateResourceW(hUpdate, RT_GROUP_ICON, MAKEINTRESOURCEW(1), MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), grpData.data(), (DWORD)grpData.size());
+        EndUpdateResourceW(hUpdate, FALSE);
+    }
+    return true;
+}
+
+int wmain(int argc, wchar_t *argv[]) {
+    if (argc >= 4 && (wcscmp(argv[1], L"--patch-target") == 0 || wcscmp(argv[1], L"--patch-icon") == 0)) {
+        bool ok = PatchUkikuraExe(argv[2], argv[3]);
+        return ok ? 0 : 1;
+    }
+
     SetConsoleOutputCP(CP_UTF8);
     RoInitialize(RO_INIT_MULTITHREADED);
 

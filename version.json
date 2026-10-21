@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 54,
+  "versionCode": 55,
   "version": "1.0.6",
-  "fixCount": 54,
-  "displayVersion": "1.0.6 (Patch 54 - Native C++ Hardware Bridge & Restoration of Patch 44 Desktop Architecture)",
+  "fixCount": 55,
+  "displayVersion": "1.0.6 (Patch 55 - Cloud Lightweight Web Installer, Ukikura PE Binary Identity & Task Manager Grouping)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 54 - Pemulihan Penuh Arsitektur Desktop Patch 44 & Implementasi Hardware Bridge Native C++ ukikura-bridge.exe): 1) Mengembalikan host desktop utama ke arsitektur Patch 44 yang stabil dan kaya fitur (transparansi tanpa clipping, fisika maskot 11 emosi, lirik sinkron 3 bahasa Romaji/Kanji/Sub-Indo, dan WhatsApp Web background). 2) Menggantikan bridge PowerShell dengan biner native C++ murni (ukikura-bridge.exe) berkinerja tinggi, RAM ~2 MB, 0% CPU idle, untuk kontrol WASAPI master volume, WinRT SMTC media metadata/timeline/thumbnail, baterai laptop/Bluetooth (CfgMgr32), dan Toast notifications. 3) Mengemas installer mandiri offline 100% tanpa perlu unduhan internet."
+  "changelog": "Ukikura v1.0.6 (Patch 55 - Cloud Lightweight Web Installer, Ukikura PE Binary Identity & Process Grouping): 1) Mengembalikan format installer ke arsitektur Cloud Web Installer ultra-ringan (~2.2 MB) yang mengunduh runtime secara otomatis saat instalasi baru dan langsung melewatinya jika sudah terpasang. 2) Mengganti nama biner eksekusi menjadi Ukikura.exe serta mem-patch PE header, ikon RT_GROUP_ICON/RT_ICON, FileDescription, dan ProductName langsung via ukikura-bridge.exe sehingga Windows Task Manager menampilkan nama resmi Ukikura dan ikon Ukikura (bukan Electron / atom biru). 3) Mengoptimalkan penggunaan RAM dengan memuat WhatsApp Web secara on-demand sehingga konsumsi memori idle turun drastis (~200 MB) namun notifikasi WhatsApp native tetap tertangkap seketika via bridge C++."
 }

@@ -1,5 +1,7 @@
 "use strict";
 const { app, BrowserWindow, ipcMain, screen, shell, Tray, Menu, nativeImage, powerMonitor, desktopCapturer, session, dialog } = require("electron");
+app.name = 'Ukikura';
+try { app.setName('Ukikura'); } catch (_) {}
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
@@ -680,9 +682,10 @@ if (!gotLock) {
         setTimeout(() => checkGitHubForUpdates(false), 6000);
         setInterval(() => checkGitHubForUpdates(false), 2 * 60 * 60 * 1000);
 
-        // Siapkan pemantau WhatsApp di background (otomatis mendeteksi jika sebelumnya sudah login QR)
-        setTimeout(() => ensureWhatsAppWindow(false), 3000);
-        setInterval(() => pollWhatsAppUnread(), 5000);
+        // Pemantau WhatsApp Web dimuat secara on-demand saat pengguna mengklik chat/notifikasi untuk menghemat ~160 MB RAM
+        // Notifikasi sistem tetap tertangkap 100% instan (0ms) via biner C++ ukikura-bridge.exe (UserNotificationListener)
+        // setTimeout(() => ensureWhatsAppWindow(false), 3000);
+        // setInterval(() => pollWhatsAppUnread(), 5000);
 
         // Jalankan background crawler LMS otomatis saat start & setiap 5 menit
         setTimeout(() => runHiddenLmsCrawler(), 4000);

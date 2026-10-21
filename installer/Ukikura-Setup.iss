@@ -1,18 +1,19 @@
 ; ==============================================================================
-; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT (OFFLINE STANDALONE RUNTIME)
+; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT (CLOUD LIGHTWEIGHT INSTALLER)
 ; Uki (Terapung / Floating Island) + Kura (Gudang Penyimpanan Data & Tugas)
-; Versi: 1.0.6 (Kode Versi: 54 - Native C++ Bridge & Patch 44 Architecture)
+; Versi: 1.0.6 (Kode Versi: 55 - Cloud Installer & Native Ukikura Identity)
 ; License: GNU General Public License v3.0 (GPLv3)
 ; ==============================================================================
 
 #define MyAppName "Ukikura"
 #define MyAppFullTitle "Ukikura (浮倉) — Floating Island & Task Vault"
 #define MyAppVersion "1.0.6"
-#define MyAppVersionCode "54"
+#define MyAppVersionCode "55"
 #define MyAppPublisher "Nauflix (muhnaufal11)"
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
-#define MyAppExeName "electron.exe"
+#define MyAppExeName "Ukikura.exe"
 #define MyAppEntryArgs "dynamic-island\main.js"
+#define ElectronZipUrl "https://github.com/electron/electron/releases/download/v33.2.0/electron-v33.2.0-win32-x64.zip"
 #define OutputName "Ukikura-Setup-v" + MyAppVersion
 
 [Setup]
@@ -57,12 +58,7 @@ Name: "autostart"; Description: "Jalankan Ukikura otomatis saat Windows menyala 
 Name: "{app}\runtime"
 
 [Files]
-; 1. Runtime Mandiri Standalone (100% Offline, Tanpa Perlu Unduh Internet saat Instalasi)
-; Mengoptimalkan paket dengan menyertakan en-US.pak dan mengecualikan file html lisensi & shader compiler non-esensial agar installer < 90 MB
-Source: "..\node_modules\electron\dist\*"; DestDir: "{app}\runtime"; Excludes: "LICENSES.chromium.html,locales\*,dxcompiler.dll,dxil.dll,vk_swiftshader.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "..\node_modules\electron\dist\locales\en-US.pak"; DestDir: "{app}\runtime\locales"; Flags: ignoreversion
-
-; 2. Modul Utama Ukikura (Dynamic Island, Mesin Lirik, UI Assets, Native C++ Bridge ukikura-bridge.exe)
+; Modul Utama Ukikura (Dynamic Island, Mesin Lirik, UI Assets, Native C++ Bridge ukikura-bridge.exe)
 Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*,host-rust\*,src\*,*.md"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\Ukikura-Debug.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\version.json"; DestDir: "{app}"; Flags: ignoreversion
@@ -86,38 +82,88 @@ Type: files; Name: "{userappdata}\Microsoft\Windows\Start Menu\Programs\Startup\
 Type: files; Name: "{userstartup}\NusaDynamicIsland.vbs"
 
 [Run]
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; StatusMsg: "Menutup sesi lama Ukikura..."; Flags: runhidden waituntilterminated
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM ukikura-bridge.exe /T"; StatusMsg: "Menutup sesi lama bridge..."; Flags: runhidden waituntilterminated
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Ukikura.exe /T"; Flags: runhidden waituntilterminated
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Ukikura.exe /T"; StatusMsg: "Menutup sesi lama Ukikura..."; Flags: runhidden waituntilterminated
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; Flags: runhidden waituntilterminated
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM ukikura-bridge.exe /T"; Flags: runhidden waituntilterminated
+Filename: "{sys}\tar.exe"; Parameters: "-xf ""{tmp}\electron-runtime.zip"" -C ""{app}\runtime"""; StatusMsg: "Mengekstrak runtime Ukikura..."; Check: FileExists(ExpandConstant('{tmp}\electron-runtime.zip')); Flags: runhidden waituntilterminated
+Filename: "{sys}\cmd.exe"; Parameters: "/c if exist ""{app}\runtime\electron.exe"" move /y ""{app}\runtime\electron.exe"" ""{app}\runtime\Ukikura.exe"""; StatusMsg: "Menyiapkan biner Ukikura..."; Flags: runhidden waituntilterminated
+Filename: "{app}\dynamic-island\bridge\ukikura-bridge.exe"; Parameters: """--patch-target"" ""{app}\runtime\Ukikura.exe"" ""{app}\assets\ukikura-logo.ico"""; StatusMsg: "Menerapkan ikon dan identitas Ukikura..."; Flags: runhidden waituntilterminated
 Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; Description: "Jalankan {#MyAppFullTitle} sekarang"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopUkikuraProcesses"
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Ukikura.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopUkikuraProcesses"
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopElectronProcesses"
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM ukikura-bridge.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopUkikuraBridge"
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Ukikura.exe /T"; Flags: runhidden waituntilterminated; RunOnceId: "StopUkikuraHost"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\runtime"
 
 [Code]
-function InitializeSetup(): Boolean;
 var
-  ResultCode: Integer;
+  DownloadPage: TDownloadWizardPage;
+
+function OnDownloadProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
 begin
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM ukikura-bridge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Ukikura.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Sleep(250);
+  if Progress = ProgressMax then
+    Log(Format('Successfully downloaded file to {tmp}: %s', [FileName]));
   Result := True;
 end;
 
-function PrepareToInstall(var NeedsRestart: Boolean): String;
+procedure TerminateUkikuraProcesses();
 var
   ResultCode: Integer;
 begin
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Ukikura.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM ukikura-bridge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Ukikura.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Sleep(250);
+  Sleep(400);
+end;
+
+function InitializeSetup(): Boolean;
+begin
+  TerminateUkikuraProcesses();
+  Result := True;
+end;
+
+procedure InitializeWizard;
+begin
+  DownloadPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), SetupMessage(msgPreparingDesc), @OnDownloadProgress);
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  TerminateUkikuraProcesses();
   Result := '';
+end;
+
+function IsRuntimeComplete(): Boolean;
+begin
+  Result := (FileExists(ExpandConstant('{app}\runtime\Ukikura.exe')) or FileExists(ExpandConstant('{app}\runtime\electron.exe'))) and FileExists(ExpandConstant('{app}\runtime\icudtl.dat'));
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  if CurPageID = wpReady then begin
+    DownloadPage.Clear;
+    if not IsRuntimeComplete() then begin
+      DownloadPage.Add('{#ElectronZipUrl}', 'electron-runtime.zip', '');
+      DownloadPage.Show;
+      try
+        try
+          DownloadPage.Download;
+          Result := True;
+        except
+          if DownloadPage.AbortedByUser then
+            Log('Download aborted by user.')
+          else
+            SuppressibleMsgBox(AddPeriod(GetExceptionMessage), mbCriticalError, MB_OK, IDOK);
+          Result := False;
+        end;
+      finally
+        DownloadPage.Hide;
+      end;
+    end else
+      Result := True;
+  end else
+    Result := True;
 end;

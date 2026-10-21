@@ -9,7 +9,10 @@ echo.
 set UKIKURA_DEBUG=1
 set ELECTRON_ENABLE_LOGGING=true
 
-set "INSTALLED_EXE=%LOCALAPPDATA%\Programs\Ukikura\runtime\electron.exe"
+set "INSTALLED_EXE=%LOCALAPPDATA%\Programs\Ukikura\runtime\Ukikura.exe"
+if not exist "%INSTALLED_EXE%" (
+    set "INSTALLED_EXE=%LOCALAPPDATA%\Programs\Ukikura\runtime\electron.exe"
+)
 if exist "%INSTALLED_EXE%" (
     echo [Ukikura Debug] Menjalankan runtime terpasang: "%INSTALLED_EXE%"
     if exist "%~dp0dynamic-island\main.js" (
