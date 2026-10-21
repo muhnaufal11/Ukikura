@@ -278,47 +278,112 @@ function startNusaHoverLoop() {
             }
         }
 
+        const winState = typeof getLastWindowState === 'function' ? getLastWindowState() : null;
+        // Deteksi apakah jendela latar depan aktif adalah fullscreen atau maximized
+        const isFullscreenOrMaximized = Boolean(winState && (winState.browserMaximized || winState.isMaximized));
+
         // Dimensi kapsul notch saat tertutup (Closed Notch: 176px x 25px, di tengah atas y = 0..30px)
-        const halfClosedW = Math.round(CLOSED_NOTCH_W / 2) + 8;
-        const insideClosedNotch = pt.x >= (centerX - halfClosedW) && pt.x <= (centerX + halfClosedW) && pt.y >= 0 && pt.y <= (CLOSED_NOTCH_H + 6);
+        const halfClosedW = Math.round(CLOSED_NOTCH_W / 2) + 12;
+        const inHorizontalSpan = pt.x >= (centerX - halfClosedW) && pt.x <= (centerX + halfClosedW);
+        const approachingNotch = inHorizontalSpan && pt.y >= 0 && pt.y <= (CLOSED_NOTCH_H + 12);
 
-        if (insideClosedNotch) {
-            // Kursor berada tepat di atas kapsul notch:
-            // Aktifkan interaksi mouse penuh agar maskot & notch bisa diklik seketika!
-            if (lastIgnoreState !== false) {
-                lastIgnoreState = false;
-                mainWindow.setIgnoreMouseEvents(false);
-            }
-            if (lastPassthroughState) {
-                lastPassthroughState = false;
-                mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
-            }
-
-            // Buka Dynamic Island jika kursor berdiam (dwell) di notch selama >= 280ms
-            if (!isTucked) {
-                if (!hoverOpenTimer) {
-                    hoverOpenTimer = setTimeout(() => {
-                        hoverOpenTimer = null;
-                        if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
-                            setIslandExpanded(true);
-                        }
-                    }, 280);
+        if (isFullscreenOrMaximized) {
+            // =========================================================================
+            // MODE FULLSCREEN / MAXIMIZED:
+            // "kalau fullscreen dia tetap sama kecuali aku dekatin di island nya
+            //  baru dia transparan + bisa di klik di belakang nya"
+            // =========================================================================
+            if (approachingNotch) {
+                // Kursor MENDEKATI / BERADA DI ATAS NOTCH:
+                // 1. Seketika ubah menjadi transparan tipis agar tab di belakang terlihat jelas!
+                if (!lastPassthroughState) {
+                    lastPassthroughState = true;
+                    mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'ghost' });
                 }
-            } else if (hoverOpenTimer) {
-                clearTimeout(hoverOpenTimer);
-                hoverOpenTimer = null;
+                // 2. Tembus klik 100% langsung ke tab browser di belakangnya!
+                if (lastIgnoreState !== true) {
+                    lastIgnoreState = true;
+                    mainWindow.setIgnoreMouseEvents(true, { forward: true });
+                }
+                if (hoverOpenTimer) {
+                    clearTimeout(hoverOpenTimer);
+                    hoverOpenTimer = null;
+                }
+            } else {
+                // Kursor DI LUAR NOTCH (area halaman web atau video):
+                // 1. Tampilan kembali NORMAL (tetap sama seperti biasa, solid black + mata maskot)
+                if (lastPassthroughState) {
+                    lastPassthroughState = false;
+                    mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
+                }
+                // 2. Kanvas transparan tetap tembus klik ke konten di bawahnya
+                if (lastIgnoreState !== true) {
+                    lastIgnoreState = true;
+                    mainWindow.setIgnoreMouseEvents(true, { forward: true });
+                }
+
+                // Opsi buka sengaja saat fullscreen: letakkan kursor sedikit di bawah tab (y: 42..65px) selama >= 450ms
+                if (inHorizontalSpan && pt.y > 40 && pt.y <= 65 && !isTucked) {
+                    if (!hoverOpenTimer) {
+                        hoverOpenTimer = setTimeout(() => {
+                            hoverOpenTimer = null;
+                            if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
+                                setIslandExpanded(true);
+                            }
+                        }, 450);
+                    }
+                } else if (hoverOpenTimer) {
+                    clearTimeout(hoverOpenTimer);
+                    hoverOpenTimer = null;
+                }
             }
         } else {
-            // Kursor berada di luar kapsul notch (area kanvas transparan di sekitar pulau):
-            if (hoverOpenTimer) {
-                clearTimeout(hoverOpenTimer);
-                hoverOpenTimer = null;
-            }
+            // =========================================================================
+            // MODE NORMAL (Desktop / Jendela Tidak Maximized):
+            // =========================================================================
+            const insideClosedNotch = inHorizontalSpan && pt.y >= 0 && pt.y <= (CLOSED_NOTCH_H + 6);
+            if (insideClosedNotch) {
+                // Kursor berada tepat di atas kapsul notch:
+                // Aktifkan interaksi mouse penuh agar maskot & notch bisa diklik seketika!
+                if (lastIgnoreState !== false) {
+                    lastIgnoreState = false;
+                    mainWindow.setIgnoreMouseEvents(false);
+                }
+                if (lastPassthroughState) {
+                    lastPassthroughState = false;
+                    mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
+                }
 
-            // Tembus klik 100% ke seluruh tab browser dan aplikasi di sekitar pulau!
-            if (lastIgnoreState !== true) {
-                lastIgnoreState = true;
-                mainWindow.setIgnoreMouseEvents(true, { forward: true });
+                // Buka Dynamic Island jika kursor berdiam (dwell) di notch selama >= 280ms
+                if (!isTucked) {
+                    if (!hoverOpenTimer) {
+                        hoverOpenTimer = setTimeout(() => {
+                            hoverOpenTimer = null;
+                            if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
+                                setIslandExpanded(true);
+                            }
+                        }, 280);
+                    }
+                } else if (hoverOpenTimer) {
+                    clearTimeout(hoverOpenTimer);
+                    hoverOpenTimer = null;
+                }
+            } else {
+                // Kursor berada di luar kapsul notch (area kanvas transparan di sekitar pulau):
+                if (hoverOpenTimer) {
+                    clearTimeout(hoverOpenTimer);
+                    hoverOpenTimer = null;
+                }
+                if (lastPassthroughState) {
+                    lastPassthroughState = false;
+                    mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
+                }
+
+                // Tembus klik 100% ke seluruh tab browser dan aplikasi di sekitar pulau!
+                if (lastIgnoreState !== true) {
+                    lastIgnoreState = true;
+                    mainWindow.setIgnoreMouseEvents(true, { forward: true });
+                }
             }
         }
     }, 60);

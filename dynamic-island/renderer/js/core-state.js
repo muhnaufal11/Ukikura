@@ -371,10 +371,10 @@ function getClosedVisualMode() {
 // Terima status hover/open otomatis dari proses utama Electron
 ipcRenderer.on('nusa-state', (event, state) => {
     if (!state) return;
-    if (state.mode === 'passthrough' && !peekTimer) {
-        holderEl.classList.add('passthrough');
+    if ((state.mode === 'passthrough' || state.mode === 'ghost') && !peekTimer) {
+        holderEl.classList.add('ghost-passthrough');
     } else {
-        holderEl.classList.remove('passthrough');
+        holderEl.classList.remove('ghost-passthrough');
     }
 
     if (state.expanded) {

@@ -52,20 +52,20 @@
         pointer-events: auto !important;
     }
 
-    /* Tembus pandang & tembus klik saat kursor berada di area tab browser (100% bebas klik tab) */
-    .mn-holder.passthrough,
-    .mn-holder.passthrough * {
-        opacity: 0.04 !important;
-        transform: translateX(-50%) scale(0.92);
-        pointer-events: none !important;
-        transition: opacity 0.12s ease, transform 0.16s ease;
+    /* Saat fullscreen / browser maximized: Tampilan tetap normal seperti biasa */
+    .mn-holder.browser-maximized:not(.is-expanded) .mn {
+        opacity: 1;
+        transition: opacity 0.16s ease, transform 0.16s ease;
     }
 
-    /* Saat browser (Brave, Chrome, dll.) terdeteksi sedang fullscreen/maximized agar tab di belakang terlihat */
-    .mn-holder.browser-maximized:not(.is-expanded) .mn {
-        opacity: 0.25;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-        transition: opacity 0.22s ease, box-shadow 0.22s ease;
+    /* KECUALI saat kursor didekatkan / berada di atas notch saat fullscreen:
+       Seketika transparan tipis + tembus klik agar tab di belakang terlihat jelas & bebas diklik 100%! */
+    .mn-holder.ghost-passthrough:not(.is-expanded) .mn,
+    .mn-holder.passthrough:not(.is-expanded) .mn {
+        opacity: 0.04 !important;
+        transform: scale(0.96);
+        pointer-events: none !important;
+        transition: opacity 0.12s ease, transform 0.14s ease;
     }
 
     /* Saat notch sedang terbuka (expanded), selalu 100% tajam dan jelas */
