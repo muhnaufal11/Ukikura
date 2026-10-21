@@ -53,6 +53,21 @@ static BRIDGE_STDIN: Mutex<Option<ChildStdin>> = Mutex::new(None);
 static GLOBAL_HWND: Mutex<Option<usize>> = Mutex::new(None);
 static GLOBAL_CONTROLLER: Mutex<Option<SendSync<Controller>>> = Mutex::new(None);
 static GLOBAL_WEBVIEW: Mutex<Option<SendSync<WebView>>> = Mutex::new(None);
+static NODE_CHILD: Mutex<Option<Child>> = Mutex::new(None);
+static BRIDGE_CHILD: Mutex<Option<Child>> = Mutex::new(None);
+
+fn cleanup_child_processes() {
+    if let Ok(mut guard) = NODE_CHILD.lock() {
+        if let Some(ref mut child) = *guard {
+            let _ = child.kill();
+        }
+    }
+    if let Ok(mut guard) = BRIDGE_CHILD.lock() {
+        if let Some(ref mut child) = *guard {
+            let _ = child.kill();
+        }
+    }
+}
 
 fn log_debug(msg: &str) {
     let p = std::env::temp_dir().join("ukikura_rust.log");
@@ -215,7 +230,12 @@ fn spawn_background_server() -> Option<Child> {
             .stderr(Stdio::null())
             .spawn()
         {
-            Ok(child) => return Some(child),
+            Ok(child) => {
+                if let Ok(mut guard) = NODE_CHILD.lock() {
+                    *guard = Some(child);
+                }
+                return None;
+            }
             Err(e) => eprintln!("[Ukikura Rust] Failed to spawn node worker: {:?}", e),
         }
     } else {
@@ -311,7 +331,11 @@ fn spawn_bridge_process() -> Option<Child> {
         });
     }
 
-    Some(child)
+    if let Ok(mut guard) = BRIDGE_CHILD.lock() {
+        *guard = Some(child);
+    }
+
+    None
 }
 
 fn set_island_size(hwnd: HWND, expand: bool) {
@@ -462,6 +486,7 @@ unsafe extern "system" fn window_proc(
                     ShellExecuteW(null_mut(), op.as_ptr(), uri.as_ptr(), null(), null(), SW_SHOWNORMAL);
                 }
                 TRAY_ID_QUIT => {
+                    cleanup_child_processes();
                     PostQuitMessage(0);
                 }
                 _ => {}
@@ -469,6 +494,7 @@ unsafe extern "system" fn window_proc(
             0
         }
         WM_DESTROY => {
+            cleanup_child_processes();
             PostQuitMessage(0);
             0
         }
@@ -490,7 +516,31 @@ fn set_dpi_aware() {
     }
 }
 
+fn setup_job_object() {
+    unsafe {
+        use winapi::um::jobapi2::*;
+        use winapi::um::processthreadsapi::GetCurrentProcess;
+        use winapi::um::winnt::*;
+
+        let job = CreateJobObjectW(null_mut(), null());
+        if !job.is_null() {
+            let mut info: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = std::mem::zeroed();
+            info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+            let res = SetInformationJobObject(
+                job,
+                JobObjectExtendedLimitInformation,
+                &mut info as *mut _ as *mut _,
+                std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
+            );
+            if res != 0 {
+                let _ = AssignProcessToJobObject(job, GetCurrentProcess());
+            }
+        }
+    }
+}
+
 fn main() {
+    setup_job_object();
     set_dpi_aware();
     log_debug("--- Ukikura Starting ---");
     let _node_proc = spawn_background_server();
@@ -706,7 +756,7 @@ fn main() {
                                             SetWindowPos(hwnd_capture as HWND, HWND_TOPMOST, x, 0, 580, h, SWP_NOACTIVATE);
                                         }
                                         "island-get-version" => {
-                                            let ver_script = "window.dispatchEvent(new CustomEvent('ipc-version-info', { detail: { versionName: '1.0.6', versionCode: 52, name: 'Ukikura (Rust Native)' } }));".to_string();
+                                            let ver_script = "window.dispatchEvent(new CustomEvent('ipc-version-info', { detail: { versionName: '1.0.6', versionCode: 53, name: 'Ukikura (Rust Native)' } }));".to_string();
                                             post_js_to_ui(ver_script);
                                         }
                                         "island-get-autostart" => {
@@ -726,6 +776,7 @@ fn main() {
                                             post_js_to_ui(script);
                                         }
                                         "island-quit" => {
+                                            cleanup_child_processes();
                                             PostQuitMessage(0);
                                         }
                                         _ => {}

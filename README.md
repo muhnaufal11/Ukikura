@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch52-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch53-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -151,6 +151,9 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
     * **`30 FPS`**: Standar seimbang 30 FPS.
     * **`15 FPS`**: Mode hemat daya baterai 15 FPS.
   - Pilihan tersimpan secara persisten di `localStorage`.
+- **Perbaikan File Lock node.exe & Integrasi Windows Job Object (Patch 53 - Installer & Host)**:
+  - **Penyelesaian Tuntas Galat Installer 'DeleteFile failed; code 5. Access is denied'**: Memperbaiki kegagalan instalasi saat menimpa `runtime/node.exe` dengan menambahkan prosedur pembersihan proses terpusat `TerminateUkikuraProcesses` pada fase `InitializeSetup` dan `PrepareToInstall` Inno Setup, memastikan tidak ada file `.exe` yang terkunci saat proses ekstraksi berlangsung.
+  - **Windows Job Object (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`)**: Mengintegrasikan Windows Job Object pada host native Rust `Ukikura.exe`, sehingga seluruh proses child (`runtime/node.exe` dan `ukikura-bridge.exe`) otomatis diterminasi tuntas oleh kernel Windows saat Ukikura ditutup atau keluar dari tray.
 - **Perbaikan Tuntas Bug Black Box & Eliminasi Dialog Screen Share (Patch 52 - Host Native Rust)**:
   - **100% Transparansi Desktop Sejati (Tanpa Kotak Hitam)**: Mengonfigurasi `Per-Monitor V2 DPI Awareness` (`SetThreadDpiAwarenessContext`), DWM Extended Frame (`MARGINS { -1, -1, -1, -1 }`), dan `ICoreWebView2Controller2::put_DefaultBackgroundColor(alpha = 0)`. Menghilangkan kotak hitam pekat di sekitar kapsul sehingga Dynamic Island melayang murni menyatu dengan wallpaper/desktop Windows.
   - **Eliminasi Total Dialog 'Choose what to share' (Screen Share Modal)**: Mengamankan `initDesktopAudioVisualizer()` saat berjalan pada mode native Rust, menonaktifkan pemanggilan Chromium `getDisplayMedia` dan beralih otomatis ke visualizer sintetis berkinerja 0% CPU tanpa pernah memunculkan dialog pemilihan layar.
