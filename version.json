@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 37,
+  "versionCode": 38,
   "version": "1.0.6",
-  "fixCount": 37,
-  "displayVersion": "1.0.6 (Patch 37)",
+  "fixCount": 38,
+  "displayVersion": "1.0.6 (Patch 38)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 37): Memperbaiki regresi tampilan lirik ALiCE&u (multilingual 3 bahasa) dan ReoNa Amore (Romaji + Kanji + Sub Indo). Menyempurnakan pencarian YouTube official CC dengan loop multi-kandidat video, mencegah penolakan CC manual resmi pada lagu multilingual ber-track Jepang/Indonesia terpisah, mempercepat transliterasi Romaji & Sub Indo via chunked delimiter batching tanpa rate-limit Google Translate 429, serta mengompensasi global offset intro MV YouTube secara akurat."
+  "changelog": "Ukikura v1.0.6 (Patch 38): Mengunci permanen tampilan lirik ALiCE&u dengan 3 tingkatan bahasa utuh (vokal asli Inggris di baris 1, Romaji alami + aksara Jepang Kanji/Kana di baris 2, dan Sub Indo resmi di baris 3). Menjamin video ID kanonikal resmi langsung di-query tanpa terhambat timeout web search, mencegah emisi dini single-language database Fast LRC pada lagu asing/multilingual, meningkatkan in-flight timeout WinRT ke 18 detik, serta menyempurnakan batasan delimiter Romaji agar transliterasi ReoNa Amore dan lagu Jepang tampil alami tanpa pemisahan morfem janggal."
 }

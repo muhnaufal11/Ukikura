@@ -172,7 +172,7 @@ async function fetchBatchJapaneseRomajiAndIndonesian(texts) {
 
     for (let i = 0; i < uniqueTexts.length; i += chunkSize) {
         const slice = uniqueTexts.slice(i, i + chunkSize);
-        const joined = slice.join(' ||| ');
+        const joined = slice.join(' 。 ');
         const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=id&dt=t&dt=rm&q=${encodeURIComponent(joined)}`;
 
         promises.push(
@@ -184,8 +184,8 @@ async function fetchBatchJapaneseRomajiAndIndonesian(texts) {
                     if (typeof item?.[0] === 'string') transBody += item[0];
                     if (typeof item?.[3] === 'string') romaBody += item[3];
                 }
-                const splitTrans = transBody.split(/\s*\|(?:\||\s*\|)+\s*/);
-                const splitRoma = romaBody.split(/\s*\|(?:\||\s*\|)+\s*/);
+                const splitTrans = transBody.split(/(?:[.?!\u3002]+\s*)+/).map(s => s.trim()).filter(Boolean);
+                const splitRoma = romaBody.split(/(?:[.?!\u3002]+\s*)+/).map(s => s.trim()).filter(Boolean);
 
                 slice.forEach((itemText, sIdx) => {
                     const r = (splitRoma[sIdx] || '').trim();

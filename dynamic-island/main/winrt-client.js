@@ -125,7 +125,7 @@ let emptyRetryCount = 0;
 async function fetchSyncedLyrics(rawTitle, rawArtist, explicitDur = 0, forceNew = false) {
     if (!rawTitle) return;
     // Cegah double-request dari renderer membatalkan pencarian yang sedang berjalan untuk judul lagu yang sama
-    if (!forceNew && inFlightTitle === rawTitle && (Date.now() - inFlightStartedAt) < 10000) {
+    if (!forceNew && inFlightTitle === rawTitle && (Date.now() - inFlightStartedAt) < 18000) {
         return;
     }
 

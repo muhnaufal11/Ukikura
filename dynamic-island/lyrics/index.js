@@ -141,9 +141,14 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     const maybeEmitFast = (cand, isFinalDbMerge = false) => {
         if (typeof onFastResult !== 'function') return;
         if (cand && cand.hasSyncedTimestamps && Array.isArray(cand.lines) && cand.lines.length >= 4) {
-            // Untuk lagu Jepang, tunggu hasil gabungan Romaji NetEase (isFinalDbMerge) jika kandidat awal belum punya Romaji
-            if (!isFinalDbMerge && meta.likelyJapanese && !cand.lines.some(l => l.romaText)) {
-                return;
+            // Untuk lagu Jepang / Asing / Multilingual, JANGAN pernah kirim fast LRC yang hanya 1 bahasa (misal bahasa Inggris tanpa Romaji/Kanji)
+            // jika lagu aslinya memiliki subtitle Romaji/Kanji/Sub Indo yang sedang diekstraksi dari YouTube CC!
+            if (meta.likelyJapanese || meta.isJapaneseVersion || /[\u3040-\u30ff\u4e00-\u9fff]/.test(rawTitle) || /\b(?:hololive|nijisanji|vshojo|vtuber|anime)\b/i.test(`${rawTitle} ${rawArtist}`)) {
+                const hasRomaji = cand.lines.some(l => l.romaText);
+                const hasJpChars = cand.lines.some(l => l.jpText || hasJapaneseChars(l.rawText || l.text));
+                if (!hasRomaji && !hasJpChars) {
+                    return;
+                }
             }
             const candScore = Number(cand.score) || 0;
             if (candScore <= bestFastScore) return;
@@ -249,19 +254,23 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
         if (Array.isArray(ytCaptions.japaneseLines) && ytCaptions.japaneseLines.length >= 4) {
             ytCaptions.lines.forEach(l => {
                 if (!l.jpText && !hasJapaneseChars(l.rawText || l.text)) {
-                    let bestJp = null;
-                    let minDiff = 999;
-                    for (const jl of ytCaptions.japaneseLines) {
-                        const diff = Math.abs(jl.time - l.time);
-                        if (diff < minDiff) {
-                            minDiff = diff;
-                            bestJp = jl;
+                    if (l.transText && hasJapaneseChars(l.transText)) {
+                        l.jpText = l.transText;
+                    } else {
+                        let bestJp = null;
+                        let minDiff = 999;
+                        for (const jl of ytCaptions.japaneseLines) {
+                            const diff = Math.abs(jl.time - l.time);
+                            if (diff < minDiff) {
+                                minDiff = diff;
+                                bestJp = jl;
+                            }
                         }
-                    }
-                    if (bestJp && minDiff <= 1.6) {
-                        const candJp = bestJp.transText || bestJp.rawText || bestJp.text || '';
-                        if (hasJapaneseChars(candJp)) {
-                            l.jpText = candJp;
+                        if (bestJp && minDiff <= 1.6) {
+                            const candJp = bestJp.transText || bestJp.rawText || bestJp.text || '';
+                            if (hasJapaneseChars(candJp)) {
+                                l.jpText = candJp;
+                            }
                         }
                     }
                 }
@@ -377,7 +386,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     // 1. Lengkapi Romaji untuk SEMUA lagu Jepang atau bersihkan morfem renggang
     const hasJpCharsInLines = finalLines.some(l => hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText));
     const hasMoraSpacedInLines = finalLines.some(l => isMoraSpacedRomaji(l.romaText || l.rawText || l.text));
-    if (finalLines.length > 0 && (hasJpCharsInLines || hasMoraSpacedInLines)) {
+    if (finalLines.length > 0 && (hasJpCharsInLines || hasMoraSpacedInLines || meta.likelyJapanese || isForeignOriginal)) {
         finalLines = await enrichWithRomaji(finalLines, meta, bestDb);
     }
 
