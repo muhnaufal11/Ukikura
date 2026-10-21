@@ -364,7 +364,7 @@ function updateKaraokeOverlay() {
             const t = curLine.transText || '';
             const combinedSub = (r && jp) ? `${r} (${jp})` : (r || jp);
             curSub = (combinedSub && t) ? `${combinedSub} · ${t}` : (combinedSub || t || '');
-        } else if (curLine.rawText && curLine.romaText) {
+        } else if (curLine.rawText && curLine.romaText && curLine.romaText.toLowerCase() !== curLine.rawText.toLowerCase()) {
             curMain = curLine.rawText;
             const r = curLine.romaText;
             const t = curLine.transText;
@@ -374,10 +374,10 @@ function updateKaraokeOverlay() {
             curMain = parts[0].trim();
             const r = parts.slice(1).join(' · ').trim();
             const t = curLine.transText;
-            curSub = (r && t) ? `${r} · ${t}` : (r || t || '');
+            curSub = (r && t && r.toLowerCase() !== t.toLowerCase()) ? `${r} · ${t}` : (t || r || '');
         } else {
-            curMain = curLine.text || '';
-            const r = curLine.romaText;
+            curMain = curLine.rawText || curLine.text || '';
+            const r = (curLine.romaText && curLine.romaText.toLowerCase() !== curMain.toLowerCase()) ? curLine.romaText : '';
             const t = curLine.transText;
             curSub = (r && t) ? `${r} · ${t}` : (t || r || '');
         }

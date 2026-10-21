@@ -154,9 +154,10 @@ function parseDurationTextToSec(durText) {
 }
 
 async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
-    const primaryQuery = (meta && Array.isArray(meta.queries) && meta.queries[0])
-        ? meta.queries[0]
-        : [rawTitle, rawArtist].filter(Boolean).join(' ').trim();
+    const rawCombined = [rawTitle, rawArtist].filter(Boolean).join(' ').trim();
+    const primaryQuery = (meta && meta.isCover)
+        ? (rawTitle || rawCombined)
+        : ((meta && Array.isArray(meta.queries) && meta.queries[0]) || rawTitle || rawCombined);
     if (!primaryQuery) return null;
 
     const searchBody = JSON.stringify({
@@ -269,10 +270,14 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     // Pisahkan kandidat ASR (memiliki <s t="..."> timestamp vokal per kata langsung dari gelombang audio)
     // dan kandidat Manual CC (subtitle dari kreator)
     const hasJpChars = hasJapaneseChars(rawTitle) || hasJapaneseChars(rawArtist);
+    const hasRuChars = /[\u0400-\u04ff]/.test(`${rawTitle} ${rawArtist}`);
+    const hasKrChars = /[\uac00-\ud7af]/.test(`${rawTitle} ${rawArtist}`);
     const isJpMeta = /\b(hololive|nijisanji|vshojo|vtuber|anime|vocaloid|j-?pop)\b/i.test(`${rawTitle} ${rawArtist}`);
     const isJpSong = Boolean(meta && (meta.likelyJapanese || meta.isJapaneseVersion || hasJpChars || isJpMeta));
     const isIdSong = Boolean(meta && meta.isIndonesianVersion);
-    const isEngSong = Boolean(meta && meta.isEnglishVersion) || (!isJpSong && !isIdSong && !(meta && meta.isKoreanVersion));
+    const isRuSong = Boolean(hasRuChars);
+    const isKrSong = Boolean(hasKrChars || (meta && meta.isKoreanVersion));
+    const isEngSong = Boolean(meta && meta.isEnglishVersion) || (!isJpSong && !isIdSong && !isRuSong && !isKrSong);
 
     const scoreLang = (t) => {
         const lang = String(t.languageCode || '').toLowerCase();
@@ -280,10 +285,14 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         if (t.kind !== 'asr') {
             // Manual CC resmi yang diunggah kreator video cover/lagu (Prioritas Utama!)
             if (isIdSong && lang.startsWith('id')) s += 200;
-            else if (isEngSong && lang.startsWith('en')) s += 200;
+            else if (isRuSong && lang.startsWith('ru')) s += 200;
+            else if (isKrSong && lang.startsWith('ko')) s += 200;
             else if (isJpSong && lang.startsWith('ja')) s += 200;
+            else if (isEngSong && lang.startsWith('en')) s += 200;
+            else if ((isJpSong || isRuSong || isKrSong) && lang.startsWith('en')) s += 85;
             else if (lang.startsWith('en')) s += 160;
             else if (lang.startsWith('ja')) s += 150;
+            else if (lang.startsWith('ru')) s += 150;
             else if (lang.startsWith('id')) s += 140;
             else s += 120;
         } else {
@@ -295,6 +304,12 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
             } else if (isIdSong) {
                 if (lang.startsWith('id')) s += 80;
                 else s = -999;
+            } else if (isRuSong) {
+                if (lang.startsWith('ru')) s += 80;
+                else s = -999;
+            } else if (isKrSong) {
+                if (lang.startsWith('ko')) s += 80;
+                else s = -999;
             } else if (isJpSong) {
                 if (lang.startsWith('ja')) s += 80;
                 else if (lang.startsWith('en')) s += 40;
@@ -303,6 +318,7 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
                 if (lang.startsWith('id')) s += 80;
                 else if (lang.startsWith('en')) s += 50;
                 else if (lang.startsWith('ja')) s += 30;
+                else if (lang.startsWith('ru')) s += 30;
             }
         }
         return { track: t, lang, langScore: s };

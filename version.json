@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 35,
+  "versionCode": 36,
   "version": "1.0.6",
-  "fixCount": 35,
-  "displayVersion": "1.0.6 (Patch 35)",
+  "fixCount": 36,
+  "displayVersion": "1.0.6 (Patch 36)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 35): Memperbaiki orientasi vokal asli pada sanitizeBilingualManualLines (mencegah teks terjemahan menukar vokal bahasa Inggris menjadi kanji), memastikan penautan multi-track subtitle resmi (vokal asli Inggris/Jepang, Romaji, Kanji, dan Sub Indo selalu tampil serentak pada ALiCE&u), serta menyempurnakan transliterasi Romaji independen tanpa konkatenasi gabungan."
+  "changelog": "Ukikura v1.0.6 (Patch 36): Menjamin Sub Indo pada seluruh lagu asing (Jepang, Inggris, Rusia, Korea) dengan deteksi bahasa akurat (mencegah false-positive YouTube tag ID), menyempurnakan Romaji alami tanpa spasi morfem (aitai/tatoeba) via dt=rm dan collapseMoraSpacedRomaji, mengunci lirik kanonikal Jepang agar tidak tertimpa CC Inggris, serta menyinkronkan ketukan lagu cover (SAY NO Cover) menggunakan YouTube ASR dan piecewise forced alignment."
 }

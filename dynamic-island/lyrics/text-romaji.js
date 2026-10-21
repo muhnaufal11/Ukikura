@@ -573,6 +573,57 @@ function isIndonesianText(sample) {
     return false;
 }
 
+function isMoraSpacedRomaji(str) {
+    if (!str || typeof str !== 'string') return false;
+    const words = str.trim().split(/\s+/).filter(Boolean);
+    if (words.length < 3) return false;
+    const shortWords = words.filter(w => /^[a-zA-Z]{1,2}$/.test(w) || /^(?:tsu|shi|chi|kya|kyu|kyo|sha|shu|sho|cha|chu|cho|nya|nyu|nyo|hya|hyu|hyo|mya|myu|myo|rya|ryu|ryo|gya|gyu|gyo|bya|byu|byo|pya|pyu|pyo)$/i.test(w));
+    return (shortWords.length / words.length) >= 0.45;
+}
+
+const JP_PARTICLES = new Set(['wa', 'ga', 'o', 'wo', 'ni', 'de', 'to', 'mo', 'no', 'e', 'ka', 'ya', 'sa', 'ne', 'yo']);
+const COMMON_ROMAJI_WORDS = new Set([
+    'moshi', 'mada', 'tokidoki', 'korigori', 'nanoni', 'kimi', 'boku', 'watashi',
+    'anata', 'koko', 'soko', 'doko', 'ima', 'kako', 'mirai', 'zutto', 'motto',
+    'subete', 'hitori', 'futari', 'jibun', 'kokoro', 'namida', 'egao', 'kotoba',
+    'sekai', 'hikari', 'yoru', 'ashita', 'kaze', 'sora', 'yume', 'hitorijime',
+    'sasete', 'tashite', 'aitai', 'tatoeba', 'omoidasu', 'kizanda', 'ushiro',
+    'sugata', 'denpa', 'akai', 'ribon', 'tsutsunde', 'hanbunko', 'kaesu',
+    'ashimoto', 'sarau', 'yunagi', 'higure'
+]);
+
+function collapseMoraSpacedRomaji(str) {
+    if (!str || !isMoraSpacedRomaji(str)) return str;
+    const tokens = str.trim().split(/\s+/);
+    const out = [];
+    let cur = '';
+
+    for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        const lower = t.toLowerCase();
+        if (t.length > 4 || /^(?:i|i'm|i’m|you|me|my|baby|crazy|want|love|go|away)$/i.test(t)) {
+            if (cur) { out.push(cur); cur = ''; }
+            out.push(t);
+            continue;
+        }
+
+        if (cur && JP_PARTICLES.has(lower) && cur.length >= 2) {
+            out.push(cur);
+            out.push(t);
+            cur = '';
+            continue;
+        }
+
+        cur += t;
+        if (COMMON_ROMAJI_WORDS.has(cur.toLowerCase()) || cur.length >= 6) {
+            out.push(cur);
+            cur = '';
+        }
+    }
+    if (cur) out.push(cur);
+    return out.join(' ');
+}
+
 module.exports = {
     hasJapaneseChars,
     hasKanji,
@@ -587,5 +638,7 @@ module.exports = {
     attachTranslationLines,
     isUnwantedForeignTranslation,
     computeMetadataSimilarity,
-    isIndonesianText
+    isIndonesianText,
+    isMoraSpacedRomaji,
+    collapseMoraSpacedRomaji
 };

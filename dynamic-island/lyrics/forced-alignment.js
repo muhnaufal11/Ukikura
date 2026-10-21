@@ -214,6 +214,47 @@ function forceAlignLyricsToAudioStream(canonicalLines, ytCaptionData, hasStudioL
             .map(a => a.time - canonicalLines[a.lineIdx].time)
             .sort((a, b) => a - b);
         const medianOffset = diffs[Math.floor(diffs.length / 2)] || 0;
+        const driftRange = diffs.length >= 2 ? (diffs[diffs.length - 1] - diffs[0]) : 0;
+
+        // Jika terdapat variasi tempo antar anchor (driftRange >= 2.0s dan validAnchors >= 3),
+        // ini adalah aransemen cover/remix dengan tempo vokal berbeda -> gunakan interpolasi piecewise antar anchor
+        if (driftRange >= 2.0 && validAnchors.length >= 3) {
+            return canonicalLines.map((l, i) => {
+                if (anchors[i]) {
+                    return Object.assign({}, l, {
+                        time: Math.round(anchors[i].time * 100) / 100,
+                        anchored: true
+                    });
+                }
+                const pIdx = findPrevAnchorIdx(anchors, i - 1);
+                const nIdx = findNextAnchorIdx(anchors, i + 1);
+                if (pIdx >= 0 && nIdx >= 0) {
+                    const pTime = anchors[pIdx].time;
+                    const nTime = anchors[nIdx].time;
+                    const pStudio = canonicalLines[pIdx].time;
+                    const nStudio = canonicalLines[nIdx].time;
+                    const ratio = (nStudio > pStudio) ? (canonicalLines[i].time - pStudio) / (nStudio - pStudio) : 0.5;
+                    const interpTime = pTime + ratio * (nTime - pTime);
+                    return Object.assign({}, l, {
+                        time: Math.round(interpTime * 100) / 100,
+                        anchored: false
+                    });
+                } else if (pIdx >= 0) {
+                    const shift = anchors[pIdx].time - canonicalLines[pIdx].time;
+                    return Object.assign({}, l, {
+                        time: Math.round((canonicalLines[i].time + shift) * 100) / 100,
+                        anchored: false
+                    });
+                } else if (nIdx >= 0) {
+                    const shift = anchors[nIdx].time - canonicalLines[nIdx].time;
+                    return Object.assign({}, l, {
+                        time: Math.max(0, Math.round((canonicalLines[i].time + shift) * 100) / 100),
+                        anchored: false
+                    });
+                }
+                return Object.assign({}, l, { anchored: false });
+            });
+        }
 
         // Jika durasi video sama dengan durasi studio (selisih <= 3.5s),
         // berarti ini aransemen/audio studio yang sama persis -> pertahankan 100% waktu LRC studio asli tanpa distorsi ASR!
