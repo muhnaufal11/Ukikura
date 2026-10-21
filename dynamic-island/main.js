@@ -276,8 +276,8 @@ function startNusaHoverLoop() {
         if (isTucked) {
             applyGhost(false, false);
             applyIgnore(true, forceIgnore);
-            // Untuck otomatis jika kursor berdiam sengaja di garis bezel paling atas tengah (y <= 4px) selama >= 750ms
-            const inTuckBezel = Math.abs(pt.x - centerX) <= 40 && pt.y >= 0 && pt.y <= 4;
+            // Untuck otomatis jika kursor berdiam sengaja di garis bezel paling atas tengah (y <= 12px) selama >= 350ms
+            const inTuckBezel = Math.abs(pt.x - centerX) <= 60 && pt.y >= 0 && pt.y <= 12;
             if (inTuckBezel) {
                 if (!hoverOpenTimer) {
                     hoverOpenTimer = setTimeout(() => {
@@ -286,7 +286,7 @@ function startNusaHoverLoop() {
                             setIslandTucked(false);
                             mainWindow.webContents.send('toggle-tuck');
                         }
-                    }, 750);
+                    }, 350);
                 }
             } else if (hoverOpenTimer) {
                 clearTimeout(hoverOpenTimer);
@@ -323,10 +323,10 @@ function startNusaHoverLoop() {
             });
         }
 
-        // Zona Dagu / Bibir Bawah (y: 41..65px, |x - centerX| <= 95px):
-        // Area tepat di bawah deretan tab browser. Jika pengguna sengaja mengarahkan kursor ke sini dan berdiam (dwell >= 220ms),
+        // Zona Dagu / Bibir Bawah (y: 35..68px, |x - centerX| <= 95px):
+        // Area tepat di bawah deretan tab browser. Jika pengguna sengaja mengarahkan kursor ke sini dan berdiam (dwell >= 200ms),
         // Dynamic Island akan otomatis terbuka lebar.
-        const inChinZone = relDistX <= 95 && relY > 40 && relY <= 65;
+        const inChinZone = relDistX <= 95 && relY >= 35 && relY <= 68;
 
         // =========================================================================
         // ATURAN MUTLAK KLIK & TRANSPARANSI KANVAS:
@@ -340,28 +340,46 @@ function startNusaHoverLoop() {
 
         if (inTabBarZone) {
             // 1. Kursor berada di area tab browser:
-            // Seketika sembunyikan/minimize pulau (jendela native opacity 0 + CSS ghost)
+            // Pulau otomatis MELIPAT jadi garis tipis (mode lipat) & tembus klik ke tab di belakang.
             applyGhost(true, false);
-            // Batalkan timer buka pulau: JANGAN PERNAH buka pulau saat kursor memilih tab!
             if (hoverOpenTimer) {
                 clearTimeout(hoverOpenTimer);
                 hoverOpenTimer = null;
             }
+            // Fitur Masuk Island dari mode lipat:
+            // Cukup tempatkan kursor di garis lipatan atas (y <= 14px, +-75px) selama >= 220ms -> pulau terbuka lebar!
+            // Sedangkan jika memilih tab browser di bawahnya (y = 15..40px), tab dapat diklik bebas tanpa terganggu.
+            const onFoldLine = relDistX <= 75 && relY >= 0 && relY <= 14;
+            if (onFoldLine) {
+                const moved = Math.abs(pt.x - foldDwellX) > 16 || Math.abs(pt.y - foldDwellY) > 16;
+                if (!foldDwellStart || moved) {
+                    foldDwellStart = Date.now();
+                    foldDwellX = pt.x;
+                    foldDwellY = pt.y;
+                } else if (Date.now() - foldDwellStart >= FOLD_OPEN_DWELL_MS) {
+                    foldDwellStart = 0;
+                    setIslandExpanded(true);
+                }
+            } else {
+                foldDwellStart = 0;
+            }
         } else if (inChinZone) {
+            foldDwellStart = 0;
             // 2. Kursor berada di dagu pulau (di bawah tab browser):
             // Tampilan kembali normal (maskot tampak siap berinteraksi)
             applyGhost(false, false);
-            // Buka pulau jika kursor berdiam sengaja di dagu selama >= 220ms
+            // Buka pulau jika kursor berdiam sengaja di dagu selama >= 200ms
             if (!hoverOpenTimer) {
                 hoverOpenTimer = setTimeout(() => {
                     hoverOpenTimer = null;
                     if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
                         setIslandExpanded(true);
                     }
-                }, 220);
+                }, 200);
             }
         } else {
             // 3. Kursor di luar pulau (di area halaman web, tab kiri/kanan yang jauh, dsb.)
+            foldDwellStart = 0;
             if (hoverOpenTimer) {
                 clearTimeout(hoverOpenTimer);
                 hoverOpenTimer = null;
@@ -380,14 +398,18 @@ function applyIgnore(ignore, force) {
     else mainWindow.setIgnoreMouseEvents(false);
 }
 
-// Sembunyikan pulau saat kursor di area tab: opacity jendela native (pasti pudar) + kelas CSS ghost.
+// Mode lipat otomatis saat kursor di area tab: kirim status 'ghost' ke renderer (kapsul melipat jadi garis tipis).
 let lastWinOpacity = 1;
+let foldDwellStart = 0;
+let foldDwellX = -9999;
+let foldDwellY = -9999;
+const FOLD_OPEN_DWELL_MS = 220;
 function applyGhost(ghost, expanded) {
     if (!mainWindow || mainWindow.isDestroyed()) return;
-    const target = ghost ? 0 : 1;
-    if (lastWinOpacity !== target) {
-        lastWinOpacity = target;
-        try { mainWindow.setOpacity(target); } catch (_) {}
+    // Jendela selalu terlihat penuh (tidak disembunyikan); efek lipat ditangani CSS.
+    if (lastWinOpacity !== 1) {
+        lastWinOpacity = 1;
+        try { mainWindow.setOpacity(1); } catch (_) {}
     }
     if (lastPassthroughState !== ghost) {
         lastPassthroughState = ghost;

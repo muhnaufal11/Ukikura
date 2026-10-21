@@ -52,20 +52,25 @@
         pointer-events: auto;
     }
 
-    /* GHOST PASSTHROUGH: Saat kursor mendekati tab di belakang notch:
-       Seluruh holder dan kapsul seketika transparan total (opacity: 0) & meluncur naik ke bezel
-       agar tab browser di belakang terlihat 100% jelas & bebas diklik tanpa terhalang sedikitpun! */
-    .mn-holder.ghost-passthrough:not(.is-expanded) {
-        opacity: 0 !important;
+    /* AUTO-LIPAT (ghost-passthrough): Saat kursor mendekati tab di belakang notch,
+       kapsul otomatis melipat menjadi garis tipis (seperti mode Tucked) & tembus klik,
+       lalu kembali normal saat kursor menjauh. */
+    .mn-holder.ghost-passthrough:not(.is-expanded) .mn {
+        --w: 140px !important;
+        --h: 6px !important;
+        --r: 6px !important;
+        --e: 6px !important;
         pointer-events: none !important;
-        transform: translateX(-50%) translateY(-14px) scale(0.92) !important;
-        transition: opacity 0.1s ease, transform 0.12s ease !important;
+        transition:
+            width 0.18s cubic-bezier(0.25, 1, 0.35, 1),
+            height 0.18s cubic-bezier(0.25, 1, 0.35, 1),
+            border-radius 0.18s ease !important;
     }
 
-    .mn-holder.ghost-passthrough:not(.is-expanded) .mn,
-    .mn-holder.ghost-passthrough:not(.is-expanded) * {
+    .mn-holder.ghost-passthrough:not(.is-expanded) .mn > * {
         opacity: 0 !important;
         pointer-events: none !important;
+        transition: opacity 0.08s ease !important;
     }
 
     /* Saat fullscreen / browser maximized: Tampilan tetap normal selama tidak ghost */

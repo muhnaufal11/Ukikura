@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 64,
+  "versionCode": 65,
   "version": "1.0.6",
-  "fixCount": 64,
-  "displayVersion": "1.0.6 (Patch 64 - Fix Kanvas Terkunci Setelah Peek, Auto-Minimize saat Kursor ke Tab)",
+  "fixCount": 65,
+  "displayVersion": "1.0.6 (Patch 65 - Mode Lipat Bezel saat Dekat Tab & Buka Island Responsif)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 64): 1) Akar masalah area sekitar pulau tidak bisa diklik: handler 'island-peek-active' memanggil setIgnoreMouseEvents(false) tanpa memperbarui cache, sehingga setelah peek baterai/Bluetooth pertama seluruh kanvas 580x240 terkunci menghalangi tab & address bar selamanya. Kini semua perubahan klik-tembus lewat satu helper applyIgnore() + re-assert tiap ~1 detik + status peek kedaluwarsa otomatis. 2) Saat kursor diarahkan ke tab di belakang pulau (y<=40px), jendela pulau langsung disembunyikan via opacity native (setOpacity 0) sehingga pasti hilang dan tab bisa diklik; muncul lagi saat kursor menjauh. 3) Saat panel terbuka dan kursor keluar, jendela langsung tembus klik tanpa menunggu animasi tutup."
+  "changelog": "Ukikura v1.0.6 (Patch 65): 1) Mengubah mode saat kursor mendekati tab browser: Kapsul pulau tidak lagi disembunyikan/hilang total, melainkan melipat halus menjadi garis tipis di bezel atas (mode lipat / folded 6px) dengan telinga konkaf mikro sehingga visual pulau tetap ada tanpa menutupi tab di belakangnya. 2) Interaksi Masuk Island Responsif: Untuk membuka pulau dari mode lipat, cukup diamkan kursor sebentar di garis lipatan atas (y <= 14px) selama 220ms, atau di dagu bawah (y: 35..68px), atau klik menu Tray Icon. Tab browser di bawahnya (y = 15..40px) tetap 100% bebas diklik langsung tanpa ada hambatan."
 }
