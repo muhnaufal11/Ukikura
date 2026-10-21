@@ -43,7 +43,7 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-CloseApplications=force
+CloseApplications=no
 RestartApplications=no
 UninstallDisplayName={#MyAppFullTitle}
 
@@ -75,6 +75,11 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\runtime\{#MyAppExeName}"; P
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Ukikura"; ValueData: """{app}\runtime\{#MyAppExeName}"" ""{app}\{#MyAppEntryArgs}"""; Flags: uninsdeletevalue; Tasks: autostart
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "NusaDynamicIsland"; Flags: deletevalue
+
+[InstallDelete]
+Type: files; Name: "{userappdata}\Microsoft\Windows\Start Menu\Programs\Startup\NusaDynamicIsland.vbs"
+Type: files; Name: "{userstartup}\NusaDynamicIsland.vbs"
 
 [Run]
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; StatusMsg: "Menutup sesi lama Ukikura..."; Flags: runhidden waituntilterminated
@@ -95,6 +100,17 @@ function OnDownloadProgress(const Url, FileName: String; const Progress, Progres
 begin
   if Progress = ProgressMax then
     Log(Format('Successfully downloaded file to {tmp}: %s', [FileName]));
+  Result := True;
+end;
+
+function InitializeSetup(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  // Tutup instans Ukikura lama dan PowerShell bridge segera saat installer dibuka agar file tidak terkunci
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\powershell.exe'), '-NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match ''winrt-bridge'' -or $_.CommandLine -match ''dynamic-island'' } | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(300);
   Result := True;
 end;
 
