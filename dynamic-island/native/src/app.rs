@@ -75,6 +75,10 @@ pub struct App {
     pub power: PowerStatus,
     pub last_power_check: Instant,
     pub media_state: MediaState,
+    pub shelf_tab: crate::pages::shelf::ShelfTab,
+    pub closed_style_mascot: bool,
+    pub notifs: Vec<crate::pages::battery_notif::NotifItem>,
+    pub shelf_files: Vec<crate::pages::shelf::ShelfFile>,
     w: Spring,
     h: Spring,
     r: Spring,
@@ -132,6 +136,10 @@ impl App {
             power,
             last_power_check: Instant::now(),
             media_state,
+            shelf_tab: crate::pages::shelf::ShelfTab::Files,
+            closed_style_mascot: true,
+            notifs: Vec::new(),
+            shelf_files: Vec::new(),
             w: Spring::new(d.w, 300.0, 30.0),
             h: Spring::new(d.h, 300.0, 30.0),
             r: Spring::new(d.r, 300.0, 30.0),
@@ -280,6 +288,15 @@ impl App {
                                 self.scale,
                             );
                         }
+                        AppPage::Notif => {
+                            let _ = crate::pages::battery_notif::draw_notif_page(
+                                &self.gpu,
+                                &shape,
+                                &self.power,
+                                &self.notifs,
+                                self.scale,
+                            );
+                        }
                         AppPage::Todo => {
                             let _ = crate::pages::todo::draw_todo_page(
                                 &self.gpu,
@@ -305,11 +322,28 @@ impl App {
                                 self.scale,
                             );
                         }
-                        AppPage::Clipboard => {
-                            let _ = crate::pages::clipboard_page::draw_clipboard_page(
+                        AppPage::Shelf => {
+                            let _ = crate::pages::shelf::draw_shelf_page(
                                 &self.gpu,
                                 &shape,
+                                self.shelf_tab,
+                                &self.shelf_files,
                                 &self.clipboard.get_history(),
+                                self.scale,
+                            );
+                        }
+                        AppPage::Config => {
+                            let cfg = crate::pages::config::ConfigState {
+                                ical_url: String::new(),
+                                last_sync_text: "Sinkronisasi otomatis aktif".to_string(),
+                                autostart: crate::window::autostart::is_enabled(),
+                                closed_style_mascot: self.closed_style_mascot,
+                                mascot_fps_label: "Eco".to_string(),
+                            };
+                            let _ = crate::pages::config::draw_config_page(
+                                &self.gpu,
+                                &shape,
+                                &cfg,
                                 self.scale,
                             );
                         }
@@ -446,7 +480,6 @@ impl App {
         let (x, y, _) = self.cursor_local();
         let s = self.scale;
         let shape = self.shape();
-        let cx = shape.center_x;
         match self.mode {
             Mode::Tucked | Mode::Closed => {
                 self.media_state = self.smtc.poll_state();
@@ -488,119 +521,7 @@ impl App {
                 }
 
                 // 5. Interaksi per halaman
-                match self.page {
-                    AppPage::Music => {
-                        let left = shape.center_x - shape.width / 2.0;
-                        if self.lyrics_mode {
-                            // Tombol kembali ke pemutar musik standar
-                            let back_x = left + 46.0 * s;
-                            let back_y = 146.0 * s;
-                            let dist = ((x - back_x).powi(2) + (y - back_y).powi(2)).sqrt();
-                            if dist <= 18.0 * s {
-                                self.set_lyrics_mode(false);
-                                return;
-                            }
-                        } else {
-                            // Tombol balon lirik (buka mode lirik melebar)
-                            let lyr_btn_x = left + 52.0 * s;
-                            let ctrl_y = 148.0 * s;
-                            let dist_lyr = ((x - lyr_btn_x).powi(2) + (y - ctrl_y).powi(2)).sqrt();
-                            if dist_lyr <= 18.0 * s {
-                                self.set_lyrics_mode(true);
-                                return;
-                            }
-
-                            // Play / Pause main button
-                            let dist_play = ((x - cx).powi(2) + (y - ctrl_y).powi(2)).sqrt();
-                            if dist_play <= 22.0 * s {
-                                let _ = self.smtc.toggle_play_pause();
-                                self.media_state = self.smtc.poll_state();
-                                self.render();
-                                return;
-                            }
-
-                            // Prev button
-                            let dist_prev = ((x - (cx - 44.0 * s)).powi(2) + (y - ctrl_y).powi(2)).sqrt();
-                            if dist_prev <= 18.0 * s {
-                                let _ = self.smtc.prev();
-                                self.media_state = self.smtc.poll_state();
-                                self.render();
-                                return;
-                            }
-
-                            // Next button
-                            let dist_next = ((x - (cx + 44.0 * s)).powi(2) + (y - ctrl_y).powi(2)).sqrt();
-                            if dist_next <= 18.0 * s {
-                                let _ = self.smtc.next();
-                                self.media_state = self.smtc.poll_state();
-                                self.render();
-                                return;
-                            }
-
-                            // Timeline seek bar click
-                            let bar_x = left + 88.0 * s;
-                            let bar_w = shape.width - 176.0 * s;
-                            let bar_y = 118.0 * s;
-                            if x >= bar_x && x <= bar_x + bar_w && (y - bar_y).abs() <= 12.0 * s {
-                                let ratio = ((x - bar_x) / bar_w).clamp(0.0, 1.0) as f64;
-                                let target_sec = ratio * self.media_state.duration_sec;
-                                let _ = self.smtc.seek(target_sec);
-                                self.media_state.position_sec = target_sec;
-                                self.render();
-                                return;
-                            }
-                        }
-                    }
-                    AppPage::Todo => {
-                        let left = shape.center_x - shape.width / 2.0;
-                        let card_x = left + 44.0 * s;
-                        let mut item_y = 38.0 * s;
-                        let card_h = 36.0 * s;
-                        let tasks = self.vault.get_tasks().tasks;
-                        for task in tasks.iter().take(3) {
-                            let chk_x = card_x + 16.0 * s;
-                            let chk_y = item_y + card_h / 2.0;
-                            let dist = ((x - chk_x).powi(2) + (y - chk_y).powi(2)).sqrt();
-                            if dist <= 16.0 * s {
-                                self.vault.toggle_task(&task.id);
-                                self.render();
-                                return;
-                            }
-                            item_y += card_h + 6.0 * s;
-                        }
-                    }
-                    AppPage::Pomodoro => {
-                        let btn_y = 142.0 * s;
-                        let dist_play = ((x - cx).powi(2) + (y - btn_y).powi(2)).sqrt();
-                        if dist_play <= 20.0 * s {
-                            self.pomodoro.toggle_run();
-                            self.render();
-                            return;
-                        }
-                        if (x - (cx + 38.0 * s)).abs() <= 25.0 * s && (y - btn_y).abs() <= 15.0 * s {
-                            self.pomodoro.reset();
-                            self.render();
-                            return;
-                        }
-                    }
-                    AppPage::Calendar => {}
-                    AppPage::Clipboard => {
-                        let left = shape.center_x - shape.width / 2.0;
-                        let card_x = left + 44.0 * s;
-                        let card_w = shape.width - 88.0 * s;
-                        let card_h = 36.0 * s;
-                        let mut item_y = 38.0 * s;
-                        let history = self.clipboard.get_history();
-                        for item in history.iter().take(3) {
-                            if x >= card_x && x <= card_x + card_w && y >= item_y && y <= item_y + card_h {
-                                crate::services::clipboard::copy_to_clipboard(&item.content);
-                                self.render();
-                                return;
-                            }
-                            item_y += card_h + 6.0 * s;
-                        }
-                    }
-                }
+                crate::pages::interactions::handle_page_click(self, &shape, x, y, s);
             }
         }
     }

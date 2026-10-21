@@ -17,37 +17,45 @@ use crate::ui::text;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum AppPage {
     Music,
+    Notif,
     Todo,
     Calendar,
     Pomodoro,
-    Clipboard,
+    Shelf,
+    Config,
 }
 
-pub const ALL_PAGES: [AppPage; 5] = [
+pub const ALL_PAGES: [AppPage; 7] = [
     AppPage::Music,
+    AppPage::Notif,
     AppPage::Todo,
     AppPage::Calendar,
     AppPage::Pomodoro,
-    AppPage::Clipboard,
+    AppPage::Shelf,
+    AppPage::Config,
 ];
 
 pub fn next_page(current: AppPage) -> AppPage {
     match current {
-        AppPage::Music => AppPage::Todo,
+        AppPage::Music => AppPage::Notif,
+        AppPage::Notif => AppPage::Todo,
         AppPage::Todo => AppPage::Calendar,
         AppPage::Calendar => AppPage::Pomodoro,
-        AppPage::Pomodoro => AppPage::Clipboard,
-        AppPage::Clipboard => AppPage::Music,
+        AppPage::Pomodoro => AppPage::Shelf,
+        AppPage::Shelf => AppPage::Config,
+        AppPage::Config => AppPage::Music,
     }
 }
 
 pub fn prev_page(current: AppPage) -> AppPage {
     match current {
-        AppPage::Music => AppPage::Clipboard,
-        AppPage::Todo => AppPage::Music,
+        AppPage::Music => AppPage::Config,
+        AppPage::Notif => AppPage::Music,
+        AppPage::Todo => AppPage::Notif,
         AppPage::Calendar => AppPage::Todo,
         AppPage::Pomodoro => AppPage::Calendar,
-        AppPage::Clipboard => AppPage::Pomodoro,
+        AppPage::Shelf => AppPage::Pomodoro,
+        AppPage::Config => AppPage::Shelf,
     }
 }
 
@@ -86,10 +94,12 @@ pub fn draw_header(
     // 1. Judul Kiri (.hdr-title)
     let (t1, t2, c2) = match page {
         AppPage::Music => ("Now", "Playing", cyan),
-        AppPage::Todo => ("LMS", "Todolist", emerald),
+        AppPage::Notif => ("Phone", "& WA", emerald),
+        AppPage::Todo => ("LMS", "Tasks", emerald),
         AppPage::Calendar => ("Smart", "Calendar", indigo),
-        AppPage::Pomodoro => ("Pomodoro", "Focus", amber),
-        AppPage::Clipboard => ("Clipboard", "Vault", violet),
+        AppPage::Pomodoro => ("Deadline", "Timer", amber),
+        AppPage::Shelf => ("File", "Shelf", cyan),
+        AppPage::Config => ("LMS", "Sync", violet),
     };
 
     let title_x = left + 20.0 * scale;

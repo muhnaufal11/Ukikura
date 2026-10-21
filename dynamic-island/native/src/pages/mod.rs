@@ -1,9 +1,12 @@
+pub mod battery_notif;
 pub mod calendar;
-pub mod clipboard_page;
+pub mod config;
+pub mod interactions;
 pub mod mascot;
 pub mod music;
 pub mod navbar;
 pub mod notch;
 pub mod peek;
 pub mod pomodoro;
+pub mod shelf;
 pub mod todo;
