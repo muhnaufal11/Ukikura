@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch50-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch51-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -201,23 +201,28 @@ Ukikura/
 │   ├── Ukikura-Setup-v1.0.6.exe     # Installer Windows siap pakai (langsung instal tanpa compile)
 │   ├── Ukikura-Setup.iss            # Skrip konfigurasi Inno Setup 6
 │   └── Build-Ukikura-Installer.ps1  # Skrip pembaruan installer (opsional untuk pengembang)
-├── main.js                          # Entry point utama Electron (Window, Hover Loop, Tray, IPC)
-├── main/
-│   ├── kura-server.js               # Server penyimpanan lokal mandiri (Tasks, Config, SSE)
-│   ├── winrt-client.js              # Spawner PowerShell WinRT Bridge & pengirim komando SMTC
-│   ├── whatsapp-companion.js        # Jendela pendamping WhatsApp Web & ekstraktor notifikasi/stiker
-│   ├── lms-crawler.js               # Klien SSO LMS & background Moodle scraper
-│   ├── updater.js                   # Pendeteksi pembaruan otomatis via GitHub Releases / version.json
-│   └── autostart.js                 # Pengelola Windows Startup (VBScript & Registry Run)
-├── bridge/
-│   └── winrt-bridge.ps1             # Jembatan native Windows Runtime (SMTC, Toast, Bluetooth/USB Battery)
-├── lyrics/
-│   ├── index.js                     # Pipeline orkestrasi getCompleteSyncedLyrics
-│   ├── http-client.js               # Klien HTTP & YouTube InnerTube native
-│   ├── text-romaji.js               # Parser LRC, normalisasi teks, & transliterasi Kana/Kanji ke Romaji
-│   ├── providers.js                 # Konektor database LRCLIB, NetEase Cloud Music, & KuGou
-│   ├── youtube-captions.js          # Ekstraktor subtitle asli YouTube (.srv3 TimedText)
-│   └── forced-alignment.js          # Mesin Audio-to-Text Forced Alignment & RANSAC Global Offset
+├── Ukikura.exe                      # Binary utama Native Host Rust (WebView2 ~32 MB RAM, 0% CPU)
+├── dynamic-island/
+│   ├── host-rust/                   # Host native desktop berbasis Rust (Win32 API + Microsoft Edge WebView2)
+│   │   ├── Cargo.toml               # Konfigurasi dependensi Rust (webview2, winapi, serde)
+│   │   └── src/main.rs              # Loop event Win32, transparent layered window, hit testing, & tray
+│   ├── bridge/
+│   │   ├── ukikura-bridge.exe       # Jembatan hardware C# ultra-ringan (SMTC Media, Battery, Toast Notif)
+│   │   └── winrt-bridge.ps1         # Jembatan fallback PowerShell WinRT
+│   ├── main/
+│   │   ├── kura-server.js           # Server penyimpanan lokal mandiri & API Lirik (port 8089)
+│   │   ├── winrt-client.js          # Spawner bridge & pengirim komando media
+│   │   ├── whatsapp-companion.js    # Jendela pendamping WhatsApp Web & ekstraktor notifikasi/stiker
+│   │   ├── lms-crawler.js           # Klien SSO LMS & background Moodle scraper
+│   │   ├── updater.js               # Pendeteksi pembaruan otomatis via GitHub Releases
+│   │   └── autostart.js             # Pengelola Windows Startup (Registry Run)
+│   ├── lyrics/
+│   │   ├── index.js                 # Pipeline orkestrasi getCompleteSyncedLyrics
+│   │   ├── http-client.js           # Klien HTTP & YouTube InnerTube native
+│   │   ├── text-romaji.js           # Parser LRC, normalisasi teks, & transliterasi Kana/Kanji ke Romaji
+│   │   ├── providers.js             # Konektor database LRCLIB, NetEase Cloud Music, & KuGou
+│   │   ├── youtube-captions.js      # Ekstraktor subtitle asli YouTube (.srv3 TimedText)
+│   │   └── forced-alignment.js      # Mesin Audio-to-Text Forced Alignment & RANSAC Global Offset
 ├── renderer/
 │   ├── index.html                   # Kerangka markup DOM murni (~420 baris)
 │   ├── styles/

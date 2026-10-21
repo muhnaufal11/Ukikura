@@ -549,6 +549,18 @@ ipcRenderer.on('media-update', (event, msg) => {
         `;
         lyrListEl.style.transform = 'translateY(0px)';
         ipcRenderer.send('island-request-lyrics', { title: mediaState.title, artist: mediaState.artist, dur: mediaState.dur });
+        try {
+            const reqTitle = mediaState.title;
+            const fetchUrl = `${SERVER_URL}/__qbot__/lyrics?title=${encodeURIComponent(reqTitle)}&artist=${encodeURIComponent(mediaState.artist || '')}&dur=${encodeURIComponent(mediaState.dur || 0)}`;
+            fetch(fetchUrl)
+                .then(r => r.json())
+                .then(payload => {
+                    if (payload && payload.title === mediaState.title && Array.isArray(payload.lines) && payload.lines.length > 0) {
+                        window.dispatchEvent(new CustomEvent('ipc-lyrics-update', { detail: payload }));
+                    }
+                })
+                .catch(() => {});
+        } catch (_) {}
     }
 
     // Jika musik baru mulai berputar, otomatis tampilkan halaman musik / status bar musik

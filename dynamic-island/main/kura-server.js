@@ -34,6 +34,10 @@ const TASKS_FILE = path.join(DATA_DIR, 'tasks.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 
 let sseClients = new Set();
+let getCompleteSyncedLyrics = null;
+try {
+    getCompleteSyncedLyrics = require('../lyrics').getCompleteSyncedLyrics;
+} catch (_) {}
 
 function ensureDataDir() {
     try {
@@ -189,6 +193,28 @@ function startKuraServer(port = 8089) {
 
             const urlPath = (req.url || '').split('?')[0];
 
+            if (req.method === 'GET' && urlPath === '/__qbot__/lyrics') {
+                const parsedUrl = new URL(req.url, 'http://127.0.0.1:8089');
+                const title = parsedUrl.searchParams.get('title') || '';
+                const artist = parsedUrl.searchParams.get('artist') || '';
+                const dur = Number(parsedUrl.searchParams.get('dur')) || 0;
+                if (!title || !getCompleteSyncedLyrics) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ title, lines: [] }));
+                    return;
+                }
+                getCompleteSyncedLyrics(title, artist, dur, false)
+                    .then(data => {
+                        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                        res.end(JSON.stringify(data || { title, lines: [] }));
+                    })
+                    .catch(err => {
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ title, error: String(err), lines: [] }));
+                    });
+                return;
+            }
+
             if (req.method === 'GET' && urlPath === '/__qbot__/config') {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify(loadKuraConfig()));
@@ -279,3 +305,8 @@ module.exports = {
     saveKuraTasks,
     startKuraServer
 };
+
+if (require.main === module) {
+    const port = parseInt(process.argv[2] || '8089', 10);
+    startKuraServer(port);
+}
