@@ -1,4 +1,33 @@
-const { ipcRenderer, shell, webUtils } = require('electron');
+let ipcRenderer, shell, webUtils;
+if (typeof require !== 'undefined') {
+    try {
+        const electron = require('electron');
+        ipcRenderer = electron.ipcRenderer;
+        shell = electron.shell;
+        webUtils = electron.webUtils;
+    } catch (_) {}
+}
+if (!ipcRenderer) {
+    ipcRenderer = {
+        send: function(channel, ...args) {
+            if (window.chrome && window.chrome.webview) {
+                window.chrome.webview.postMessage({ channel: channel, args: args });
+            }
+        },
+        on: function(channel, listener) {
+            window.addEventListener('ipc-' + channel, (e) => listener(e, e.detail));
+        }
+    };
+    shell = {
+        openExternal: function(url) {
+            if (window.chrome && window.chrome.webview) {
+                window.chrome.webview.postMessage({ channel: 'island-open-url', url: url });
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+    };
+}
 
 const SERVER_URL = 'http://127.0.0.1:8089';
 const PAGES = ['music', 'notif', 'todo', 'cal', 'pomo', 'shelf', 'config'];
