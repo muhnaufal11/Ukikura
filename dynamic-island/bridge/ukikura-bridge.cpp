@@ -1320,6 +1320,7 @@ private:
     bool m_lastMaximized = false;
     std::string m_lastApp = "";
     int m_tick = 0;
+    bool m_hasInitialScan = false;
 
 public:
     void Poll() {
@@ -1332,7 +1333,7 @@ public:
         if (GetWindowRect(fg, &rc)) {
             int screenW = GetSystemMetrics(SM_CXSCREEN);
             // Jika jendela menutupi area paling atas layar
-            if (rc.top <= 2 && (rc.right - rc.left) >= (screenW - 36)) {
+            if (rc.top <= 2 && (rc.right - rc.left) >= (screenW - 40)) {
                 isMaximized = true;
             }
         }
@@ -1355,11 +1356,15 @@ public:
                     std::wstring baseName = pSlash ? (pSlash + 1) : procPath;
                     for (auto &c : baseName) c = towlower(c);
                     appName = WideToUtf8(baseName);
-                    if (baseName == L"brave.exe" || baseName == L"chrome.exe" || 
-                        baseName == L"msedge.exe" || baseName == L"firefox.exe" || 
-                        baseName == L"opera.exe" || baseName == L"vivaldi.exe" || 
-                        baseName == L"zen.exe" || baseName == L"waterfox.exe" ||
-                        baseName == L"arc.exe") {
+                    if (baseName.find(L"brave") != std::wstring::npos ||
+                        baseName.find(L"chrome") != std::wstring::npos || 
+                        baseName.find(L"edge") != std::wstring::npos || 
+                        baseName.find(L"firefox") != std::wstring::npos || 
+                        baseName.find(L"opera") != std::wstring::npos || 
+                        baseName.find(L"vivaldi") != std::wstring::npos || 
+                        baseName.find(L"zen") != std::wstring::npos || 
+                        baseName.find(L"waterfox") != std::wstring::npos ||
+                        baseName.find(L"arc") != std::wstring::npos) {
                         isBrowser = true;
                     }
                 }
@@ -1367,8 +1372,26 @@ public:
             }
         }
 
+        // Cek juga judul jendela (Window Title) jika process name browser disamarkan/terproteksi
+        if (!isBrowser) {
+            wchar_t wTitle[256] = {0};
+            if (GetWindowTextW(fg, wTitle, 256) > 0) {
+                std::wstring titleStr = wTitle;
+                for (auto &c : titleStr) c = towlower(c);
+                if (titleStr.find(L"brave") != std::wstring::npos ||
+                    titleStr.find(L"chrome") != std::wstring::npos ||
+                    titleStr.find(L"edge") != std::wstring::npos ||
+                    titleStr.find(L"firefox") != std::wstring::npos ||
+                    titleStr.find(L"youtube") != std::wstring::npos) {
+                    isBrowser = true;
+                }
+            }
+        }
+
         bool browserMaximized = (isBrowser && isMaximized);
-        if (browserMaximized != m_lastBrowserMaximized || isMaximized != m_lastMaximized || (m_tick % 10 == 0)) {
+        bool changed = (!m_hasInitialScan) || (browserMaximized != m_lastBrowserMaximized) || (isMaximized != m_lastMaximized);
+        if (changed || (m_tick % 10 == 0)) {
+            m_hasInitialScan = true;
             m_lastBrowserMaximized = browserMaximized;
             m_lastMaximized = isMaximized;
             m_lastApp = appName;

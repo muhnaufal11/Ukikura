@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 const http = require("http");
 const { initLmsCrawler, openLmsLoginWindow, runHiddenLmsCrawler, postJsonToServer } = require("./main/lms-crawler");
-const { initWinRtClient, startWinRtBridge, sendMediaCommand, fetchSyncedLyrics, getWinRtProc, resetLyricsTrackKey, getLastLyricsPayload } = require("./main/winrt-client");
+const { initWinRtClient, startWinRtBridge, sendMediaCommand, fetchSyncedLyrics, getWinRtProc, resetLyricsTrackKey, getLastLyricsPayload, getLastWindowState } = require("./main/winrt-client");
 const { initWhatsAppCompanion, ensureWhatsAppWindow, pollWhatsAppUnread, resetWaState, replyWhatsApp } = require("./main/whatsapp-companion");
 const { initAutoStart, isWindowsAutoStartEnabled, setWindowsAutoStart } = require("./main/autostart");
 const { startKuraServer } = require("./main/kura-server");
@@ -128,7 +128,7 @@ function createIslandWindow() {
 
     mainWindow.setAlwaysOnTop(true, 'screen-saver');
     mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    mainWindow.setIgnoreMouseEvents(true, { forward: true });
+    mainWindow.setIgnoreMouseEvents(true);
 
     // Request handler untuk loopback audio desktop real-time (WASAPI Loopback)
     try {
@@ -240,7 +240,7 @@ function startNusaHoverLoop() {
                 const needIgnore = isPinnedOpen && !insideOpen;
                 if (lastIgnoreState !== needIgnore) {
                     lastIgnoreState = needIgnore;
-                    mainWindow.setIgnoreMouseEvents(needIgnore, { forward: true });
+                    mainWindow.setIgnoreMouseEvents(needIgnore);
                 }
             } else {
                 // Kursor keluar dari area notch terbuka: tutup otomatis setelah jeda singkat
@@ -251,7 +251,7 @@ function startNusaHoverLoop() {
                         lastIgnoreState = true;
                         lastPassthroughState = false;
                         if (mainWindow && !mainWindow.isDestroyed()) {
-                            mainWindow.setIgnoreMouseEvents(true, { forward: true });
+                            mainWindow.setIgnoreMouseEvents(true);
                             mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
                         }
                     }, 220);
@@ -282,27 +282,37 @@ function startNusaHoverLoop() {
             }
         }
 
+        const winState = typeof getLastWindowState === 'function' ? getLastWindowState() : null;
+        const isBrowserMaximized = Boolean(winState && winState.browserMaximized);
+
         const halfClosedW = Math.round(CLOSED_NOTCH_W / 2) + 12;
         const inHorizontalSpan = pt.x >= (centerX - halfClosedW) && pt.x <= (centerX + halfClosedW);
-        const inTabBarSpan = pt.x >= (centerX - halfClosedW - 48) && pt.x <= (centerX + halfClosedW + 48);
+        const inTabBarSpan = pt.x >= (centerX - halfClosedW - 60) && pt.x <= (centerX + halfClosedW + 60);
 
-        // Kursor berada di barisan Tab Browser (y = 0..44px):
-        // Seluruh barisan tab bebas diklik 100% tanpa halangan!
-        const hoveringBrowserTabs = inTabBarSpan && pt.y >= 0 && pt.y <= 44;
+        // Kursor berada di barisan Tab Browser (y = 0..48px):
+        // Seluruh barisan tab bebas diklik 100% langsung tembus ke browser di bawahnya!
+        const hoveringBrowserTabs = inTabBarSpan && pt.y >= 0 && pt.y <= 48;
 
         if (hoveringBrowserTabs) {
-            // Segera aktifkan mode tembus pandang & tembus klik (passthrough)
+            // Segera aktifkan mode tembus pandang & tembus klik OS murni (WS_EX_TRANSPARENT)
             if (!lastPassthroughState) {
                 lastPassthroughState = true;
                 mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'passthrough' });
             }
             if (lastIgnoreState !== true) {
                 lastIgnoreState = true;
-                mainWindow.setIgnoreMouseEvents(true, { forward: true });
+                mainWindow.setIgnoreMouseEvents(true);
             }
 
-            // Buka Dynamic Island hanya jika pengguna sengaja menahan kursor (dwell) di area notch selama >= 320ms
-            if (inHorizontalSpan && !isTucked) {
+            // Jika browser sedang fullscreen/maximized:
+            // Area tab browser (y <= 48) DILARANG auto-expand agar pengguna bebas klik tab 100%!
+            if (isBrowserMaximized) {
+                if (hoverOpenTimer) {
+                    clearTimeout(hoverOpenTimer);
+                    hoverOpenTimer = null;
+                }
+            } else if (inHorizontalSpan && !isTucked) {
+                // Saat di desktop atau bukan browser maximized: buka jika hover dwell >= 320ms
                 if (!hoverOpenTimer) {
                     hoverOpenTimer = setTimeout(() => {
                         hoverOpenTimer = null;
@@ -320,10 +330,26 @@ function startNusaHoverLoop() {
                 hoverOpenTimer = null;
             }
         } else {
-            if (hoverOpenTimer) {
+            // Jika browser maximized dan kursor sedikit di bawah tab (y: 49..68px di area bibir bawah notch):
+            // Berikan opsi buka sengaja dengan dwell 400ms tanpa mengganggu barisan tab
+            if (isBrowserMaximized && inHorizontalSpan && !isTucked && pt.y > 48 && pt.y <= 68) {
+                if (!hoverOpenTimer) {
+                    hoverOpenTimer = setTimeout(() => {
+                        hoverOpenTimer = null;
+                        if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
+                            isExpanded = true;
+                            lastIgnoreState = false;
+                            lastPassthroughState = false;
+                            mainWindow.setIgnoreMouseEvents(false);
+                            mainWindow.webContents.send('nusa-state', { expanded: true, mode: 'normal' });
+                        }
+                    }, 400);
+                }
+            } else if (hoverOpenTimer) {
                 clearTimeout(hoverOpenTimer);
                 hoverOpenTimer = null;
             }
+
             if (lastPassthroughState) {
                 lastPassthroughState = false;
                 mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
@@ -331,7 +357,7 @@ function startNusaHoverLoop() {
             // Selalu tembuskan semua klik ke aplikasi di bawahnya saat di luar notch
             if (lastIgnoreState !== true) {
                 lastIgnoreState = true;
-                mainWindow.setIgnoreMouseEvents(true, { forward: true });
+                mainWindow.setIgnoreMouseEvents(true);
             }
         }
     }, 60);
@@ -549,7 +575,7 @@ ipcMain.on('island-resize', (event, expand) => setIslandExpanded(expand));
 ipcMain.on('island-pin', (event, pin) => { isPinnedOpen = Boolean(pin); });
 ipcMain.on('island-tuck', (event, tuck) => setIslandTucked(tuck));
 ipcMain.on('island-ignore-mouse', (event, ignore) => {
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setIgnoreMouseEvents(Boolean(ignore), { forward: Boolean(ignore) });
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setIgnoreMouseEvents(Boolean(ignore));
 });
 ipcMain.on('media-control', (event, action) => sendMediaCommand(action));
 ipcMain.on('media-seek', (event, targetSec) => sendMediaCommand(`SEEK:${Math.max(0, Number(targetSec) || 0).toFixed(2)}`));

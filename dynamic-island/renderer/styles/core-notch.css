@@ -32,6 +32,7 @@
         overflow: hidden;
         font-family: var(--ui);
         -webkit-font-smoothing: antialiased;
+        pointer-events: none !important;
     }
 
     /* Holder tepat di tengah atas layar (y = 0), menyatu 100% dengan frame atas */
@@ -42,30 +43,48 @@
         transform: translateX(-50%);
         transform-origin: top center;
         transition: opacity 0.16s ease, transform 0.2s ease;
+        pointer-events: none;
+    }
+
+    /* Saat notch sedang terbuka (expanded), barulah terima klik mouse penuh */
+    .mn-holder.is-expanded,
+    .mn-holder.is-expanded * {
+        pointer-events: auto !important;
+    }
+
+    /* Saat notch dalam keadaan tertutup (tidak expanded): seluruh elemen notch WAJIB pointer-events: none */
+    .mn-holder:not(.is-expanded) {
+        pointer-events: none !important;
+    }
+    .mn-holder:not(.is-expanded) * {
+        pointer-events: none !important;
+    }
+
+    /* Pengecualian saat peek popup aktif agar tombol peek bisa diklik */
+    .mn-holder:not(.is-expanded):has(.mn[data-s="peek"]),
+    .mn-holder:not(.is-expanded):has(.mn[data-s="peek"]) * {
+        pointer-events: auto !important;
     }
 
     /* Tembus pandang & tembus klik saat kursor berada di area tab browser (100% bebas klik tab) */
-    .mn-holder.passthrough {
-        opacity: 0.08 !important;
+    .mn-holder.passthrough,
+    .mn-holder.passthrough * {
+        opacity: 0.04 !important;
         transform: translateX(-50%) scale(0.92);
         pointer-events: none !important;
         transition: opacity 0.12s ease, transform 0.16s ease;
     }
 
-    .mn-holder.passthrough * {
-        pointer-events: none !important;
-    }
-
     /* Saat browser (Brave, Chrome, dll.) terdeteksi sedang fullscreen/maximized agar tab di belakang terlihat */
     .mn-holder.browser-maximized:not(.is-expanded) .mn {
-        opacity: 0.35;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+        opacity: 0.16 !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         transition: opacity 0.22s ease, box-shadow 0.22s ease;
     }
 
     .mn-holder.browser-maximized:not(.is-expanded):hover .mn,
     .mn-holder.browser-maximized:not(.is-expanded).passthrough .mn {
-        opacity: 0.06 !important;
+        opacity: 0.02 !important;
         pointer-events: none !important;
     }
 
