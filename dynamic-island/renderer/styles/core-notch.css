@@ -46,36 +46,42 @@
         pointer-events: none;
     }
 
-    /* Kapsul notch selalu menerima interaksi & klik mouse secara responsif */
+    /* Kapsul notch menerima interaksi mouse saat terbuka */
     .mn,
     .mn * {
-        pointer-events: auto !important;
+        pointer-events: auto;
     }
 
-    /* Saat fullscreen / browser maximized: Tampilan tetap normal seperti biasa */
-    .mn-holder.browser-maximized:not(.is-expanded) .mn {
+    /* GHOST PASSTHROUGH: Saat kursor mendekati tab di belakang notch:
+       Seluruh holder dan kapsul seketika transparan total (opacity: 0) & meluncur naik ke bezel
+       agar tab browser di belakang terlihat 100% jelas & bebas diklik tanpa terhalang sedikitpun! */
+    .mn-holder.ghost-passthrough:not(.is-expanded) {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transform: translateX(-50%) translateY(-14px) scale(0.92) !important;
+        transition: opacity 0.1s ease, transform 0.12s ease !important;
+    }
+
+    .mn-holder.ghost-passthrough:not(.is-expanded) .mn,
+    .mn-holder.ghost-passthrough:not(.is-expanded) * {
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    /* Saat fullscreen / browser maximized: Tampilan tetap normal selama tidak ghost */
+    .mn-holder.browser-maximized:not(.is-expanded):not(.ghost-passthrough) .mn {
         opacity: 1;
         transition: opacity 0.16s ease, transform 0.16s ease;
-    }
-
-    /* KECUALI saat kursor didekatkan / berada di atas notch saat fullscreen:
-       Seketika transparan tipis + tembus klik agar tab di belakang terlihat jelas & bebas diklik 100%! */
-    .mn-holder.ghost-passthrough:not(.is-expanded) .mn,
-    .mn-holder.passthrough:not(.is-expanded) .mn {
-        opacity: 0.02 !important;
-        transform: translateY(-8px) scale(0.96);
-        pointer-events: none !important;
-        transition: opacity 0.1s ease, transform 0.12s ease;
-    }
-
-    .mn-holder.ghost-passthrough:not(.is-expanded) .eyes,
-    .mn-holder.passthrough:not(.is-expanded) .eyes {
-        opacity: 0 !important;
     }
 
     /* Saat notch sedang terbuka (expanded), selalu 100% tajam dan jelas */
     .mn-holder.is-expanded .mn {
         opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    .mn-holder.is-expanded .mn * {
+        pointer-events: auto;
     }
 
     @property --e {
@@ -131,11 +137,14 @@
     }
 
     /* Mode Terlipat Tipis (Tucked) */
-    .mn[data-s="tucked"] {
+    .mn[data-s="tucked"],
+    .mn-holder .mn[data-s="tucked"],
+    .mn[data-s="tucked"] * {
         --w: 140px;
         --h: 6px;
         --r: 6px;
         cursor: pointer;
+        pointer-events: none !important;
     }
 
     /* Mode Peek Popup (Notifikasi WA / HP Masuk) */

@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 62,
+  "versionCode": 63,
   "version": "1.0.6",
-  "fixCount": 62,
-  "displayVersion": "1.0.6 (Patch 62 - Fullscreen Tab Auto-Hide Ghost, 100% Tab Click-Through & Tucked Passthrough Fix)",
+  "fixCount": 63,
+  "displayVersion": "1.0.6 (Patch 63 - Total Instant Ghost Tab Auto-Hide, Zero Click Blocking Around Island & 100% Click-Through Fix)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 62 - Fullscreen Tab Auto-Hide Ghost, 100% Tab Click-Through & Tucked Passthrough Fix): 1) Memperbaiki masalah pulau menghalangi tab browser saat fullscreen / maximized: Kapsul Dynamic Island seketika berubah menjadi transparan tipis (ghost mode opacity 0.02) dan tergeser naik ke bezel saat kursor didekatkan ke area tab browser (y: 0..38px), serta 100% tembus klik langsung ke tab browser di belakangnya (bisa klik, pilih, pindah, atau tutup tab bebas hambatan). 2) Tidak ada lagi auto-expand tiba-tiba yang mengganggu saat hovering pada tab browser: Untuk membuka pulau secara sengaja saat fullscreen, pengguna cukup menyentuh dagu pulau di bawah tab (y: 39..68px) atau mengklik menu Tray Icon. 3) Memperbaiki masalah saat pulau di-minimize (tucked mode): Seluruh area tab browser kini 100% tembus klik langsung tanpa pernah tertahan oleh kanvas Electron."
+  "changelog": "Ukikura v1.0.6 (Patch 63): 1) Memperbaiki masalah kapsul tidak memudar ('gak pudar tuh'): Kapsul Dynamic Island kini seketika lenyap total (ghost mode opacity 0 + slide ke bezel) saat kursor mendekati area tab (y <= 40px), sehingga tab browser di belakang terlihat 100% jernih dan bebas dipilih. 2) Memperbaiki masalah area di sekitar pulau tidak bisa ditekan ('di sekitar island nya kok gak bisa tekan ya?'): Saat pulau sedang tertutup, seluruh kanvas Electron 580x240 kini 100% tembus klik permanen (unconditional setIgnoreMouseEvents passthrough). Seluruh tab di kiri/kanan pulau, address bar, bookmarks bar, dan halaman web kini 100% bebas ditekan tanpa hambatan sedikitpun. 3) Mode Tucked (Minimize) juga 100% tembus klik tanpa pernah memblokir tab browser di baliknya."
 }

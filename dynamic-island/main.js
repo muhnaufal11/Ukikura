@@ -317,125 +317,73 @@ function startNusaHoverLoop() {
             });
         }
 
-        const winState = typeof getLastWindowState === 'function' ? getLastWindowState() : null;
-        // Deteksi apakah jendela latar depan aktif adalah fullscreen atau maximized
-        // Default ke true jika winState belum tersedia agar aman saat aplikasi baru menyala
-        const isFullscreenOrMaximized = (winState !== null) ? Boolean(winState.browserMaximized || winState.isMaximized) : true;
+        // Hitung koordinat kursor relatif terhadap tengah pulau dan bibir atas layar
+        const relDistX = Math.abs(pt.x - centerX);
+        const relY = pt.y - b.y;
 
-        // Dimensi kapsul notch saat tertutup (Closed Notch: 176px x 25px)
-        const halfClosedW = Math.round(CLOSED_NOTCH_W / 2) + 14;
-        const inHorizontalSpan = pt.x >= (centerX - halfClosedW) && pt.x <= (centerX + halfClosedW);
+        // Zona Tab Bar (y: 0..40px, |x - centerX| <= 125px):
+        // Kursor berada tepat di area tab browser (atau jendela ber-tab) di belakang kapsul pulau.
+        // "aku mau kalau kursor dekat mau milih tab di browser yang fullscreen dia akan sembunyikan atau transparan gitu dan bisa aku tekan tab yang di belakang"
+        const inTabBarZone = relDistX <= 125 && relY >= 0 && relY <= 40;
 
-        // Zona Tab Browser di belakang pulau (y: 0..38px): Area di mana tab browser berada saat fullscreen / maximized!
-        const inTabBarZone = inHorizontalSpan && pt.y >= 0 && pt.y <= 38;
-        // Zona Bibir Bawah / Dagu Pulau (y: 39..68px): Area bawah kapsul untuk interaksi sengaja membuka Dynamic Island
-        const inChinZone = inHorizontalSpan && pt.y > 38 && pt.y <= 68;
+        // Zona Dagu / Bibir Bawah (y: 41..65px, |x - centerX| <= 95px):
+        // Area tepat di bawah deretan tab browser. Jika pengguna sengaja mengarahkan kursor ke sini dan berdiam (dwell >= 220ms),
+        // Dynamic Island akan otomatis terbuka lebar.
+        const inChinZone = relDistX <= 95 && relY > 40 && relY <= 65;
 
-        if (isFullscreenOrMaximized) {
-            // =========================================================================
-            // MODE FULLSCREEN / BROWSER MAXIMIZED:
-            // "aku mau kalau kursor dekat mau milih tab di browser yang fullscreen
-            //  dia akan sembunyikan atau transparan gitu dan bisa aku tekan tab yang di belakang"
-            // =========================================================================
-            if (inTabBarZone) {
-                // Kursor BERADA DI AREA TAB BROWSER (y = 0..38px):
-                // 1. Seketika ubah menjadi transparan tipis (ghost mode) & geser naik sedikit ke bezel!
-                if (!lastPassthroughState) {
-                    lastPassthroughState = true;
-                    mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'ghost' });
-                }
-                // 2. Tembus klik 100% langsung ke tab browser di belakangnya (bisa klik tab, ganti tab, atau tutup tab)!
-                if (lastIgnoreState !== true) {
-                    lastIgnoreState = true;
-                    mainWindow.setIgnoreMouseEvents(true, { forward: true });
-                }
-                // 3. Batalkan timer hover: JANGAN PERNAH buka pulau otomatis saat kursor di area tab browser!
-                if (hoverOpenTimer) {
-                    clearTimeout(hoverOpenTimer);
+        // =========================================================================
+        // ATURAN MUTLAK KLIK & TRANSPARANSI KANVAS:
+        // Saat pulau sedang tertutup (!isExpanded), setIgnoreMouseEvents(true, { forward: true })
+        // WAJIB SELALU AKTIF!
+        // Jangan pernah memanggil setIgnoreMouseEvents(false) saat pulau tertutup,
+        // agar seluruh tab di samping kiri/kanan, address bar, bookmarks bar, dan konten web
+        // 100% BEBAS DIKLIK TANPA PERNAH TERHALANG!
+        // =========================================================================
+        if (lastIgnoreState !== true) {
+            lastIgnoreState = true;
+            mainWindow.setIgnoreMouseEvents(true, { forward: true });
+        }
+
+        if (inTabBarZone) {
+            // 1. Kursor berada di area tab browser:
+            // Seketika sembunyikan kapsul pulau (ghost mode: opacity 0 + meluncur naik ke bezel)
+            if (!lastPassthroughState) {
+                lastPassthroughState = true;
+                mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'ghost' });
+            }
+            // Batalkan timer buka pulau: JANGAN PERNAH buka pulau saat kursor memilih tab!
+            if (hoverOpenTimer) {
+                clearTimeout(hoverOpenTimer);
+                hoverOpenTimer = null;
+            }
+        } else if (inChinZone) {
+            // 2. Kursor berada di dagu pulau (di bawah tab browser):
+            // Tampilan kembali normal (maskot tampak siap berinteraksi)
+            if (lastPassthroughState) {
+                lastPassthroughState = false;
+                mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
+            }
+            // Buka pulau jika kursor berdiam sengaja di dagu selama >= 220ms
+            if (!hoverOpenTimer) {
+                hoverOpenTimer = setTimeout(() => {
                     hoverOpenTimer = null;
-                }
-            } else if (inChinZone) {
-                // Kursor BERADA DI BIBIR BAWAH / DAGU PULAU (y = 39..68px):
-                // Pengguna mengarahkan kursor tepat di bawah barisan tab browser untuk berinteraksi:
-                if (lastPassthroughState) {
-                    lastPassthroughState = false;
-                    mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
-                }
-                if (lastIgnoreState !== false) {
-                    lastIgnoreState = false;
-                    mainWindow.setIgnoreMouseEvents(false);
-                }
-
-                if (!hoverOpenTimer) {
-                    hoverOpenTimer = setTimeout(() => {
-                        hoverOpenTimer = null;
-                        if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
-                            setIslandExpanded(true);
-                        }
-                    }, 260);
-                }
-            } else {
-                // Kursor DI LUAR PULAU (area halaman web atau video):
-                if (hoverOpenTimer) {
-                    clearTimeout(hoverOpenTimer);
-                    hoverOpenTimer = null;
-                }
-                // 1. Tampilan kembali NORMAL (solid black + mata maskot berkedip)
-                if (lastPassthroughState) {
-                    lastPassthroughState = false;
-                    mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
-                }
-                // 2. Kanvas transparan tetap tembus klik ke konten di bawahnya
-                if (lastIgnoreState !== true) {
-                    lastIgnoreState = true;
-                    mainWindow.setIgnoreMouseEvents(true, { forward: true });
-                }
+                    if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
+                        setIslandExpanded(true);
+                    }
+                }, 220);
             }
         } else {
-            // =========================================================================
-            // MODE NORMAL (Desktop / Jendela Tidak Maximized):
-            // =========================================================================
-            const insideClosedNotch = inHorizontalSpan && pt.y >= 0 && pt.y <= (CLOSED_NOTCH_H + 12);
-            if (insideClosedNotch) {
-                // Kursor berada tepat di atas kapsul notch:
-                // Aktifkan interaksi mouse penuh agar maskot & notch bisa diklik seketika!
-                if (lastIgnoreState !== false) {
-                    lastIgnoreState = false;
-                    mainWindow.setIgnoreMouseEvents(false);
-                }
-                if (lastPassthroughState) {
-                    lastPassthroughState = false;
-                    mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
-                }
-
-                // Buka Dynamic Island jika kursor berdiam (dwell) di notch selama >= 280ms
-                if (!hoverOpenTimer) {
-                    hoverOpenTimer = setTimeout(() => {
-                        hoverOpenTimer = null;
-                        if (!isExpanded && !isTucked && mainWindow && !mainWindow.isDestroyed()) {
-                            setIslandExpanded(true);
-                        }
-                    }, 280);
-                }
-            } else {
-                // Kursor berada di luar kapsul notch (area kanvas transparan di sekitar pulau):
-                if (hoverOpenTimer) {
-                    clearTimeout(hoverOpenTimer);
-                    hoverOpenTimer = null;
-                }
-                if (lastPassthroughState) {
-                    lastPassthroughState = false;
-                    mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
-                }
-
-                // Tembus klik 100% ke seluruh tab browser dan aplikasi di sekitar pulau!
-                if (lastIgnoreState !== true) {
-                    lastIgnoreState = true;
-                    mainWindow.setIgnoreMouseEvents(true, { forward: true });
-                }
+            // 3. Kursor di luar pulau (di area halaman web, tab kiri/kanan yang jauh, dsb.)
+            if (hoverOpenTimer) {
+                clearTimeout(hoverOpenTimer);
+                hoverOpenTimer = null;
+            }
+            if (lastPassthroughState) {
+                lastPassthroughState = false;
+                mainWindow.webContents.send('nusa-state', { expanded: false, mode: 'normal' });
             }
         }
-    }, 60);
+    }, 45);
 }
 
 function setIslandExpanded(expand) {

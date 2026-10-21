@@ -375,19 +375,16 @@ function getClosedVisualMode() {
 // Terima status hover/open otomatis dari proses utama Electron
 ipcRenderer.on('nusa-state', (event, state) => {
     if (!state) return;
-    if ((state.mode === 'passthrough' || state.mode === 'ghost') && !peekTimer) {
-        holderEl.classList.add('ghost-passthrough');
-    } else {
-        holderEl.classList.remove('ghost-passthrough');
-    }
-
     if (state.expanded) {
         if (peekTimer) {
             clearTimeout(peekTimer);
             peekTimer = null;
         }
         isExpanded = true;
-        if (holderEl) holderEl.classList.add('is-expanded');
+        if (holderEl) {
+            holderEl.classList.remove('ghost-passthrough');
+            holderEl.classList.add('is-expanded');
+        }
         const eff = getEffectiveState();
         hdrTitleEl.innerHTML = PAGE_TITLES[eff] || PAGE_TITLES.todo;
         mnEl.dataset.s = eff;
@@ -401,9 +398,14 @@ ipcRenderer.on('nusa-state', (event, state) => {
         btnPinEl.classList.remove('active');
         if (mnEl.dataset.s !== 'tucked') {
             mnEl.dataset.s = getClosedVisualMode();
-    if (typeof window.ensureLivingEyesLoop === 'function') {
-        window.ensureLivingEyesLoop();
-    }
+            if (typeof window.ensureLivingEyesLoop === 'function') {
+                window.ensureLivingEyesLoop();
+            }
+        }
+        if ((state.mode === 'passthrough' || state.mode === 'ghost') && !peekTimer) {
+            if (holderEl) holderEl.classList.add('ghost-passthrough');
+        } else {
+            if (holderEl) holderEl.classList.remove('ghost-passthrough');
         }
     }
 });
