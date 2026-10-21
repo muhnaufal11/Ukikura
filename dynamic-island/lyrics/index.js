@@ -204,45 +204,44 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     const hasManualCC = Boolean(ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4);
     if (hasManualCC) {
         // Cek apakah ada Japanese Lines dari manual CC (seperti ALiCE&u yang memiliki track JA terpisah):
-        const hasSeparateJa = Array.isArray(ytCaptions.japaneseLines) && ytCaptions.japaneseLines.length >= 4 && !ytCaptions.lines.some(l => hasJapaneseChars(l.rawText || l.text));
-        if (hasSeparateJa) {
+        if (Array.isArray(ytCaptions.japaneseLines) && ytCaptions.japaneseLines.length >= 4) {
             ytCaptions.lines.forEach(l => {
-                let bestJp = null;
-                let minDiff = 999;
-                for (const jl of ytCaptions.japaneseLines) {
-                    const diff = Math.abs(jl.time - l.time);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        bestJp = jl;
+                if (!l.jpText && !hasJapaneseChars(l.rawText || l.text)) {
+                    let bestJp = null;
+                    let minDiff = 999;
+                    for (const jl of ytCaptions.japaneseLines) {
+                        const diff = Math.abs(jl.time - l.time);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            bestJp = jl;
+                        }
                     }
-                }
-                if (bestJp && minDiff <= 1.2) {
-                    const candJp = bestJp.rawText || bestJp.text || '';
-                    if (hasJapaneseChars(candJp)) {
-                        l.jpText = candJp;
+                    if (bestJp && minDiff <= 1.2) {
+                        const candJp = bestJp.transText || bestJp.rawText || bestJp.text || '';
+                        if (hasJapaneseChars(candJp)) {
+                            l.jpText = candJp;
+                        }
                     }
                 }
             });
         }
 
-        // Pasangkan Indonesian Lines dari manual CC jika belum ada transText
+        // Pasangkan Indonesian Lines dari manual CC (selalu prioritaskan terjemahan resmi ID di atas subtitle lain!)
         if (Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 4) {
             ytCaptions.lines.forEach(l => {
-                if (!l.transText) {
-                    let bestId = null;
-                    let minDiff = 999;
-                    for (const idl of ytCaptions.indonesianLines) {
-                        const diff = Math.abs(idl.time - l.time);
-                        if (diff < minDiff) {
-                            minDiff = diff;
-                            bestId = idl;
-                        }
+                let bestId = null;
+                let minDiff = 999;
+                for (const idl of ytCaptions.indonesianLines) {
+                    const diff = Math.abs(idl.time - l.time);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        bestId = idl;
                     }
-                    if (bestId && minDiff <= 1.2) {
-                        const candId = bestId.transText || bestId.rawText || bestId.text || '';
-                        if (candId.toLowerCase() !== (l.rawText || l.text).toLowerCase()) {
-                            l.transText = candId;
-                        }
+                }
+                if (bestId && minDiff <= 1.2) {
+                    const candId = bestId.transText || bestId.rawText || bestId.text || '';
+                    if (candId && candId.toLowerCase() !== (l.rawText || l.text).toLowerCase()) {
+                        l.transText = candId;
                     }
                 }
             });
@@ -274,7 +273,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
 
             return {
                 time: l.time,
-                text: (roma && roma.toLowerCase() !== mainDisplay.toLowerCase()) ? `${roma} · ${mainDisplay}` : mainDisplay,
+                text: mainDisplay,
                 rawText: rawClean,
                 jpText: l.jpText || '',
                 romaText: roma,

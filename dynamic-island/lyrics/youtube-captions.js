@@ -392,42 +392,23 @@ function sanitizeBilingualManualLines(rawLines) {
         const cur = rawLines[i];
         const next = rawLines[i + 1];
 
-        // 1. Cek pasangan bilingual pada timestamp berdekatan (<= 0.75s)
-        if (next && Math.abs(next.time - cur.time) <= 0.75) {
-            const curIsJp = hasJapaneseChars(cur.text);
-            const nextIsJp = hasJapaneseChars(next.text);
-            const curIsEn = /^[a-zA-Z0-9\s,.'!?~—–-]+$/.test(cur.text);
-            const nextIsEn = /^[a-zA-Z0-9\s,.'!?~—–-]+$/.test(next.text);
-            const isDifferentLang = (curIsJp !== nextIsJp) || (curIsEn !== nextIsEn) || (cur.text.trim().toLowerCase() !== next.text.trim().toLowerCase());
+        // 1. Cek pasangan bilingual pada timestamp berdekatan (<= 0.85s)
+        if (next && Math.abs(next.time - cur.time) <= 0.85) {
+            const curText = (cur.text || cur.rawText || '').trim();
+            const nextText = (next.text || next.rawText || '').trim();
+            const isDifferent = curText.toLowerCase() !== nextText.toLowerCase();
 
-            if (isDifferentLang) {
-                let primaryLine = cur;
-                let secondaryLine = next;
-                if (curIsJp && !nextIsJp) {
-                    primaryLine = cur;
-                    secondaryLine = next;
-                } else if (!curIsJp && nextIsJp) {
-                    primaryLine = next;
-                    secondaryLine = cur;
-                }
-
+            if (isDifferent) {
+                // Di subtitle resmi YouTube (TimedText), baris pertama (cur) selalu merupakan lirik/vokal yang dinyanyikan!
+                // Sedangkan baris kedua (next) adalah terjemahan resmi track tersebut!
                 cleaned.push({
-                    time: primaryLine.time,
-                    endTime: Math.max(primaryLine.endTime || 0, secondaryLine.endTime || 0),
-                    text: primaryLine.text,
-                    rawText: primaryLine.text,
-                    transText: secondaryLine.text
+                    time: cur.time,
+                    endTime: Math.max(cur.endTime || 0, next.endTime || 0),
+                    text: curText,
+                    rawText: curText,
+                    transText: nextText
                 });
                 i++; // lewati next karena sudah dipasangkan
-
-                // Cek jika ada baris pengulangan segera setelahnya (<= 1.2s)
-                const next2 = rawLines[i + 1];
-                if (next2 && Math.abs(next2.time - primaryLine.time) <= 1.2) {
-                    const n2 = next2.text.trim().toLowerCase();
-                    if (n2 === primaryLine.text.trim().toLowerCase() || n2 === secondaryLine.text.trim().toLowerCase()) {
-                        i++;
-                    }
-                }
                 continue;
             }
         }
@@ -456,8 +437,12 @@ function sanitizeBilingualManualLines(rawLines) {
     const sanitizedManual = isManualCC ? sanitizeBilingualManualLines(parsedManual.lines) : [];
     const primaryLines = isManualCC ? sanitizedManual : asrMergedLines;
     const languageCode = (bestManual && bestManual.lang) || (bestAsr && bestAsr.lang) || '';
-    const cleanIdLines = parsedId.lines.length > 0 ? sanitizeBilingualManualLines(parsedId.lines) : [];
-    const cleanJaLines = parsedJa.lines.length > 0 ? sanitizeBilingualManualLines(parsedJa.lines) : [];
+    const cleanIdLines = idTrack
+        ? (bestManual && idTrack === bestManual.track ? sanitizedManual : (parsedId.lines.length > 0 ? sanitizeBilingualManualLines(parsedId.lines) : []))
+        : [];
+    const cleanJaLines = jaTrack
+        ? (bestManual && jaTrack === bestManual.track ? sanitizedManual : (parsedJa.lines.length > 0 ? sanitizeBilingualManualLines(parsedJa.lines) : []))
+        : [];
 
     if (primaryTokens.length === 0 && primaryLines.length === 0) return null;
 

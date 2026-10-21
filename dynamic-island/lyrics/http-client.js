@@ -162,27 +162,16 @@ async function fetchBatchJapaneseRomajiAndIndonesian(texts) {
 
     if (toFetch.length === 0) return results;
 
-    const chunkSize = 5;
-    const promises = [];
-    for (let i = 0; i < toFetch.length; i += chunkSize) {
-        const slice = toFetch.slice(i, i + chunkSize);
-        const joined = slice.map(item => item.text).join('\n');
-        promises.push(
-            fetchGoogleTranslate(joined, 'ja', 'id', true).then(res => {
-                const transSplit = (res.text || '').split(/\r?\n/).map(s => s.trim());
-                const romaSplit = (res.romaji || '').split(/\r?\n/).map(s => s.trim());
-                slice.forEach((item, sIdx) => {
-                    const r = romaSplit[sIdx] || '';
-                    const ind = transSplit[sIdx] || '';
-                    const obj = { romaji: r, indo: ind };
-                    results[item.index] = obj;
-                    romajiCache.set(item.text, obj);
-                });
-            }).catch(() => {})
-        );
-    }
+    const promises = toFetch.map(item =>
+        fetchGoogleTranslate(item.text, 'ja', 'id', true).then(res => {
+            const obj = { romaji: res.romaji || '', indo: res.text || '' };
+            results[item.index] = obj;
+            romajiCache.set(item.text, obj);
+        }).catch(() => {})
+    );
 
     await Promise.all(promises);
+    return results;
     return results;
 }
 
