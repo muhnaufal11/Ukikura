@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 65,
+  "versionCode": 66,
   "version": "1.0.6",
-  "fixCount": 65,
-  "displayVersion": "1.0.6 (Patch 65 - Mode Lipat Bezel saat Dekat Tab & Buka Island Responsif)",
+  "fixCount": 66,
+  "displayVersion": "1.0.6 (Patch 66 - Lipat Khusus Browser Maximized & Buka Island Khusus Garis Lipatan)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 65): 1) Mengubah mode saat kursor mendekati tab browser: Kapsul pulau tidak lagi disembunyikan/hilang total, melainkan melipat halus menjadi garis tipis di bezel atas (mode lipat / folded 6px) dengan telinga konkaf mikro sehingga visual pulau tetap ada tanpa menutupi tab di belakangnya. 2) Interaksi Masuk Island Responsif: Untuk membuka pulau dari mode lipat, cukup diamkan kursor sebentar di garis lipatan atas (y <= 14px) selama 220ms, atau di dagu bawah (y: 35..68px), atau klik menu Tray Icon. Tab browser di bawahnya (y = 15..40px) tetap 100% bebas diklik langsung tanpa ada hambatan."
+  "changelog": "Ukikura v1.0.6 (Patch 66): 1) Fitur lipat otomatis hanya aktif saat browser dalam mode maximized/fullscreen: Saat di desktop atau window normal, pulau tetap dalam mode normal dan tidak melipat otomatis. 2) Masuk island dari mode lipat kini khusus dipicu ketika kursor benar-benar didekatkan ke atas sekali tepat di garis lipatan bezel (y <= 7px): Tidak ada lagi auto-open yang tidak disengaja saat kursor bergerak di area tab (y = 8..40px) atau dagu/bookmarks (y > 40px). Tab browser dan address bar 100% bebas diklik tanpa khawatir pulau terbuka tiba-tiba."
 }
