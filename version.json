@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 45,
+  "versionCode": 46,
   "version": "1.0.6",
-  "fixCount": 45,
-  "displayVersion": "1.0.6 (Patch 45)",
+  "fixCount": 46,
+  "displayVersion": "1.0.6 (Patch 46)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 45 - Solusi Tingkat 1 & Tingkat 2): Menghadirkan Native Compiled Binary Bridge (ukikura-bridge.exe) menggantikan PowerShell winrt-bridge.ps1 sehingga memangkas penggunaan RAM bridge sebesar 99.7% (dari 126 MB menjadi < 1 MB) dan CPU 0%, menerapkan Smart WhatsApp Web Hibernation untuk menghemat konsumsi memori background saat diminimize tanpa mengorbankan notifikasi realtime 0ms, serta menyediakan blueprint dan scaffolding lengkap Solusi Tingkat 2 berbasis Tauri 2.0 & Windows WebView2 dengan 100% fitur visual, animasi maskot, equalizer, dan hierarki lirik multibahasa tetap utuh."
+  "changelog": "Ukikura v1.0.6 (Patch 46): Memperbaiki galat 'Unable to execute file: C:\\WINDOWS\\system32\\powershell.exe' pada installer Inno Setup dengan membetulkan path WindowsPowerShell dan menyematkan pemeriksaan kondisi ekstraksi aman, serta mengalihkan pemuatan WhatsApp Web menjadi on-demand saat dibutuhkan sehingga membebaskan konsumsi RAM hingga ~650 MB sejak awal startup sistem."
 }

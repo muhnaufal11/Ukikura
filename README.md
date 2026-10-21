@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch45-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch46-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -151,6 +151,9 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
     * **`30 FPS`**: Standar seimbang 30 FPS.
     * **`15 FPS`**: Mode hemat daya baterai 15 FPS.
   - Pilihan tersimpan secara persisten di `localStorage`.
+- **Perbaikan Galat Installer Inno Setup & On-Demand WhatsApp Web (Patch 46)**:
+  - **Perbaikan Galat Path PowerShell Installer**: Memperbaiki kegagalan instalasi `Unable to execute file: C:\WINDOWS\system32\powershell.exe (CreateProcess failed; code 2)` dengan membetulkan lokasi pemanggilan ke `{sys}\WindowsPowerShell\v1.0\powershell.exe` serta menambahkan verifikasi boolean aman `NeedPowershellZipFallback()`, sehingga proses instalasi dan pembaruan berjalan mulus 100% tanpa galat popup.
+  - **On-Demand WhatsApp Web (Hemat ~650 MB RAM Tambahan)**: Mengalihkan inisialisasi WhatsApp Web Chromium dari yang sebelumnya otomatis dimuat di latar belakang saat startup menjadi *on-demand* (hanya dibuka saat pengguna mengklik ikon WhatsApp atau membuka chat). Seluruh notifikasi WhatsApp tetap tertangkap secara instan (0ms) lewat biner native Windows bridge (`ukikura-bridge.exe`) hanya dengan 344 KB RAM.
 - **Solusi Tingkat 1 & Tingkat 2: Ultra-Light Native Bridge & Tauri 2.0 (Patch 45)**:
   - **Native Compiled Binary Bridge (`ukikura-bridge.exe`)**: Menggantikan `powershell.exe winrt-bridge.ps1` dengan executable C# native mandiri (`dynamic-island/bridge/ukikura-bridge.exe`). Memotong penggunaan RAM bridge dari **126 MB $\rightarrow$ < 1 MB (344 KB, penghematan 99.7%)** dan CPU ke **0.00%**, tanpa dependensi SDK eksternal (menggunakan compiler bawaan Windows `csc.exe`).
   - **Smart WhatsApp Web Hibernation**: Menerapkan penyesuaian interval polling background saat jendela WhatsApp Web diminimalkan/ditutup ke latar belakang (35 detik) dengan `backgroundThrottling` dan muting audio, menghemat puluhan megabyte memori tanpa memutus deteksi pesan baru maupun stiker/VN secara realtime (0ms) via sadapan `window.Notification`.

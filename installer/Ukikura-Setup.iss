@@ -1,14 +1,14 @@
 ; ==============================================================================
 ; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT
 ; Uki (Terapung / Floating Island) + Kura (Gudang Penyimpanan Data & Tugas)
-; Versi: 1.0.6 (Kode Versi: 45)
+; Versi: 1.0.6 (Kode Versi: 46)
 ; License: GNU General Public License v3.0 (GPLv3)
 ; ==============================================================================
 
 #define MyAppName "Ukikura"
 #define MyAppFullTitle "Ukikura (浮倉) — Floating Island & Task Vault"
 #define MyAppVersion "1.0.6"
-#define MyAppVersionCode "45"
+#define MyAppVersionCode "46"
 #define MyAppPublisher "Nauflix (muhnaufal11)"
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
 #define MyAppExeName "electron.exe"
@@ -83,8 +83,9 @@ Type: files; Name: "{userstartup}\NusaDynamicIsland.vbs"
 
 [Run]
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; StatusMsg: "Menutup sesi lama Ukikura..."; Flags: runhidden waituntilterminated
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM ukikura-bridge.exe /T"; StatusMsg: "Menutup sesi lama bridge..."; Flags: runhidden waituntilterminated
 Filename: "{sys}\tar.exe"; Parameters: "-xf ""{tmp}\electron-runtime.zip"" -C ""{app}\runtime"""; StatusMsg: "Mengekstrak runtime Ukikura..."; Check: FileExists(ExpandConstant('{tmp}\electron-runtime.zip')); Flags: runhidden waituntilterminated
-Filename: "{sys}\powershell.exe"; Parameters: "-NoProfile -Command ""if (-not (Test-Path '{app}\runtime\resources.pak')) {{ Expand-Archive -Path '{tmp}\electron-runtime.zip' -DestinationPath '{app}\runtime' -Force }}"""; StatusMsg: "Memverifikasi integritas runtime Ukikura..."; Check: FileExists(ExpandConstant('{tmp}\electron-runtime.zip')); Flags: runhidden waituntilterminated
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -Command ""if (-not (Test-Path '{app}\runtime\resources.pak')) {{ Expand-Archive -Path '{tmp}\electron-runtime.zip' -DestinationPath '{app}\runtime' -Force }}"""; StatusMsg: "Memverifikasi integritas runtime Ukikura..."; Check: NeedPowershellZipFallback(); Flags: runhidden waituntilterminated
 Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; Description: "Jalankan {#MyAppFullTitle} sekarang"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
@@ -104,13 +105,24 @@ begin
   Result := True;
 end;
 
+function NeedPowershellZipFallback(): Boolean;
+begin
+  Result := FileExists(ExpandConstant('{tmp}\electron-runtime.zip')) and
+            (not FileExists(ExpandConstant('{app}\runtime\resources.pak'))) and
+            FileExists(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'));
+end;
+
 function InitializeSetup(): Boolean;
 var
   ResultCode: Integer;
+  PsExe: String;
 begin
-  // Tutup instans Ukikura lama dan PowerShell bridge segera saat installer dibuka agar file tidak terkunci
+  // Tutup instans Ukikura lama dan bridge segera saat installer dibuka agar file tidak terkunci
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec(ExpandConstant('{sys}\powershell.exe'), '-NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match ''winrt-bridge'' -or $_.CommandLine -match ''dynamic-island'' } | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM ukikura-bridge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  PsExe := ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe');
+  if FileExists(PsExe) then
+    Exec(PsExe, '-NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match ''winrt-bridge'' -or $_.CommandLine -match ''dynamic-island'' } | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Sleep(300);
   Result := True;
 end;
@@ -123,10 +135,14 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
+  PsExe: String;
 begin
-  // Tutup instans Ukikura lama dan PowerShell bridge agar proses update mulus tanpa file terkunci
+  // Tutup instans Ukikura lama dan bridge agar proses update mulus tanpa file terkunci
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM electron.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec(ExpandConstant('{sys}\powershell.exe'), '-NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match ''winrt-bridge'' } | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM ukikura-bridge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  PsExe := ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe');
+  if FileExists(PsExe) then
+    Exec(PsExe, '-NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match ''winrt-bridge'' } | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Sleep(400);
 
   Result := '';
