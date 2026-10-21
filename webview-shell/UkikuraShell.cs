@@ -23,12 +23,24 @@ namespace Ukikura.NativeShell {
         [DllImport("user32.dll")]
         public static extern int GetWindowLong(IntPtr hWnd, int nIndex);
 
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmExtendFrameIntoClientArea(IntPtr hWnd, ref MARGINS pMarInsets);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MARGINS {
+            public int cxLeftWidth;
+            public int cxRightWidth;
+            public int cyTopHeight;
+            public int cyBottomHeight;
+        }
+
         private const int GWL_EXSTYLE = -20;
         private const int WS_EX_TOOLWINDOW = 0x00000080;
         private const int WS_EX_TRANSPARENT = 0x00000020;
-        private const int WS_EX_LAYERED = 0x00080000;
 
         public MainForm() {
+            Environment.SetEnvironmentVariable("WEBVIEW2_DEFAULT_BACKGROUND_COLOR", "00000000");
+
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.Manual;
             this.Width = 580;
@@ -57,8 +69,17 @@ namespace Ukikura.NativeShell {
             base.OnHandleCreated(e);
             try {
                 int exStyle = GetWindowLong(this.Handle, GWL_EXSTYLE);
-                SetWindowLong(this.Handle, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW | WS_EX_LAYERED);
+                SetWindowLong(this.Handle, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
+
+                MARGINS margins = new MARGINS { cxLeftWidth = -1, cxRightWidth = -1, cyTopHeight = -1, cyBottomHeight = -1 };
+                DwmExtendFrameIntoClientArea(this.Handle, ref margins);
             } catch {}
+        }
+
+        protected override void OnPaintBackground(PaintEventArgs e) {
+            using (var brush = new SolidBrush(Color.Black)) {
+                e.Graphics.FillRectangle(brush, this.ClientRectangle);
+            }
         }
 
         private void InitializeTray() {
