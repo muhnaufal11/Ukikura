@@ -1,6 +1,6 @@
-# To-Do List Pengembangan Fitur Baru Ukikura (18 Ide Lengkap)
+# To-Do List Pengembangan Fitur Baru Ukikura (20 Ide Lengkap & Roadmap)
 
-Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Floating Island + *Kura* = Local Vault), dikelompokkan berdasarkan modulnya.
+Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Floating Island + *Kura* = Local Vault), dikelompokkan berdasarkan modul arsitekturnya.
 
 ---
 
@@ -13,11 +13,12 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
 - [x] **2. Real-Time Audio Ambient Visualizer (WASAPI Loopback)**
   - Latar belakang aura (`.ambient`) dan pendaran sampul album di halaman musik & lirik berdenyut (*pulse & breathe*) mengikuti **frekuensi bass dan vokal asli** dari output audio Windows secara *real-time* via Web Audio API loopback stream (5 bar kapsul dipertahankan orisinal sesuai preferensi).
 
-- [x] **3. Dual-Sub Lirik (Romaji + Kanji + Terjemahan Indonesia)**
+- [x] **3. Hierarki Lirik Multibahasa 3 Tingkat & Universal Cover Forced Alignment**
   - Teks utama (Kanji/Original) di atas, baris Romaji di bawahnya, dan baris terjemahan Bahasa Indonesia di bawah Romaji (dari `tlyric` NetEase / CC YouTube). Dilengkapi tombol toggle `[SUB: ON]` / `[SUB: OFF]` di samping badge `[SYNC]`.
+  - Audio-to-Text Forced Alignment untuk lagu Cover, Remix, & Koplo dengan pengambilan lirik kanonikal bersih dari database (NetEase, LRCLIB, KuGou) tanpa penalti kemiripan.
 
 - [x] **4. Mini Floating Karaoke Overlay (Mode Pin Transparan)**
-  - Mode khusus kapsul ramping melayang (`480px x 54px`, radius `22px`) semi-transparan dengan blur latar belakang (`backdrop-filter`) yang menampilkan 2 baris lirik (baris aktif + berikutnya / terjemahan), mini sampul lagu, tombol play/pause mini, tombol toggle sub `[≡]`, tombol perluas lirik `[⤢]`, dan tombol close `[✕]`. Klik tembus pandang otomatis saat kursor berada di luar kapsul.
+  - Mode khusus kapsul ramping melayang (`480px x 54px`, radius `22px`) semi-transparan dengan blur latar belakang (`backdrop-filter: blur(28px)`) yang menampilkan 2 baris lirik (baris aktif + berikutnya / terjemahan), mini sampul lagu, tombol play/pause mini, tombol toggle sub `[≡]`, tombol perluas lirik `[⤢]`, dan tombol close `[✕]`. Klik tembus pandang otomatis saat kursor berada di luar kapsul.
 
 ---
 
@@ -29,8 +30,8 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
 - [x] **6. Drag-Out dari File Shelf ke Browser / WhatsApp**
   - Menarik (*drag*) file dari dalam rak File Shelf langsung keluar ke kolom *upload* tugas LMS di browser, chat WhatsApp, atau File Explorer menggunakan Electron native OS drag API (`event.sender.startDrag`). Dilengkapi indikator badge "Tarik keluar" dan petunjuk interaktif.
 
-- [ ] **7. Notifikasi Suara & Popup Peringatan Bertahap Deadline LMS**
-  - Ekspansi *Peek Popup* otomatis saat tugas LMS tersisa **H-24 jam**, **H-6 jam**, dan **H-1 jam**, lengkap dengan tombol 1-klik untuk langsung membuka halaman pengumpulan tugas tersebut.
+- [x] **7. Notifikasi Suara & Popup Peringatan Bertahap Deadline LMS**
+  - Peringatan khusus tugas & kuis mendesak sisa $\le$ 5 jam (`check5HourQuizAlerts`) dengan *Peek Popup* otomatis di notch, pendaran merah darurat (`.urgent`), *Desktop Notification Toast*, serta chime audio Web Audio API (`window.playAudioAlert('urgent-quiz')`).
 
 - [x] **8. Jadwal Matkul Mingguan & Bunyi Alarm Kuliah (iGracias Telkom University)**
   - Input & simpan jadwal perkuliahan mingguan (Hari, Jam Mulai/Selesai, Nama Mata Kuliah, Ruangan/Lab, dan Kelas):
@@ -50,11 +51,11 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
 
 ## 3. Modul Komunikasi & Notifikasi (`notifications-wa.js` & `whatsapp-companion.js`)
 
-- [x] **9. Inline Quick Reply WhatsApp dari Peek Popup**
+- [x] **9. Inline Quick Reply WhatsApp dari Peek Popup & Kartu Notifikasi**
   - Saat muncul *Peek Popup* pesan WhatsApp masuk di atas layar, tersedia kolom ketik singkat (`Balas cepat...` + tekan `Enter`) yang langsung mengirim balasan melalui jendela pendamping `whatsapp-companion.js` tanpa perlu membuka jendela WhatsApp.
   - Dilengkapi kolom balas cepat langsung dari tiap kartu notifikasi di Halaman Notifikasi tanpa membuka jendela WhatsApp.
 
-- [x] **10. Pratinjau Gambar & Voice Note WhatsApp**
+- [x] **10. Pratinjau Gambar, Stiker, & Voice Note WhatsApp**
   - Menampilkan *thumbnail* foto yang dikirim teman (selain stiker yang sudah didukung) langsung di dalam daftar notifikasi kapsul dan Peek Popup.
   - Mendeteksi pesan Voice Note (PTT) lengkap dengan durasi (`0:15`) dan animasi gelombang audio hidup (*live audio waveform*).
 
@@ -71,9 +72,18 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
 - [ ] **13. Peringatan Baterai Kritis Lintas Perangkat**
   - *Peek Popup* otomatis ketika baterai HP (via Phone Link) atau TWS Bluetooth turun di bawah **20%**, atau ketika baterai laptop mencapai **100%** (pengingat cabut cas).
 
+- [ ] **18. Native C# AOT / C++ WinRT Companion Bridge (`bridge.exe`)**
+  - Menggantikan `powershell.exe` (`winrt-bridge.ps1`) dengan binary native mandiri hasil kompilasi C# Native AOT atau C++/WinRT untuk memotong konsumsi RAM bridge dari **130 MB $\rightarrow$ ~8 MB** dan CPU ke **0.001%** tanpa mengubah format JSON protokol maupun memotong satu pun fitur.
+
+- [ ] **19. Smart WhatsApp Web Hibernation (Ghost Tab)**
+  - Menidurkan Chromium renderer WhatsApp Web saat jendela diminimalkan/ditutup ke background agar menghemat **~350 MB RAM** tanpa memutus penerimaan pesan baru.
+
 ---
 
 ## 5. Interaksi Kapsul, Maskot, & Kustomisasi (`core-state.js` & `mascot-engine.js`)
+
+- [x] **Pengaturan FPS Maskot & Zero-Repaint Settled Idle**
+  - Pilihan frame rate animasi mata maskot (`Eco`, `60 FPS`, `30 FPS`, `15 FPS`) di Halaman Pengaturan dengan deteksi status diam (*settled state*) yang menghentikan mutasi CSS DOM sehingga konsumsi CPU berada di **0% saat idle**.
 
 - [ ] **14. Global Keyboard Hotkeys**
   - Pintasan keyboard dari aplikasi mana saja:
@@ -82,12 +92,15 @@ Daftar rencana pengembangan fitur baru untuk memperkuat **Ukikura** (*Uki* = Flo
     - `Alt + S`: Buka langsung halaman **File Shelf & Clipboard**.
     - `Alt + M`: *Play / Pause* musik instan.
 
-- [ ] **15. Dynamic Album Art Ambient Theme**
+- [x] **15. Dynamic Album Art Ambient Theme**
   - Menyesuaikan warna pendaran (*ambient glow*) dan aksen tombol di halaman Musik/Lirik mengikuti warna dominan sampul lagu yang sedang diputar.
 
-- [ ] **16. Reaksi Maskot terhadap Beat Musik & Cuaca/Waktu**
-  - Mata maskot di mode `pet` ikut mengangguk mengikuti ketukan musik saat lagu diputar, atau menampilkan animasi mengantuk otomatis saat lewat pukul 00:00 malam.
+- [x] **16. Reaksi Maskot terhadap Beat Musik & Siklus Emosi**
+  - Mata maskot di mode `pet` ikut memantul ritmis mengikuti ketukan musik saat lagu diputar (`eyeBeatBob`), dan menampilkan animasi mengantuk otomatis (`mood-sleepy`) pada siklus emosinya.
 
 - [ ] **17. Integrasi Lockscreen & Animasi Penyambutan Saat Unlock (`Welcome Back Peek`)**
   - Mendeteksi otomatis saat layar Windows dikunci (*Lockscreen*) dan saat baru dibuka kembali (`powerMonitor` `lock-screen` / `unlock-screen` & event WinRT `SessionSwitch`).
   - Menampilkan animasi sambutan hangat dari maskot (`mood-happy` / `mood-love`) beserta *Peek Popup* ringkasan cepat saat layar baru dibuka (sapaan sesuai waktu Pagi/Siang/Malam, jumlah notifikasi WhatsApp yang masuk selama laptop terkunci, dan jadwal kuliah/deadline terdekat hari itu).
+
+- [ ] **20. Eksplorasi Arsitektur Masa Depan: Migrasi ke Tauri 2.0 (Rust + WebView2)**
+  - Evaluasi migrasi jangka panjang ke Tauri 2.0 dengan runtime Microsoft Edge WebView2 bawaan Windows 11 untuk menghasilkan ukuran installer $\le$ 10 MB dan penggunaan RAM $\le$ 40 MB, dengan mempertahankan 100% markup HTML, styling CSS, dan JavaScript UI yang sudah ada.
