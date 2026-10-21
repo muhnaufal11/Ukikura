@@ -114,6 +114,7 @@ function renderPowerUI() {
     const phoneDev = powerState.phone;
     const hdrPhonePill = document.getElementById('hdr-phone-bat');
     const batPhoneValEl = document.getElementById('bat-phone-val');
+    const batCardPhoneEl = document.getElementById('bat-card-phone');
     if (phoneDev) {
         const pChg = Boolean(phoneDev.charging);
         const hasPhoneBat = typeof phoneDev.battery === 'number' && phoneDev.battery >= 0;
@@ -125,11 +126,17 @@ function renderPowerUI() {
         document.getElementById('bat-phone-label').textContent = pChg ? `⚡ ${phoneDev.name}` : phoneDev.name;
         batPhoneValEl.textContent = `${pChg ? '⚡ ' : ''}${pBatStr}`;
         batPhoneValEl.style.color = pChg ? '#33e07a' : '#5ec2ff';
+        if (batCardPhoneEl) {
+            batCardPhoneEl.title = `${phoneDev.name} · ${pBatStr}${pChg ? ' (Mengisi Daya)' : ''} · Klik untuk Peek`;
+        }
     } else {
         hdrPhonePill.style.display = 'none';
         document.getElementById('bat-phone-label').textContent = 'Baterai HP';
         batPhoneValEl.textContent = '--%';
         batPhoneValEl.style.color = '#5ec2ff';
+        if (batCardPhoneEl) {
+            batCardPhoneEl.title = 'Baterai HP (Phone Link / Bluetooth) · Klik untuk Peek';
+        }
     }
 
     const audioDev = powerState.audio;

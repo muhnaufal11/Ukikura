@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 67,
+  "versionCode": 68,
   "version": "1.0.6",
-  "fixCount": 67,
-  "displayVersion": "1.0.6 (Patch 67 - Masuk Island Khusus Ditekan/Diklik & Nol Auto-Open Liar)",
+  "fixCount": 68,
+  "displayVersion": "1.0.6 (Patch 68 - Deteksi Baterai HP Realtime via Phone Link & Companion Sync)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 67): 1) Masuk island dikembalikan sepenuhnya ke interaksi klik/tekan (di tekan) tanpa auto-open hover yang mengganggu: Klik pada garis lipatan bezel (y <= 7px) saat browser maximized langsung membuka pulau, dan klik pada kapsul notch (y <= 26px) saat di desktop juga langsung membuka pulau. 2) Menghilangkan seluruh timer auto-open hover liar saat memilih tab atau bookmarks sehingga tab browser 100% damai dan bebas dipilih."
+  "changelog": "Ukikura v1.0.6 (Patch 68): 1) Deteksi Status & Baterai HP Realtime via Phone Link: Mengintegrasikan pembacaan status Microsoft Phone Link (Link to Windows) secara native di bridge C++ (ukikura-bridge.exe) dan Node.js companion watcher sehingga nama perangkat (seperti Redmi Note 13 Pro+ 5G), persentase baterai HP, dan status cas langsung tampil realtime di halaman Notifikasi/Baterai dan Header Island. 2) Menambahkan live file watcher pada StartMenuCompanion.json milik Phone Link sehingga setiap perubahan daya HP seketika ter-update ke pulau tanpa jeda."
 }

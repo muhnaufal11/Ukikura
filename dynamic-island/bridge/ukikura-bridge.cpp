@@ -406,6 +406,7 @@ struct BtDeviceItem {
     int battery;
     bool connected;
     std::string kind;
+    bool charging = false;
 };
 
 class DevicePowerMonitor {
@@ -414,6 +415,122 @@ private:
     bool m_lastCharging = false;
     bool m_hasInitialScan = false;
     int m_tick = 0;
+
+    std::string m_lastPhoneName = "";
+    int m_lastPhoneBat = -1;
+    bool m_lastPhoneConn = false;
+    bool m_lastPhoneChg = false;
+
+    bool GetPhoneLinkStatus(BtDeviceItem &outPhone) {
+        wchar_t localAppData[MAX_PATH];
+        DWORD len = GetEnvironmentVariableW(L"LOCALAPPDATA", localAppData, MAX_PATH);
+        if (len == 0 || len >= MAX_PATH) return false;
+
+        std::wstring companionPath = std::wstring(localAppData) + L"\\Packages\\Microsoft.YourPhone_8wekyb3d8bbwe\\LocalState\\StartMenu\\StartMenuCompanion.json";
+        HANDLE hFile = CreateFileW(companionPath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (hFile == INVALID_HANDLE_VALUE) return false;
+
+        DWORD fileSize = GetFileSize(hFile, NULL);
+        if (fileSize == INVALID_FILE_SIZE || fileSize == 0 || fileSize > 512 * 1024) {
+            CloseHandle(hFile);
+            return false;
+        }
+
+        std::string rawJson(fileSize, '\0');
+        DWORD bytesRead = 0;
+        if (!ReadFile(hFile, &rawJson[0], fileSize, &bytesRead, NULL) || bytesRead == 0) {
+            CloseHandle(hFile);
+            return false;
+        }
+        CloseHandle(hFile);
+        rawJson.resize(bytesRead);
+
+        std::string phoneName = "HP Android";
+        size_t speakPos = rawJson.find("\"speak\"");
+        if (speakPos != std::string::npos) {
+            size_t colon = rawJson.find(':', speakPos);
+            size_t quote1 = (colon != std::string::npos) ? rawJson.find('\"', colon + 1) : std::string::npos;
+            if (quote1 != std::string::npos) {
+                size_t quote2 = rawJson.find('\"', quote1 + 1);
+                if (quote2 != std::string::npos) {
+                    std::string speakStr = rawJson.substr(quote1 + 1, quote2 - quote1 - 1);
+                    size_t dash = speakStr.find(" - ");
+                    if (dash != std::string::npos) {
+                        phoneName = speakStr.substr(0, dash);
+                    } else {
+                        phoneName = speakStr;
+                    }
+                }
+            }
+        } else {
+            size_t textPos = rawJson.find("\"text\"");
+            if (textPos != std::string::npos) {
+                size_t colon = rawJson.find(':', textPos);
+                size_t quote1 = (colon != std::string::npos) ? rawJson.find('\"', colon + 1) : std::string::npos;
+                if (quote1 != std::string::npos) {
+                    size_t quote2 = rawJson.find('\"', quote1 + 1);
+                    if (quote2 != std::string::npos) {
+                        phoneName = rawJson.substr(quote1 + 1, quote2 - quote1 - 1);
+                    }
+                }
+            }
+        }
+
+        size_t uPos = 0;
+        while ((uPos = phoneName.find("\\u002B", uPos)) != std::string::npos) {
+            phoneName.replace(uPos, 6, "+");
+            uPos += 1;
+        }
+        uPos = 0;
+        while ((uPos = phoneName.find("\\u002b", uPos)) != std::string::npos) {
+            phoneName.replace(uPos, 6, "+");
+            uPos += 1;
+        }
+
+        bool isConnected = (rawJson.find("Connected to your PC") != std::string::npos ||
+                            rawJson.find("Terhubung ke PC") != std::string::npos ||
+                            rawJson.find("Connected") != std::string::npos);
+        if (rawJson.find("Disconnected") != std::string::npos || rawJson.find("Terputus") != std::string::npos) {
+            isConnected = false;
+        }
+
+        int batPct = -1;
+        const char* batPatterns[] = { "Battery ", "currently at ", "Baterai ", "daya " };
+        for (const char* pat : batPatterns) {
+            size_t pos = 0;
+            while ((pos = rawJson.find(pat, pos)) != std::string::npos) {
+                pos += strlen(pat);
+                int num = 0;
+                bool foundDigits = false;
+                while (pos < rawJson.size() && rawJson[pos] >= '0' && rawJson[pos] <= '9') {
+                    num = num * 10 + (rawJson[pos] - '0');
+                    foundDigits = true;
+                    pos++;
+                }
+                if (foundDigits && num >= 0 && num <= 100) {
+                    while (pos < rawJson.size() && rawJson[pos] == ' ') pos++;
+                    if (pos < rawJson.size() && rawJson[pos] == '%') {
+                        batPct = num;
+                        break;
+                    }
+                }
+            }
+            if (batPct >= 0) break;
+        }
+
+        bool isCharging = false;
+        if ((rawJson.find("charging") != std::string::npos || rawJson.find("mengisi daya") != std::string::npos) &&
+            (rawJson.find("not charging") == std::string::npos && rawJson.find("tidak mengisi") == std::string::npos)) {
+            isCharging = true;
+        }
+
+        outPhone.name = phoneName;
+        outPhone.battery = batPct;
+        outPhone.connected = isConnected;
+        outPhone.kind = "phone";
+        outPhone.charging = isCharging;
+        return true;
+    }
 
     int GetBtBattery(const std::wstring &instId) {
         DEVINST devInst;
@@ -471,15 +588,35 @@ public:
         if (laptopPct > 100) laptopPct = 100;
         bool isCharging = (sps.ACLineStatus == 1);
 
-        bool powerChanged = (laptopPct != m_lastLaptopPct) || (isCharging != m_lastCharging);
+        BtDeviceItem plPhone;
+        bool hasPhone = GetPhoneLinkStatus(plPhone);
+
+        bool phoneChanged = false;
+        if (hasPhone) {
+            phoneChanged = (plPhone.name != m_lastPhoneName) ||
+                           (plPhone.battery != m_lastPhoneBat) ||
+                           (plPhone.connected != m_lastPhoneConn) ||
+                           (plPhone.charging != m_lastPhoneChg);
+        }
+
+        bool powerChanged = (laptopPct != m_lastLaptopPct) || (isCharging != m_lastCharging) || phoneChanged;
         bool needDeepScan = (!m_hasInitialScan) || powerChanged || (m_tick % 20 == 0);
 
         if (needDeepScan) {
             m_hasInitialScan = true;
             m_lastLaptopPct = laptopPct;
             m_lastCharging = isCharging;
+            if (hasPhone) {
+                m_lastPhoneName = plPhone.name;
+                m_lastPhoneBat = plPhone.battery;
+                m_lastPhoneConn = plPhone.connected;
+                m_lastPhoneChg = plPhone.charging;
+            }
 
             std::vector<BtDeviceItem> devices;
+            if (hasPhone && (plPhone.connected || plPhone.battery >= 0)) {
+                devices.push_back(plPhone);
+            }
 
             // Pindai Registry BTHENUM & BTHLE untuk menemukan perangkat terdaftar
             const wchar_t* enumRoots[] = { L"SYSTEM\\CurrentControlSet\\Enum\\BTHENUM", L"SYSTEM\\CurrentControlSet\\Enum\\BTHLE" };
@@ -532,7 +669,7 @@ public:
 
                                                 bool exists = false;
                                                 for (auto &d : devices) {
-                                                    if (d.name == cleanName) {
+                                                    if (d.name == cleanName || (d.kind == "phone" && kind == "phone")) {
                                                         if (conn) d.connected = true;
                                                         if (bat >= 0) d.battery = bat;
                                                         exists = true;
@@ -540,7 +677,7 @@ public:
                                                     }
                                                 }
                                                 if (!exists) {
-                                                    devices.push_back({ cleanName, bat, conn, kind });
+                                                    devices.push_back({ cleanName, bat, conn, kind, false });
                                                 }
                                             }
                                         }
@@ -564,7 +701,7 @@ public:
                 ss << "{\"name\":\"" << EscapeJsonString(devices[i].name)
                    << "\",\"battery\":" << devices[i].battery
                    << ",\"connected\":" << (devices[i].connected ? "true" : "false")
-                   << ",\"charging\":false"
+                   << ",\"charging\":" << (devices[i].charging ? "true" : "false")
                    << ",\"kind\":\"" << devices[i].kind << "\"}";
             }
             ss << "]}";

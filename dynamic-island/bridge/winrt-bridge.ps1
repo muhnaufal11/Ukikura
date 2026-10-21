@@ -903,7 +903,7 @@ while ($true) {
                 }
             } catch {}
 
-            if ($plBat -ge 0) {
+            if ($plBat -ge 0 -or $plOnline) {
                 $foundPhone = $false
                 for ($i = 0; $i -lt $devices.Count; $i++) {
                     if ($devices[$i].kind -eq "phone") {

@@ -8,13 +8,112 @@ const { getCompleteSyncedLyrics } = require("../lyrics");
 let winrtProc = null;
 let lastLyricsTrackKey = "";
 let lastMediaThumb = "";
+let thumbDeliveredToRenderer = false;
 let lastWindowState = null;
+let lastPowerPayload = null;
 let getMainWindow = () => null;
 const BRIDGE_DIR = path.join(__dirname, "../bridge");
 
-function initWinRtClient(mainWinGetter) { getMainWindow = mainWinGetter; }
+function getPhoneLinkStatus() {
+    try {
+        const localAppData = process.env.LOCALAPPDATA;
+        if (!localAppData) return null;
+        const p = path.join(localAppData, 'Packages', 'Microsoft.YourPhone_8wekyb3d8bbwe', 'LocalState', 'StartMenu', 'StartMenuCompanion.json');
+        if (!fs.existsSync(p)) return null;
+        const rawJson = fs.readFileSync(p, 'utf8');
+        if (!rawJson) return null;
+
+        let phoneName = 'HP Android';
+        let battery = -1;
+        let connected = false;
+        let charging = false;
+
+        const speakMatch = rawJson.match(/"speak"\s*:\s*"([^"]+?)\s*-\s*(?:Connected|Disconnected|Terhubung|Terputus)/i);
+        if (speakMatch && speakMatch[1]) {
+            phoneName = speakMatch[1].replace(/\\u002B/gi, '+').trim();
+        } else {
+            const textMatch = rawJson.match(/"text"\s*:\s*"([^"]+?)"/);
+            if (textMatch && textMatch[1] && !textMatch[1].includes('ago')) {
+                phoneName = textMatch[1].replace(/\\u002B/gi, '+').trim();
+            }
+        }
+
+        if (/Connected to your PC|Terhubung ke PC|Terhubung/i.test(rawJson) && !/Disconnected|Terputus/i.test(rawJson)) {
+            connected = true;
+        }
+
+        const batMatch = rawJson.match(/(?:Battery|currently at|Baterai|daya|level)\s*(\d{1,3})\s*%/i) ||
+                         rawJson.match(/(\d{1,3})\s*%\s*(?:remaining|tersisa|charging|mengisi)/i) ||
+                         rawJson.match(/(\d{1,3})\s*%/);
+        if (batMatch && batMatch[1]) {
+            const val = parseInt(batMatch[1], 10);
+            if (val >= 0 && val <= 100) {
+                battery = val;
+            }
+        }
+
+        if (/charging|mengisi daya|pengisian daya/i.test(rawJson) && !/not charging|tidak mengisi/i.test(rawJson)) {
+            const chgNearBat = /(?:Battery|altText|tooltip)[^"]*?(?:charging|mengisi daya)/i.test(rawJson);
+            if (chgNearBat) {
+                charging = true;
+            }
+        }
+
+        return { name: phoneName, battery, connected, charging, kind: 'phone' };
+    } catch (_) {
+        return null;
+    }
+}
+
+let phoneLinkWatcherInited = false;
+function initPhoneLinkWatcher() {
+    if (phoneLinkWatcherInited) return;
+    phoneLinkWatcherInited = true;
+    try {
+        const localAppData = process.env.LOCALAPPDATA;
+        if (!localAppData) return;
+        const dir = path.join(localAppData, 'Packages', 'Microsoft.YourPhone_8wekyb3d8bbwe', 'LocalState', 'StartMenu');
+        if (!fs.existsSync(dir)) return;
+
+        let debounceTimer = null;
+        fs.watch(dir, (event, filename) => {
+            if (!filename || filename.toLowerCase().includes('companion')) {
+                if (debounceTimer) clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    const pl = getPhoneLinkStatus();
+                    if (!pl) return;
+                    const basePower = lastPowerPayload || {
+                        type: 'power',
+                        laptop: { percent: 100, charging: false },
+                        devices: []
+                    };
+                    const devs = Array.isArray(basePower.devices) ? [...basePower.devices] : [];
+                    const idx = devs.findIndex(d => d.kind === 'phone' || d.name === pl.name);
+                    if (idx >= 0) {
+                        devs[idx] = Object.assign({}, devs[idx], pl);
+                    } else {
+                        devs.push(pl);
+                    }
+                    basePower.devices = devs;
+                    lastPowerPayload = basePower;
+                    const mainWindow = getMainWindow();
+                    if (mainWindow && !mainWindow.isDestroyed()) {
+                        mainWindow.webContents.send('power-update', basePower);
+                    }
+                }, 300);
+            }
+        });
+    } catch (_) {}
+}
+
+function initWinRtClient(mainWinGetter) {
+    getMainWindow = mainWinGetter;
+    initPhoneLinkWatcher();
+}
 function getWinRtProc() { return winrtProc; }
 function resetLyricsTrackKey() { lastLyricsTrackKey = ""; }
+// Dipanggil saat renderer dimuat ulang agar thumbnail terakhir dikirim ulang satu kali
+function resetMediaThumbDelivery() { thumbDeliveredToRenderer = false; }
 function getLastLyricsPayload() { return lastLyricsPayload; }
 
 function startWinRtBridge() {
@@ -61,10 +160,18 @@ function startWinRtBridge() {
                         if (!msg.active && lastMediaPayload && !lastMediaPayload.active) {
                             return;
                         }
+                        if (!msg.active || (lastMediaPayload && lastMediaPayload.title !== msg.title)) {
+                            // Lagu berganti / sesi berhenti: renderer membuang thumb lama, izinkan kirim ulang
+                            thumbDeliveredToRenderer = false;
+                        }
                         if (msg.thumb) {
                             lastMediaThumb = msg.thumb;
-                        } else if (lastMediaThumb && msg.active) {
+                            thumbDeliveredToRenderer = true;
+                        } else if (lastMediaThumb && msg.active && !thumbDeliveredToRenderer) {
+                            // Hemat CPU: thumbnail base64 (puluhan-ratusan KB) cukup dikirim SEKALI per lagu,
+                            // bukan di setiap tick SMTC (~5x/detik). Renderer menyimpan thumb terakhir sendiri.
                             msg.thumb = lastMediaThumb;
+                            thumbDeliveredToRenderer = true;
                         }
                         lastMediaPayload = msg;
                         const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
@@ -91,6 +198,16 @@ function startWinRtBridge() {
                             mainWindow.webContents.send('notif-update', msg.items);
                         }
                     } else if (msg.type === 'power') {
+                        const pl = getPhoneLinkStatus();
+                        if (pl && Array.isArray(msg.devices)) {
+                            const idx = msg.devices.findIndex(d => d.kind === 'phone' || d.name === pl.name);
+                            if (idx >= 0) {
+                                msg.devices[idx] = Object.assign({}, msg.devices[idx], pl);
+                            } else {
+                                msg.devices.push(pl);
+                            }
+                        }
+                        lastPowerPayload = msg;
                         const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
                             mainWindow.webContents.send('power-update', msg);
                         }
@@ -237,4 +354,4 @@ async function fetchSyncedLyrics(rawTitle, rawArtist, explicitDur = 0, forceNew 
 
 function getLastWindowState() { return lastWindowState; }
 
-module.exports = { initWinRtClient, startWinRtBridge, sendMediaCommand, fetchSyncedLyrics, getWinRtProc, resetLyricsTrackKey, getLastLyricsPayload, getLastWindowState };
+module.exports = { initWinRtClient, startWinRtBridge, sendMediaCommand, fetchSyncedLyrics, getWinRtProc, resetLyricsTrackKey, resetMediaThumbDelivery, getLastLyricsPayload, getLastWindowState };
