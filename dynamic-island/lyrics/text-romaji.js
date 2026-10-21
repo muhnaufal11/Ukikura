@@ -348,7 +348,6 @@ function mergeJapaneseAndRomajiLines(jpLines, romaLines) {
     if (!Array.isArray(jpLines) || jpLines.length === 0) return romaLines || [];
     if (!Array.isArray(romaLines) || romaLines.length === 0) {
         return jpLines.map(l => {
-            // Jangan tampilkan kanaToRomaji sebagai teks utama jika baris memiliki Kanji (karena Kanji tidak terkonversi dan menyatu tanpa spasi)
             const pureKanaRoma = (!hasKanji(l.text) && hasHiraganaOrKatakana(l.text)) ? kanaToRomaji(l.text) : '';
             return {
                 time: l.time,
@@ -359,18 +358,57 @@ function mergeJapaneseAndRomajiLines(jpLines, romaLines) {
         });
     }
 
-    // Pasangkan baris Romaji dan Kanji/Kana berdasarkan timestamp terdekat
-    return jpLines.map(jl => {
+    // 1. Hitung global offset antara jpLines dan romaLines jika ada intro MV YouTube (misal offset +3.4s)
+    let globalOffset = 0;
+    const offsets = [];
+    const minLen = Math.min(jpLines.length, romaLines.length);
+    for (let k = 0; k < minLen; k++) {
+        const diff = jpLines[k].time - romaLines[k].time;
+        if (Math.abs(diff) <= 35) {
+            offsets.push(diff);
+        }
+    }
+    if (offsets.length >= 4) {
+        offsets.sort((a, b) => a - b);
+        globalOffset = offsets[Math.floor(offsets.length / 2)];
+    }
+
+    const shiftedRomaLines = romaLines.map(rl => ({
+        ...rl,
+        time: rl.time + globalOffset
+    }));
+
+    // 2. Pasangkan baris Romaji dan Kanji/Kana berdasarkan timestamp terdekat setelah kompensasi offset
+    return jpLines.map((jl, idx) => {
         let bestRoma = null;
         let minDiff = 999;
-        for (const rl of romaLines) {
-            const diff = Math.abs(rl.time - jl.time);
-            if (diff < minDiff) {
-                minDiff = diff;
-                bestRoma = rl;
+
+        // Cek dulu kandidat di indeks yang sama jika urutan lirik identik
+        if (shiftedRomaLines[idx]) {
+            const directDiff = Math.abs(shiftedRomaLines[idx].time - jl.time);
+            if (directDiff <= 1.8) {
+                bestRoma = shiftedRomaLines[idx];
+                minDiff = directDiff;
             }
         }
-        const romaStr = (bestRoma && minDiff <= 2.2) ? bestRoma.text.trim() : '';
+
+        if (!bestRoma || minDiff > 1.2) {
+            for (const rl of shiftedRomaLines) {
+                const diff = Math.abs(rl.time - jl.time);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    bestRoma = rl;
+                }
+            }
+        }
+
+        let romaStr = (bestRoma && minDiff <= 2.2) ? bestRoma.text.trim() : '';
+        if (romaStr && isMoraSpacedRomaji(romaStr)) {
+            romaStr = collapseMoraSpacedRomaji(romaStr);
+        }
+        if (!romaStr && !hasKanji(jl.text) && hasHiraganaOrKatakana(jl.text)) {
+            romaStr = kanaToRomaji(jl.text);
+        }
         const display = (romaStr && romaStr.toLowerCase() !== jl.text.toLowerCase())
             ? `${romaStr} · ${jl.text}`
             : jl.text;
@@ -589,7 +627,10 @@ const COMMON_ROMAJI_WORDS = new Set([
     'sekai', 'hikari', 'yoru', 'ashita', 'kaze', 'sora', 'yume', 'hitorijime',
     'sasete', 'tashite', 'aitai', 'tatoeba', 'omoidasu', 'kizanda', 'ushiro',
     'sugata', 'denpa', 'akai', 'ribon', 'tsutsunde', 'hanbunko', 'kaesu',
-    'ashimoto', 'sarau', 'yunagi', 'higure'
+    'ashimoto', 'sarau', 'yunagi', 'higure', 'futatsu', 'chigiru', 'mahou',
+    'sayonara', 'eien', 'koukai', 'shiawase', 'arigatou', 'gomen', 'hontou',
+    'kiseki', 'mainichi', 'kinenbini', 'shite', 'iwaou', 'atarimae', 'zettai',
+    'negai', 'kanau', 'dareka', 'nanika', 'itsu', 'omou', 'tsuyoku', 'yasashiku'
 ]);
 
 function collapseMoraSpacedRomaji(str) {
@@ -601,13 +642,13 @@ function collapseMoraSpacedRomaji(str) {
     for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i];
         const lower = t.toLowerCase();
-        if (t.length > 4 || /^(?:i|i'm|i’m|you|me|my|baby|crazy|want|love|go|away)$/i.test(t)) {
+        if (t.length > 4 || /^(?:i'm|i’m|you|me|my|baby|crazy|want|love|go|away)$/i.test(t)) {
             if (cur) { out.push(cur); cur = ''; }
             out.push(t);
             continue;
         }
 
-        if (cur && JP_PARTICLES.has(lower) && cur.length >= 2) {
+        if (cur && JP_PARTICLES.has(lower) && (COMMON_ROMAJI_WORDS.has(cur.toLowerCase()) || cur.length >= 4)) {
             out.push(cur);
             out.push(t);
             cur = '';

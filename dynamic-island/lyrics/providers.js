@@ -144,7 +144,7 @@ async function searchNetEaseLyrics(meta, mediaDur) {
         if (finalLines.length >= 4) {
             let bonus = 40;
             if (meta.likelyJapanese && isJpLrc) bonus += 25;
-            if (romaLines.length >= 4) bonus += 20;
+            if (romaLines.length >= 4) bonus += 50; // Bonus tinggi untuk official pre-synced romalrc NetEase
 
             const candidateRes = {
                 source: 'NetEase',

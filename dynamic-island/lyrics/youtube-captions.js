@@ -211,6 +211,15 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
             else score -= 45;
         }
 
+        // Prioritaskan video MV resmi / official song daripada audio album statis
+        if (/\b(?:official|music\s*video|mv|original\s*song)\b/i.test(vTitle)) {
+            score += 40;
+        }
+        const artistClean = (rawArtist || '').toLowerCase().trim();
+        if (artistClean && (vTitle.includes(artistClean) || artistClean.includes(vTitle))) {
+            score += 35;
+        }
+
         if (!videoIds.some(v => v.id === vid)) {
             videoIds.push({ id: vid, dur: vDur, score });
         }
@@ -222,50 +231,56 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     }
 
     videoIds.sort((a, b) => b.score - a.score);
-    const chosenVideo = videoIds[0];
-    if (!chosenVideo) return null;
 
     // Panggil InnerTube Player dengan ANDROID / IOS client untuk mendapatkan captionTracks bebas blokir exp=xpe
+    let chosenVideo = null;
     let captionTracks = [];
     let usedClient = ANDROID_CLIENT;
 
-    for (const client of [IOS_CLIENT, ANDROID_CLIENT]) {
-        const pBody = JSON.stringify({
-            context: {
-                client: {
-                    clientName: client.clientName,
-                    clientVersion: client.clientVersion,
-                    androidSdkVersion: client.androidSdkVersion,
-                    hl: client.hl,
-                    gl: client.gl
+    // Periksa hingga 3 kandidat video teratas untuk menemukan video dengan captionTracks (menghindari video topik statis tanpa subtitle)
+    for (const candVid of videoIds.slice(0, 3)) {
+        for (const client of [IOS_CLIENT, ANDROID_CLIENT]) {
+            const pBody = JSON.stringify({
+                context: {
+                    client: {
+                        clientName: client.clientName,
+                        clientVersion: client.clientVersion,
+                        androidSdkVersion: client.androidSdkVersion,
+                        hl: client.hl,
+                        gl: client.gl
+                    }
+                },
+                videoId: candVid.id
+            });
+            const pJson = await httpRequestJson('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
+                method: 'POST',
+                ua: client.ua,
+                headers: { 'Content-Type': 'application/json' },
+                body: pBody,
+                timeout: 6500
+            });
+            const tracks = pJson &&
+                pJson.captions &&
+                pJson.captions.playerCaptionsTracklistRenderer &&
+                Array.isArray(pJson.captions.playerCaptionsTracklistRenderer.captionTracks)
+                ? pJson.captions.playerCaptionsTracklistRenderer.captionTracks
+                : [];
+            if (tracks.length > 0) {
+                const hasManual = tracks.some(t => t && t.kind !== 'asr');
+                if (hasManual || captionTracks.length === 0) {
+                    captionTracks = tracks;
+                    usedClient = client;
+                    chosenVideo = candVid;
+                    if (hasManual) break;
                 }
-            },
-            videoId: chosenVideo.id
-        });
-        const pJson = await httpRequestJson('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
-            method: 'POST',
-            ua: client.ua,
-            headers: { 'Content-Type': 'application/json' },
-            body: pBody,
-            timeout: 6500
-        });
-        const tracks = pJson &&
-            pJson.captions &&
-            pJson.captions.playerCaptionsTracklistRenderer &&
-            Array.isArray(pJson.captions.playerCaptionsTracklistRenderer.captionTracks)
-            ? pJson.captions.playerCaptionsTracklistRenderer.captionTracks
-            : [];
-        if (tracks.length > 0) {
-            const hasManual = tracks.some(t => t && t.kind !== 'asr');
-            if (hasManual || captionTracks.length === 0) {
-                captionTracks = tracks;
-                usedClient = client;
-                if (hasManual) break;
             }
+        }
+        if (captionTracks.length > 0 && captionTracks.some(t => t && t.kind !== 'asr')) {
+            break;
         }
     }
 
-    if (captionTracks.length === 0) return null;
+    if (!chosenVideo || captionTracks.length === 0) return null;
 
     // Pisahkan kandidat ASR (memiliki <s t="..."> timestamp vokal per kata langsung dari gelombang audio)
     // dan kandidat Manual CC (subtitle dari kreator)

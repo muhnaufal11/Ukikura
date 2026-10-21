@@ -37,41 +37,92 @@ async function enrichWithRomaji(lines, meta, bestDb) {
     const hasJp = lines.some(l => hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText));
     if (!hasJp) return lines;
 
-    // Gunakan Google Translate dt=rm paralel untuk melengkapi Romaji alami & Sub Indo secara presisi per-baris
-    const toEnrich = [];
-    lines.forEach((l, idx) => {
-        const targetJp = (l.jpText && hasJapaneseChars(l.jpText))
-            ? l.jpText
-            : ((hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text)) ? (l.rawText || l.text) : '');
+    // Cari romalrc resmi ke NetEase jika masih ada baris yang belum memiliki Romaji
+    const missingRomaCount = lines.filter(l => !l.romaText && (hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText))).length;
+    if (missingRomaCount >= 2) {
+        const searchQueries = [
+            bestDb ? `${bestDb.artistName} ${bestDb.trackName}` : '',
+            meta.jpQuotes && meta.jpQuotes[0] ? `${meta.cleanChannel || ''} ${meta.jpQuotes[0]}` : '',
+            ...(meta.queries || []),
+            meta.cleanedTitle,
+            meta.origTitle
+        ]
+            .map(q => String(q || '').replace(/[|•·／/]/g, ' ').replace(/\b(?:cover|covered|utattemita|歌ってみた)\b/gi, '').replace(/\s+/g, ' ').trim())
+            .filter(q => q && q.length >= 2);
 
-        if (!targetJp) return;
+        const uniqueQueries = [...new Set(searchQueries)].slice(0, 3);
+        for (const q of uniqueQueries) {
+            try {
+                const data = await httpRequestJson(
+                    `https://music.163.com/api/search/get?s=${encodeURIComponent(q)}&type=1&limit=4`,
+                    { method: 'POST', headers: { Referer: 'https://music.163.com' }, timeout: 3500 }
+                );
+                const songs = data?.result?.songs || [];
+                for (const s of songs) {
+                    if (!s || !s.id) continue;
+                    const sim = computeMetadataSimilarity(s.name, s.artists?.[0]?.name, meta);
+                    if (sim < 22) continue;
 
-        const needsRoma = !l.romaText || isMoraSpacedRomaji(l.romaText);
-        const needsTrans = !l.transText || hasJapaneseChars(l.transText) || l.transText.trim().toLowerCase() === (l.rawText || l.text || '').trim().toLowerCase();
+                    const lyrData = await httpRequestJson(
+                        `https://music.163.com/api/song/lyric?id=${s.id}&lv=1&kv=1&tv=-1&rv=-1`,
+                        { headers: { Referer: 'https://music.163.com' }, timeout: 3500 }
+                    );
+                    if (lyrData?.romalrc?.lyric && lyrData.romalrc.lyric.length > 50) {
+                        const romaLines = parseLrcText(lyrData.romalrc.lyric);
+                        if (romaLines.length >= 4) {
+                            lines = mergeJapaneseAndRomajiLines(
+                                lines.map(l => ({ time: l.time, text: l.rawText || l.text, transText: l.transText, jpText: l.jpText })),
+                                romaLines
+                            );
+                            break;
+                        }
+                    }
+                }
+            } catch (_) {}
+            if (lines.some(l => l.romaText)) break;
+        }
+    }
 
-        if (needsRoma || needsTrans) {
-            toEnrich.push({ line: l, text: targetJp, index: idx });
+    // Untuk baris yang hanya berupa Kana murni, gunakan kanaToRomaji instan
+    lines.forEach(l => {
+        const targetKana = (l.jpText && hasJapaneseChars(l.jpText)) ? l.jpText : (l.rawText || l.text || '');
+        if ((!l.romaText || isMoraSpacedRomaji(l.romaText)) && !hasKanji(targetKana) && hasHiraganaOrKatakana(targetKana)) {
+            l.romaText = kanaToRomaji(targetKana);
         }
     });
 
-    if (toEnrich.length > 0) {
-        const texts = toEnrich.map(item => item.text);
+    // Untuk baris yang masih kekurangan Romaji (misal bait kanji pada ALiCE&u jpText), minta terjemahan batch cepat
+    const remainingMissing = lines.filter(l => {
+        const targetJp = (l.jpText && hasJapaneseChars(l.jpText)) ? l.jpText : ((hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text)) ? (l.rawText || l.text) : '');
+        return targetJp && (!l.romaText || isMoraSpacedRomaji(l.romaText));
+    });
+
+    if (remainingMissing.length > 0) {
+        const texts = remainingMissing.map(l => (l.jpText && hasJapaneseChars(l.jpText)) ? l.jpText : (l.rawText || l.text));
         try {
-            const results = await fetchBatchJapaneseRomajiAndIndonesian(texts);
-            results.forEach((res, i) => {
-                const item = toEnrich[i];
-                if (res && res.romaji && (!item.line.romaText || isMoraSpacedRomaji(item.line.romaText))) {
-                    item.line.romaText = res.romaji;
+            const batchRes = await fetchBatchJapaneseRomajiAndIndonesian(texts);
+            batchRes.forEach((res, idx) => {
+                const item = remainingMissing[idx];
+                if (!item) return;
+                if (res && res.romaji && (!item.romaText || isMoraSpacedRomaji(item.romaText))) {
+                    item.romaText = res.romaji;
                 }
-                if (res && res.indo && (!item.line.transText || hasJapaneseChars(item.line.transText))) {
-                    item.line.transText = res.indo;
-                }
-                if (item.line.romaText && hasJapaneseChars(item.text)) {
-                    item.line.text = `${item.line.romaText} · ${item.text}`;
+                if (res && res.indo && (!item.transText || hasJapaneseChars(item.transText))) {
+                    item.transText = res.indo;
                 }
             });
         } catch (_) {}
     }
+
+    // Pastikan string display memuat Romaji jika ada
+    lines.forEach(l => {
+        if (l.romaText && isMoraSpacedRomaji(l.romaText)) {
+            l.romaText = collapseMoraSpacedRomaji(l.romaText);
+        }
+        if (l.romaText && hasJapaneseChars(l.rawText || l.text)) {
+            l.text = `${l.romaText} · ${l.rawText || l.text}`;
+        }
+    });
 
     return lines;
 }
@@ -189,7 +240,8 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     );
     const ytHasNativeLines = ytCaptions && ytCaptions.lines && ytCaptions.lines.some(l => hasJapaneseChars(l.rawText || l.text) || /[\u0400-\u04ff]/.test(l.rawText || l.text) || /[\uac00-\ud7af]/.test(l.rawText || l.text));
     const ytHasEnOnly = ytCaptions && ytCaptions.lines && !ytHasNativeLines && ytCaptions.lines.some(l => /[a-zA-Z]{3,}/.test(l.rawText || l.text));
-    const rejectEnglishManualForForeignSong = Boolean(isForeignOriginal && ytHasEnOnly && bestDb);
+    const ytHasJaOrIdCC = Boolean(ytCaptions && ((Array.isArray(ytCaptions.japaneseLines) && ytCaptions.japaneseLines.length >= 4) || (Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 4)));
+    const rejectEnglishManualForForeignSong = Boolean(isForeignOriginal && ytHasEnOnly && bestDb && !ytHasJaOrIdCC);
 
     const hasManualCC = Boolean(ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4 && !rejectEnglishManualForForeignSong);
     if (hasManualCC) {
@@ -206,7 +258,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
                             bestJp = jl;
                         }
                     }
-                    if (bestJp && minDiff <= 1.2) {
+                    if (bestJp && minDiff <= 1.6) {
                         const candJp = bestJp.transText || bestJp.rawText || bestJp.text || '';
                         if (hasJapaneseChars(candJp)) {
                             l.jpText = candJp;
@@ -228,7 +280,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
                         bestId = idl;
                     }
                 }
-                if (bestId && minDiff <= 1.2) {
+                if (bestId && minDiff <= 1.6) {
                     const candId = bestId.transText || bestId.rawText || bestId.text || '';
                     if (candId && candId.toLowerCase() !== (l.rawText || l.text).toLowerCase()) {
                         l.transText = candId;

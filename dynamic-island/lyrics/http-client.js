@@ -130,7 +130,7 @@ async function fetchGoogleTranslate(text, sl = 'auto', tl = 'id', withRomaji = f
     try {
         const dtParam = withRomaji ? '&dt=t&dt=rm' : '&dt=t';
         const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}${dtParam}&q=${encodeURIComponent(clean)}`;
-        const res = await httpRequestJson(url, { timeout: 3500 });
+        const res = await httpRequestJson(url, { timeout: 6500 });
         let trans = '';
         let roma = '';
         if (Array.isArray(res?.[0])) {
@@ -148,7 +148,7 @@ async function fetchGoogleTranslate(text, sl = 'auto', tl = 'id', withRomaji = f
 async function fetchBatchJapaneseRomajiAndIndonesian(texts) {
     if (!Array.isArray(texts) || texts.length === 0) return [];
     const results = new Array(texts.length).fill(null).map(() => ({ romaji: '', indo: '' }));
-    const toFetch = [];
+    const textToIndices = new Map();
 
     for (let i = 0; i < texts.length; i++) {
         const clean = String(texts[i] || '').trim();
@@ -156,22 +156,56 @@ async function fetchBatchJapaneseRomajiAndIndonesian(texts) {
         if (romajiCache.has(clean)) {
             results[i] = romajiCache.get(clean);
         } else {
-            toFetch.push({ text: clean, index: i });
+            if (!textToIndices.has(clean)) {
+                textToIndices.set(clean, [i]);
+            } else {
+                textToIndices.get(clean).push(i);
+            }
         }
     }
 
-    if (toFetch.length === 0) return results;
+    const uniqueTexts = Array.from(textToIndices.keys());
+    if (uniqueTexts.length === 0) return results;
 
-    const promises = toFetch.map(item =>
-        fetchGoogleTranslate(item.text, 'ja', 'id', true).then(res => {
-            const obj = { romaji: res.romaji || '', indo: res.text || '' };
-            results[item.index] = obj;
-            romajiCache.set(item.text, obj);
-        }).catch(() => {})
-    );
+    const chunkSize = 5;
+    const promises = [];
+
+    for (let i = 0; i < uniqueTexts.length; i += chunkSize) {
+        const slice = uniqueTexts.slice(i, i + chunkSize);
+        const joined = slice.join(' ||| ');
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=id&dt=t&dt=rm&q=${encodeURIComponent(joined)}`;
+
+        promises.push(
+            httpRequestJson(url, { timeout: 7000 }).then(res => {
+                if (!res || !Array.isArray(res[0])) return;
+                let transBody = '';
+                let romaBody = '';
+                for (const item of res[0]) {
+                    if (typeof item?.[0] === 'string') transBody += item[0];
+                    if (typeof item?.[3] === 'string') romaBody += item[3];
+                }
+                const splitTrans = transBody.split(/\s*\|(?:\||\s*\|)+\s*/);
+                const splitRoma = romaBody.split(/\s*\|(?:\||\s*\|)+\s*/);
+
+                slice.forEach((itemText, sIdx) => {
+                    const r = (splitRoma[sIdx] || '').trim();
+                    const t = (splitTrans[sIdx] || '').trim();
+                    const obj = {
+                        romaji: (r && r.toLowerCase() !== itemText.toLowerCase()) ? r : '',
+                        indo: (t && t.toLowerCase() !== itemText.toLowerCase()) ? t : ''
+                    };
+                    romajiCache.set(itemText, obj);
+                    if (obj.indo) translationCache.set(itemText, obj.indo);
+                    const indices = textToIndices.get(itemText) || [];
+                    for (const idx of indices) {
+                        results[idx] = obj;
+                    }
+                });
+            }).catch(() => {})
+        );
+    }
 
     await Promise.all(promises);
-    return results;
     return results;
 }
 
@@ -183,7 +217,7 @@ async function fetchJapaneseRomajiAndIndonesian(text) {
 async function translateBatchToIndonesian(lines, sourceLang = 'auto') {
     if (!Array.isArray(lines) || lines.length === 0) return [];
     const results = new Array(lines.length).fill('');
-    const toFetch = [];
+    const textToIndices = new Map();
 
     for (let i = 0; i < lines.length; i++) {
         const clean = String(lines[i] || '').trim();
@@ -191,28 +225,36 @@ async function translateBatchToIndonesian(lines, sourceLang = 'auto') {
         if (translationCache.has(clean)) {
             results[i] = translationCache.get(clean);
         } else {
-            toFetch.push({ text: clean, index: i });
+            if (!textToIndices.has(clean)) {
+                textToIndices.set(clean, [i]);
+            } else {
+                textToIndices.get(clean).push(i);
+            }
         }
     }
 
-    if (toFetch.length === 0) return results;
+    const uniqueTexts = Array.from(textToIndices.keys());
+    if (uniqueTexts.length === 0) return results;
 
-    const sl = (sourceLang === 'ja' || sourceLang === 'japanese') ? 'ja' : ((sourceLang === 'ko' || sourceLang === 'korean') ? 'ko' : 'auto');
+    const sl = (sourceLang === 'ja' || sourceLang === 'japanese') ? 'ja' : ((sourceLang === 'ko' || sourceLang === 'korean') ? 'ko' : ((sourceLang === 'ru' || sourceLang === 'russian') ? 'ru' : 'auto'));
     const chunkSize = 6;
     const promises = [];
 
-    for (let i = 0; i < toFetch.length; i += chunkSize) {
-        const slice = toFetch.slice(i, i + chunkSize);
-        const joined = slice.map(item => item.text).join('\n');
+    for (let i = 0; i < uniqueTexts.length; i += chunkSize) {
+        const slice = uniqueTexts.slice(i, i + chunkSize);
+        const joined = slice.join('\n');
         promises.push(
             fetchGoogleTranslate(joined, sl, 'id', false).then(({ text: transBody }) => {
                 if (transBody) {
                     const split = transBody.split(/\r?\n/).map(s => s.trim());
-                    slice.forEach((item, sIdx) => {
+                    slice.forEach((itemText, sIdx) => {
                         const transLine = split[sIdx] || '';
-                        if (transLine && transLine.toLowerCase() !== item.text.toLowerCase()) {
-                            results[item.index] = transLine;
-                            translationCache.set(item.text, transLine);
+                        if (transLine && transLine.toLowerCase() !== itemText.toLowerCase()) {
+                            translationCache.set(itemText, transLine);
+                            const indices = textToIndices.get(itemText) || [];
+                            for (const idx of indices) {
+                                results[idx] = transLine;
+                            }
                         }
                     });
                 }
