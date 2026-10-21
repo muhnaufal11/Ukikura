@@ -398,12 +398,22 @@ ipcRenderer.on('notif-update', (event, payload) => {
             if (/pesan (yang )?belum dibaca|unread message|Deadline LMS Mendesak/i.test(senderStr)) continue;
 
             const lowApp = String(rawItem.app || '').toLowerCase();
-            const isWa = Boolean(rawItem.isWhatsApp) || lowApp.includes('whatsapp') || lowApp === 'electron';
+            const isWa = Boolean(rawItem.isWhatsApp) || lowApp.includes('whatsapp') || lowApp === 'electron' || senderStr.toLowerCase().includes('whatsapp');
+            let parsedSender = senderStr || (isWa ? 'WhatsApp' : 'HP');
+            let parsedMsg = msgStr;
+            if (isWa && parsedMsg) {
+                const waMatch = parsedMsg.match(/^([^:\n]{1,40})[:\n]\s*([\s\S]+)$/);
+                if (waMatch && (parsedSender.toLowerCase() === 'whatsapp' || !parsedSender)) {
+                    parsedSender = waMatch[1].trim();
+                    parsedMsg = waMatch[2].trim();
+                }
+            }
+
             const item = Object.assign({}, rawItem, {
                 app: isWa ? 'WhatsApp' : (rawItem.app || 'HP'),
                 isWhatsApp: isWa,
-                sender: senderStr || 'WhatsApp',
-                message: msgStr,
+                sender: parsedSender,
+                message: parsedMsg,
                 sticker: rawItem.sticker || '',
                 image: rawItem.image || '',
                 isVoiceNote: Boolean(rawItem.isVoiceNote),

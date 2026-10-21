@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch68-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch69-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -139,6 +139,11 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
 - **File Shelf & Clipboard Vault**: Rak penyimpanan file sementara di atas layar dengan efek *liquid gulp* berbasis HTML5 Canvas untuk menampung dokumen Word/PDF/ZIP sebelum diunggah ke LMS, mendukung **Drag-Out native** langsung ke browser/WhatsApp, serta **Clipboard History** 15 teks/kode/link/screenshot terakhir dengan 1-klik salin.
 
 ### 3. Jembatan Perangkat Keras WinRT & WhatsApp (`Uki Engine`)
+- **Stabilisasi Bridge Native WinRT & Sinkronisasi Notifikasi HP/WA (Patch 69)**:
+  - **Perbaikan Kritis WinRT UserNotificationListener**: Memperbaiki layout ABI COM interface (`INotification`, `INotificationVisual`, `INotificationBinding`, `IAdaptiveNotificationText`) di `ukikura-bridge.cpp` yang sebelumnya memicu crash access violation (`0xC0000005`) saat memproses notifikasi masuk atau Action Center Windows.
+  - **Sinkronisasi Notifikasi Real-Time & Riwayat HP**: Notifikasi dari Microsoft Phone Link (Gojek, Grab, Shopee, Keamanan, Bing, WhatsApp, dll.) kini diproses secara stabil tanpa crash dan langsung tampil rapi di panel notifikasi Dynamic Island.
+  - **Smart Contact Parsing WhatsApp**: Otomatis mengekstraksi nama pengirim asli dan cuplikan pesan teks dari format notifikasi WhatsApp Phone Link/Android.
+  - **Pencegahan Race Condition Startup (`music-lyrics.js`)**: Memperbaiki `Uncaught ReferenceError: updateLiveMetrics is not defined` saat SMTC media aktif sebelum `lms-pomodoro.js` selesai dimuat.
 - **Pantauan Baterai Lintas Perangkat**: Menampilkan persentase baterai Laptop, status pengisian daya (*Charging Peek*), baterai HP Android/iOS (via Windows Phone Link / Bluetooth), serta baterai TWS, Mouse, dan Keyboard Bluetooth.
 - **WhatsApp Companion**: Mendeteksi pesan dan stiker WhatsApp masuk secara *real-time* dan menampilkannya melalui *Peek Popup* tanpa harus membuka jendela browser penuh.
 

@@ -152,6 +152,9 @@ struct IAppInfo : public IInspectable {
 
 struct IAdaptiveNotificationText : public IInspectable {
     virtual HRESULT STDMETHODCALLTYPE get_Text(HSTRING *value) = 0;
+    virtual HRESULT STDMETHODCALLTYPE put_Text(HSTRING value) = 0;
+    virtual HRESULT STDMETHODCALLTYPE get_Language(HSTRING *value) = 0;
+    virtual HRESULT STDMETHODCALLTYPE put_Language(HSTRING value) = 0;
 };
 
 struct IReadOnlyList_AdaptiveNotificationText : public IInspectable {
@@ -165,23 +168,25 @@ struct INotificationBinding : public IInspectable {
     virtual HRESULT STDMETHODCALLTYPE get_Language(HSTRING *value) = 0;
     virtual HRESULT STDMETHODCALLTYPE put_Language(HSTRING value) = 0;
     virtual HRESULT STDMETHODCALLTYPE get_Hints(void **value) = 0;
-    virtual HRESULT STDMETHODCALLTYPE GetTextElements(IReadOnlyList_AdaptiveNotificationText **value) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetTextElements(IReadOnlyList_AdaptiveNotificationText **result) = 0;
 };
 
 struct INotificationVisual : public IInspectable {
     virtual HRESULT STDMETHODCALLTYPE get_Language(HSTRING *value) = 0;
     virtual HRESULT STDMETHODCALLTYPE put_Language(HSTRING value) = 0;
     virtual HRESULT STDMETHODCALLTYPE get_Bindings(void **value) = 0;
-    virtual HRESULT STDMETHODCALLTYPE GetBinding(HSTRING templateName, INotificationBinding **value) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetBinding(HSTRING template_name, INotificationBinding **result) = 0;
 };
 
-struct IToastNotification : public IInspectable {
-    virtual HRESULT STDMETHODCALLTYPE get_Content(void **value) = 0;
+struct INotification : public IInspectable {
+    virtual HRESULT STDMETHODCALLTYPE get_ExpirationTime(void **value) = 0;
+    virtual HRESULT STDMETHODCALLTYPE put_ExpirationTime(void *value) = 0;
     virtual HRESULT STDMETHODCALLTYPE get_Visual(INotificationVisual **value) = 0;
+    virtual HRESULT STDMETHODCALLTYPE put_Visual(INotificationVisual *value) = 0;
 };
 
 struct IUserNotification : public IInspectable {
-    virtual HRESULT STDMETHODCALLTYPE get_Notification(IToastNotification **value) = 0;
+    virtual HRESULT STDMETHODCALLTYPE get_Notification(INotification **value) = 0;
     virtual HRESULT STDMETHODCALLTYPE get_AppInfo(IAppInfo **value) = 0;
     virtual HRESULT STDMETHODCALLTYPE get_Id(unsigned int *value) = 0;
     virtual HRESULT STDMETHODCALLTYPE get_CreationTime(long long *value) = 0;
@@ -1253,6 +1258,7 @@ struct NotifItem {
     bool isWhatsApp;
     bool isPhone;
     long long time;
+    bool isNew = true;
 };
 
 class NotificationMonitor {
@@ -1319,6 +1325,12 @@ public:
         list->get_Size(&count);
 
         std::vector<NotifItem> newItems;
+        bool isInitial = m_initialPass;
+        unsigned int startIdx = 0;
+        if (isInitial && count > 15) {
+            startIdx = count - 15;
+        }
+
         for (unsigned int i = 0; i < count; ++i) {
             IUserNotification *un = nullptr;
             if (SUCCEEDED(list->GetAt(i, &un)) && un) {
@@ -1328,7 +1340,7 @@ public:
                 if (m_seenIds.find(nid) == m_seenIds.end()) {
                     m_seenIds.insert(nid);
 
-                    if (!m_initialPass) {
+                    if (!isInitial || i >= startIdx) {
                         std::string appName = "";
                         IAppInfo *appInfo = nullptr;
                         if (SUCCEEDED(un->get_AppInfo(&appInfo)) && appInfo) {
@@ -1348,9 +1360,10 @@ public:
                         std::transform(lowApp.begin(), lowApp.end(), lowApp.begin(), ::tolower);
                         if (lowApp.find("antigravity") == std::string::npos &&
                             lowApp.find("snipping tool") == std::string::npos &&
-                            lowApp.find("windows defender") == std::string::npos) {
+                            lowApp.find("windows defender") == std::string::npos &&
+                            lowApp.find("windows security") == std::string::npos) {
 
-                            IToastNotification *toast = nullptr;
+                            INotification *toast = nullptr;
                             if (SUCCEEDED(un->get_Notification(&toast)) && toast) {
                                 INotificationVisual *visual = nullptr;
                                 if (SUCCEEDED(toast->get_Visual(&visual)) && visual) {
@@ -1402,12 +1415,13 @@ public:
 
                                                 newItems.push_back({
                                                     nid,
-                                                    isWa ? "WhatsApp" : (!appName.empty() ? appName : "Notifikasi"),
+                                                    isWa ? "WhatsApp" : (isPhone ? "HP" : (!appName.empty() ? appName : "Notifikasi")),
                                                     sender,
                                                     msg,
                                                     isWa,
                                                     isPhone,
-                                                    createMs
+                                                    createMs,
+                                                    !isInitial
                                                 });
                                             }
                                             texts->Release();
@@ -1440,7 +1454,7 @@ public:
                    << ",\"isWhatsApp\":" << (newItems[i].isWhatsApp ? "true" : "false")
                    << ",\"isPhone\":" << (newItems[i].isPhone ? "true" : "false")
                    << ",\"time\":" << newItems[i].time
-                   << ",\"isNew\":true}";
+                   << ",\"isNew\":" << (newItems[i].isNew ? "true" : "false") << "}";
             }
             ss << "]}";
             PrintJson(ss.str());

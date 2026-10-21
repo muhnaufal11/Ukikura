@@ -17,6 +17,20 @@ function cleanAppName(rawApp) {
     return rawApp ? rawApp.replace(/\.exe$/i, '') : 'Windows Media';
 }
 
+// Cache DOM-write: renderMediaUI dipanggil ~5x/detik oleh tick SMTC. Menulis ulang textContent,
+// innerHTML ikon, dan background-image (data URL base64 ratusan KB) setiap tick memicu style
+// recalc + decode gambar terus-menerus. Tulis hanya jika nilainya benar-benar berubah.
+const _mediaDomCache = new Map();
+function setMediaDom(id, prop, value) {
+    const key = id + '|' + prop;
+    if (_mediaDomCache.get(key) === value) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    _mediaDomCache.set(key, value);
+    if (prop === 'bg') el.style.backgroundImage = value;
+    else el[prop] = value;
+}
+
 function renderMediaUI() {
     const isPlaying = mediaState.active && mediaState.status === 'Playing';
     mnEl.classList.toggle('playing', isPlaying);
@@ -25,48 +39,36 @@ function renderMediaUI() {
     const artist = mediaState.artist || 'Spotify, YouTube, Brave, Chrome, Apple Music';
     const appLabel = cleanAppName(mediaState.app);
 
-    document.getElementById('music-app-1').textContent = appLabel;
-    document.getElementById('music-title-1').textContent = title;
-    document.getElementById('music-title-1').title = title;
-    document.getElementById('music-artist-1').textContent = artist;
-    document.getElementById('music-artist-1').title = artist;
-    document.getElementById('music-title-2').textContent = title;
-    document.getElementById('music-title-2').title = title;
-    document.getElementById('music-artist-2').textContent = artist;
-    document.getElementById('music-artist-2').title = artist;
+    setMediaDom('music-app-1', 'textContent', appLabel);
+    setMediaDom('music-title-1', 'textContent', title);
+    setMediaDom('music-title-1', 'title', title);
+    setMediaDom('music-artist-1', 'textContent', artist);
+    setMediaDom('music-artist-1', 'title', artist);
+    setMediaDom('music-title-2', 'textContent', title);
+    setMediaDom('music-title-2', 'title', title);
+    setMediaDom('music-artist-2', 'textContent', artist);
+    setMediaDom('music-artist-2', 'title', artist);
 
-    document.getElementById('play-icon-1').innerHTML = isPlaying ? PAUSE_SVG_PATH : PLAY_SVG_PATH;
-    document.getElementById('play-icon-2').innerHTML = isPlaying ? PAUSE_SVG_PATH : PLAY_SVG_PATH;
-    const kPlayIcon = document.getElementById('play-icon-k');
-    if (kPlayIcon) kPlayIcon.innerHTML = isPlaying ? PAUSE_SVG_PATH : PLAY_SVG_PATH;
+    const playSvg = isPlaying ? PAUSE_SVG_PATH : PLAY_SVG_PATH;
+    setMediaDom('play-icon-1', 'innerHTML', playSvg);
+    setMediaDom('play-icon-2', 'innerHTML', playSvg);
+    setMediaDom('play-icon-k', 'innerHTML', playSvg);
 
-    const art1 = document.getElementById('music-art-1');
-    const art2 = document.getElementById('music-art-2');
     const hasRealSmtcThumb = mediaState.thumb && !mediaState.isAppIcon;
     let bg = '';
     if (hasRealSmtcThumb) {
         bg = `url("data:image/jpeg;base64,${mediaState.thumb}")`;
-        art1.style.backgroundImage = bg;
-        art2.style.backgroundImage = bg;
-        idleArtEl.style.backgroundImage = bg;
-        idleArtEl.classList.add('has-art');
     } else if (lyricCoverUrl) {
         bg = `url("${lyricCoverUrl}")`;
-        art1.style.backgroundImage = bg;
-        art2.style.backgroundImage = bg;
-        idleArtEl.style.backgroundImage = bg;
-        idleArtEl.classList.add('has-art');
     } else if (mediaState.thumb) {
         bg = `url("data:image/jpeg;base64,${mediaState.thumb}")`;
-        art1.style.backgroundImage = bg;
-        art2.style.backgroundImage = bg;
+    }
+    setMediaDom('music-art-1', 'bg', bg);
+    setMediaDom('music-art-2', 'bg', bg);
+    if (_mediaDomCache.get('idle-art|bg') !== bg) {
+        _mediaDomCache.set('idle-art|bg', bg);
         idleArtEl.style.backgroundImage = bg;
-        idleArtEl.classList.add('has-art');
-    } else {
-        art1.style.backgroundImage = '';
-        art2.style.backgroundImage = '';
-        idleArtEl.style.backgroundImage = '';
-        idleArtEl.classList.remove('has-art');
+        idleArtEl.classList.toggle('has-art', Boolean(bg));
     }
 
     // Ekstrak palet warna dari sampul video/lagu untuk ambient canvas
@@ -418,18 +420,12 @@ function updateKaraokeOverlay() {
         }
     }
 
-    const kArt = document.getElementById('karaoke-art');
-    if (kArt) {
-        const coverSrc = lyricCoverUrl || (mediaState && mediaState.thumb ? `data:image/jpeg;base64,${mediaState.thumb}` : '');
-        if (coverSrc) {
-            kArt.style.backgroundImage = `url("${coverSrc.replace(/"/g, '\\"')}")`;
-        }
+    const coverSrc = lyricCoverUrl || (mediaState && mediaState.thumb ? `data:image/jpeg;base64,${mediaState.thumb}` : '');
+    if (coverSrc) {
+        setMediaDom('karaoke-art', 'bg', `url("${coverSrc.replace(/"/g, '\\"')}")`);
     }
 
-    const kIcon = document.getElementById('play-icon-k');
-    if (kIcon) {
-        kIcon.innerHTML = (mediaState.status === 'Playing') ? PAUSE_SVG_PATH : PLAY_SVG_PATH;
-    }
+    setMediaDom('play-icon-k', 'innerHTML', (mediaState.status === 'Playing') ? PAUSE_SVG_PATH : PLAY_SVG_PATH);
 }
 
 const btnOpenKaraoke = document.getElementById('btn-open-karaoke');
@@ -582,7 +578,7 @@ ipcRenderer.on('media-update', (event, msg) => {
     }
 
     renderMediaUI();
-    updateLiveMetrics();
+    if (typeof updateLiveMetrics === 'function') updateLiveMetrics();
     startAmbientVisualizerIfNeeded();
 });
 
