@@ -8,7 +8,7 @@
 #define MyAppName "Ukikura"
 #define MyAppFullTitle "Ukikura (浮倉) — Floating Island & Task Vault"
 #define MyAppVersion "1.0.6"
-#define MyAppVersionCode "40"
+#define MyAppVersionCode "41"
 #define MyAppPublisher "Nauflix (muhnaufal11)"
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
 #define MyAppExeName "electron.exe"
@@ -84,6 +84,7 @@ Type: files; Name: "{userstartup}\NusaDynamicIsland.vbs"
 [Run]
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM electron.exe /T"; StatusMsg: "Menutup sesi lama Ukikura..."; Flags: runhidden waituntilterminated
 Filename: "{sys}\tar.exe"; Parameters: "-xf ""{tmp}\electron-runtime.zip"" -C ""{app}\runtime"""; StatusMsg: "Mengekstrak runtime Ukikura..."; Check: FileExists(ExpandConstant('{tmp}\electron-runtime.zip')); Flags: runhidden waituntilterminated
+Filename: "{sys}\powershell.exe"; Parameters: "-NoProfile -Command ""if (-not (Test-Path '{app}\runtime\resources.pak')) {{ Expand-Archive -Path '{tmp}\electron-runtime.zip' -DestinationPath '{app}\runtime' -Force }}"""; StatusMsg: "Memverifikasi integritas runtime Ukikura..."; Check: FileExists(ExpandConstant('{tmp}\electron-runtime.zip')); Flags: runhidden waituntilterminated
 Filename: "{app}\runtime\{#MyAppExeName}"; Parameters: """{app}\{#MyAppEntryArgs}"""; WorkingDir: "{app}"; Description: "Jalankan {#MyAppFullTitle} sekarang"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
@@ -131,11 +132,19 @@ begin
   Result := '';
 end;
 
+function IsRuntimeComplete(): Boolean;
+begin
+  Result := FileExists(ExpandConstant('{app}\runtime\electron.exe')) and
+            FileExists(ExpandConstant('{app}\runtime\icudtl.dat')) and
+            FileExists(ExpandConstant('{app}\runtime\resources.pak')) and
+            FileExists(ExpandConstant('{app}\runtime\chrome_100_percent.pak'));
+end;
+
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   if CurPageID = wpReady then begin
     DownloadPage.Clear;
-    if (not FileExists(ExpandConstant('{app}\runtime\electron.exe'))) or (not FileExists(ExpandConstant('{app}\runtime\icudtl.dat'))) then begin
+    if not IsRuntimeComplete() then begin
       DownloadPage.Add('{#ElectronZipUrl}', 'electron-runtime.zip', '');
       DownloadPage.Show;
       try

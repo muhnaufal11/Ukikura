@@ -157,11 +157,28 @@ function createIslandWindow() {
         });
     }
 
-    mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-
+    mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+        logDebug(`[Renderer] [${level}] ${message} (${sourceId}:${line})`);
+    });
+    mainWindow.webContents.on('did-finish-load', () => {
+        logDebug('createIslandWindow: did-finish-load event fired');
+    });
+    mainWindow.webContents.on('did-fail-load', (e, errorCode, errorDescription) => {
+        logDebug('mainWindow did-fail-load:', errorCode, errorDescription);
+    });
+    mainWindow.webContents.on('render-process-gone', (e, details) => {
+        logDebug('mainWindow render-process-gone:', details);
+    });
+    mainWindow.on('close', (e) => {
+        logDebug('mainWindow close event, isQuitting:', app.isQuitting);
+    });
     mainWindow.on('closed', () => {
+        logDebug('mainWindow closed event');
         mainWindow = null;
     });
+
+    logDebug('createIslandWindow: loading file index.html');
+    mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
     startNusaHoverLoop();
     initClipboardWatcher(mainWindow);
@@ -590,11 +607,19 @@ if (!gotLock) {
         }
     });
 
+    app.on('before-quit', (e) => logDebug('app before-quit called'));
+    app.on('will-quit', (e) => logDebug('app will-quit called'));
+    app.on('quit', (e, code) => logDebug('app quit called with code', code));
+
     app.whenReady().then(async () => {
         try { app.setAppUserModelId('Ukikura Dynamic Island'); } catch (_) {}
+        logDebug('whenReady: calling ensureBackendServer');
         await ensureBackendServer();
+        logDebug('whenReady: calling createIslandWindow');
         createIslandWindow();
+        logDebug('whenReady: calling createTray');
         createTray();
+        logDebug('whenReady: calling startWinRtBridge');
         startWinRtBridge();
 
         // Buka kapsul Dynamic Island sesaat saat pertama kali dijalankan agar pengguna tahu aplikasi sudah aktif
@@ -607,26 +632,24 @@ if (!gotLock) {
             }
         }, 700);
 
-        // Hot-reload otomatis saat index.html, winrt-bridge.ps1, atau main.js diperbarui
-        try {
-            const uiHtmlPath = path.join(__dirname, 'renderer', 'index.html');
-            fs.watchFile(uiHtmlPath, { interval: 1500 }, () => {
-                if (mainWindow && !mainWindow.isDestroyed()) {
-                    resetWaState(); resetLyricsTrackKey();
-                    mainWindow.webContents.reloadIgnoringCache();
-                }
-            });
-            const bridgePsPath = path.join(__dirname, 'bridge', 'winrt-bridge.ps1');
-            fs.watchFile(bridgePsPath, { interval: 1500 }, () => {
-                const wp = getWinRtProc(); if (wp) { try { wp.kill(); } catch (_) {} }
-            });
-            fs.watchFile(__filename, { interval: 1500 }, () => {
-                app.isQuitting = true;
-                const wp = getWinRtProc(); if (wp) { try { wp.kill(); } catch (_) {} }
-                app.relaunch({ args: process.argv.slice(1) });
-                app.exit(0);
-            });
-        } catch (_) {}
+        // Hot-reload hanya aktif saat mode development aktif
+        if (process.env.NODE_ENV === 'development') {
+            try {
+                const uiHtmlPath = path.join(__dirname, 'renderer', 'index.html');
+                fs.watchFile(uiHtmlPath, { interval: 2000 }, (curr, prev) => {
+                    if (curr.mtimeMs <= prev.mtimeMs) return;
+                    if (mainWindow && !mainWindow.isDestroyed()) {
+                        resetWaState(); resetLyricsTrackKey();
+                        mainWindow.webContents.reloadIgnoringCache();
+                    }
+                });
+                const bridgePsPath = path.join(__dirname, 'bridge', 'winrt-bridge.ps1');
+                fs.watchFile(bridgePsPath, { interval: 2000 }, (curr, prev) => {
+                    if (curr.mtimeMs <= prev.mtimeMs) return;
+                    const wp = getWinRtProc(); if (wp) { try { wp.kill(); } catch (_) {} }
+                });
+            } catch (_) {}
+        }
 
         powerMonitor.on('on-ac', () => {
             if (mainWindow && !mainWindow.isDestroyed()) {
