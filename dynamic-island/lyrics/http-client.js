@@ -237,32 +237,29 @@ async function translateBatchToIndonesian(lines, sourceLang = 'auto') {
     if (uniqueTexts.length === 0) return results;
 
     const sl = (sourceLang === 'ja' || sourceLang === 'japanese') ? 'ja' : ((sourceLang === 'ko' || sourceLang === 'korean') ? 'ko' : ((sourceLang === 'ru' || sourceLang === 'russian') ? 'ru' : 'auto'));
-    const chunkSize = 6;
-    const promises = [];
+    const chunkSize = 20;
 
     for (let i = 0; i < uniqueTexts.length; i += chunkSize) {
         const slice = uniqueTexts.slice(i, i + chunkSize);
         const joined = slice.join('\n');
-        promises.push(
-            fetchGoogleTranslate(joined, sl, 'id', false).then(({ text: transBody }) => {
-                if (transBody) {
-                    const split = transBody.split(/\r?\n/).map(s => s.trim());
-                    slice.forEach((itemText, sIdx) => {
-                        const transLine = split[sIdx] || '';
-                        if (transLine && transLine.toLowerCase() !== itemText.toLowerCase()) {
-                            translationCache.set(itemText, transLine);
-                            const indices = textToIndices.get(itemText) || [];
-                            for (const idx of indices) {
-                                results[idx] = transLine;
-                            }
+        try {
+            const { text: transBody } = await fetchGoogleTranslate(joined, sl, 'id', false);
+            if (transBody) {
+                const split = transBody.split(/\r?\n/).map(s => s.trim());
+                slice.forEach((itemText, sIdx) => {
+                    const transLine = split[sIdx] || '';
+                    if (transLine && transLine.toLowerCase() !== itemText.toLowerCase()) {
+                        translationCache.set(itemText, transLine);
+                        const indices = textToIndices.get(itemText) || [];
+                        for (const idx of indices) {
+                            results[idx] = transLine;
                         }
-                    });
-                }
-            }).catch(() => {})
-        );
+                    }
+                });
+            }
+        } catch (_) {}
     }
 
-    await Promise.all(promises);
     return results;
 }
 

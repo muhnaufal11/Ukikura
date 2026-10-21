@@ -468,10 +468,12 @@ function sanitizeBilingualManualLines(rawLines) {
     return cleaned;
 }
 
-    // Prioritaskan Manual CC buatan manusia di atas Auto-ASR
-    const isManualCC = Boolean(bestManual && parsedManual.lines.length >= 4);
+    // Prioritaskan Manual CC buatan manusia di atas Auto-ASR HANYA jika bukan teks obrolan/vlog/behind-the-scenes
+    const vlogPattern = /(?:撮影|オフショット|地元|横須賀|うみかぜ公園|スケボー|古着屋|思い出スポット|気づいた|ワッペン|スカート|カワイイネェ|だよーん|お待たせしました|楽しみね|だけど[‼️!]{2,}|不思議な感覚|おっと！！|担当しますよ|そうそう！！！|写ってるんだけど|あるの[‼️!]{2,}|チャンネル登録|概要欄|vlog|behind the scenes|bts|director's cut)/i;
+    const isVlogCommentary = Boolean(bestManual && parsedManual.lines.filter(l => vlogPattern.test(l.rawText || l.text || '')).length >= 3);
+    const isManualCC = Boolean(bestManual && parsedManual.lines.length >= 4 && !isVlogCommentary);
     const useAsrPrimary = !isManualCC && parsedAsr.tokens.length >= 6;
-    const primaryTokens = useAsrPrimary ? parsedAsr.tokens : (parsedManual.tokens.length >= 6 ? parsedManual.tokens : parsedAsr.tokens);
+    const primaryTokens = useAsrPrimary ? parsedAsr.tokens : (isManualCC && parsedManual.tokens.length >= 6 ? parsedManual.tokens : parsedAsr.tokens);
     const asrMergedLines = mergeFragmentedAsrLines(parsedAsr.lines);
     const sanitizedManual = isManualCC ? sanitizeBilingualManualLines(parsedManual.lines) : [];
     const primaryLines = isManualCC ? sanitizedManual : asrMergedLines;

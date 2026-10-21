@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 39,
+  "versionCode": 40,
   "version": "1.0.6",
-  "fixCount": 39,
-  "displayVersion": "1.0.6 (Patch 39)",
+  "fixCount": 40,
+  "displayVersion": "1.0.6 (Patch 40)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 39): Optimasi performa CPU & GPU besar-besaran (0% idle CPU) serta penambahan opsi pengaturan FPS animasi maskot Nusa (Eco, 60 FPS, 30 FPS, 15 FPS). Menghentikan mutasi CSS variabel DOM saat mata maskot diam (settled zero-repaint), mengoptimalkan pengecekan screenshot clipboard dengan fingerprint buffer ringan tanpa kompresi PNG berulang, mematikan loop visualizer canvas dan pemindaian UIAutomation berat saat notch tertutup, menyusutkan payload serialisasi media PowerShell hingga 99.9%, dan mengoptimalkan unread scanner WhatsApp Web."
+  "changelog": "Ukikura v1.0.6 (Patch 40): Perbaikan kritis desinkronisasi lirik lagu cover/remix dan pencegahan penyerapan subtitle palsu/non-lirik YouTube CC (vlog commentary, diary, catatan sutradara, credits). Menambahkan sistem deteksi cerdas n-gram bigram similarity terhadap database lirik kanonikal NetEase/LRCLIB dan penyaringan kata kunci vlog/obrolan pada manual CC YouTube. Menjamin Rule 3 untuk lagu cover/remix agar selalu menggunakan lirik asli kanonikal yang bersih dan tersinkronisasi presisi sesuai ketukan vokal penyanyi, serta mengoptimalkan batching terjemahan Sub Indo hingga 20 baris per panggilan tanpa terkena pembatasan rate limit."
 }

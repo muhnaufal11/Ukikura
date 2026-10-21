@@ -127,6 +127,53 @@ async function enrichWithRomaji(lines, meta, bestDb) {
     return lines;
 }
 
+function extractNgrams(text) {
+    const clean = String(text || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+    const ngrams = new Set();
+    for (let i = 0; i < clean.length - 1; i++) {
+        ngrams.add(clean.slice(i, i + 2));
+    }
+    return ngrams;
+}
+
+function isBogusOrCommentaryCaptions(yt, bestDb, meta) {
+    if (!yt || !Array.isArray(yt.lines) || yt.lines.length === 0) return false;
+
+    // 1. Deteksi kata kunci khas vlog / obrolan / behind-the-scenes / diary komentar kreator
+    const vlogPattern = /(?:撮影|オフショット|地元|横須賀|うみかぜ公園|スケボー|古着屋|思い出スポット|気づいた|ワッペン|スカート|カワイイネェ|だよーん|お待たせしました|楽しみね|だけど[‼️!]{2,}|不思議な感覚|おっと！！|担当しますよ|そうそう！！！|写ってるんだけど|あるの[‼️!]{2,}|チャンネル登録|概要欄|vlog|behind the scenes|bts|director's cut)/i;
+    const vlogHits = yt.lines.filter(l => vlogPattern.test(l.rawText || l.text || '')).length;
+    const vlogRatio = vlogHits / yt.lines.length;
+    if (vlogHits >= 3 || vlogRatio >= 0.12) {
+        return true;
+    }
+
+    // 2. Jika bestDb kanonikal tersedia dan memiliki baris lirik:
+    if (bestDb && Array.isArray(bestDb.lines) && bestDb.lines.length >= 4) {
+        const dbCombined = bestDb.lines.map(l => l.rawText || l.text || '').join(' ');
+        const ytCombined = yt.lines.map(l => l.rawText || l.text || '').join(' ');
+        const dbNgrams = extractNgrams(dbCombined);
+        const ytNgrams = extractNgrams(ytCombined);
+
+        if (dbNgrams.size >= 12 && ytNgrams.size >= 12) {
+            let hits = 0;
+            ytNgrams.forEach(g => { if (dbNgrams.has(g)) hits++; });
+            const similarity = hits / ytNgrams.size;
+
+            if (similarity < 0.12) {
+                return true;
+            }
+            // Khusus lagu cover / remix / koplo (Rule 3):
+            // Jika kesamaan teks lirik antara subtitle YouTube dan database kanonikal < 28%,
+            // tolak subtitle YouTube agar menggunakan lirik kanonikal bersih dari database!
+            if (meta && meta.isCover && similarity < 0.28) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 // ==================== PIPELINE UTAMA PENYEDIA LIRIK SINKRON 100% ====================
 
 async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFastResult = null) {
@@ -224,12 +271,19 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
         return { neRes: ne, lrcRes: lrc, kgRes: kg, bestDb: top };
     });
 
-    const [dbBundle, ytCaptions] = await Promise.all([
+    const [dbBundle, ytCaptionsRaw] = await Promise.all([
         dbPromise,
         fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta).catch(() => null)
     ]);
 
     let bestDb = dbBundle.bestDb;
+    let ytCaptions = ytCaptionsRaw;
+
+    // Deteksi Subtitle Palsu / Non-Lirik (Vlog, Diary, Komentar Sutradara, Credits) dari YouTube CC
+    const isBogusCC = Boolean(ytCaptions && isBogusOrCommentaryCaptions(ytCaptions, bestDb, meta));
+    if (isBogusCC) {
+        ytCaptions = null;
+    }
 
     let finalLines = [];
     let syncMethod = '';
