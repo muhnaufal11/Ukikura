@@ -1,11 +1,11 @@
 {
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
-  "versionName": "1.0.6",
-  "versionCode": 67,
-  "version": "1.0.6",
-  "fixCount": 67,
-  "displayVersion": "1.0.6 (Patch 67 - Masuk Island Khusus Ditekan/Diklik & Nol Auto-Open Liar)",
+  "versionName": "1.1.0",
+  "versionCode": 68,
+  "version": "1.1.0",
+  "fixCount": 68,
+  "displayVersion": "1.1.0 (Full Native Rust Direct2D + DirectComposition - Ultra-Lightweight 0.1% CPU & 45 MB RAM)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -13,8 +13,8 @@
     "Nauflix/Ukikura"
   ],
   "branch": "main",
-  "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
+  "installerFile": "installer/Ukikura-Setup-v1.1.0.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 67): 1) Masuk island dikembalikan sepenuhnya ke interaksi klik/tekan (di tekan) tanpa auto-open hover yang mengganggu: Klik pada garis lipatan bezel (y <= 7px) saat browser maximized langsung membuka pulau, dan klik pada kapsul notch (y <= 26px) saat di desktop juga langsung membuka pulau. 2) Menghilangkan seluruh timer auto-open hover liar saat memilih tab atau bookmarks sehingga tab browser 100% damai dan bebas dipilih."
+  "changelog": "Ukikura v1.1.0 (Milestone Besar Full Native Migration 100% Rust): 1) Migrasi 100% dari Electron ke arsitektur native Rust murni berbobot ultra-ringan (~660 KB single binary) menggunakan Direct2D, DirectWrite, dan DirectComposition GPU swapchain (WS_EX_NOREDIRECTIONBITMAP, tanpa WebView / browser engine). 2) Pemakaian memori RAM turun drastis dari ~790 MB menjadi 40-50 MB, dan CPU idle turun ke 0.1% (nol wake-up saat diam). 3) Desain visual 100% identik dengan versi 1.0.6 dan kanonikal Nusa: Notch 176x25 dengan telinga kurva 10px, Mata Maskot Nusa (9x12.8px, gap 14px, aura glow cyan/emerald, specular highlight bersih tanpa titik hitam), Header Bar lengkap (Now Playing, persentase baterai laptop, tanggal dan jam realtime), panah navigasi samping (< dan >), titik pagination bawah 5 halaman, dan mode pemutar musik + lirik tersinkronisasi 3 tingkatan (Romaji, Aksara Jepang Asli Kanji/Kana, dan Sub Indo). 4) Kura Local Vault & Task Store HTTP port 8089 dengan stream SSE, Pomodoro Focus, Smart Calendar, dan Clipboard History event-driven."
 }

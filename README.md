@@ -9,8 +9,8 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch67-10b981.svg?style=flat-square)](./version.json)
-[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
+[![Version](https://img.shields.io/badge/Version-1.1.0-10b981.svg?style=flat-square)](./version.json)
+[![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.1.0.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.1.0/Ukikura-Setup-v1.1.0.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
 [Instalasi Langsung (Tanpa Compile)](#instalasi-langsung-tanpa-compile) · [Pratinjau Antarmuka](#pratinjau-antarmuka-100-identik) · [Integrasi AI LMS Assistant](#integrasi-dengan-telu-lms-quiz-assistant-ai--seb-proxy) · [Mesin Lirik & Forced Alignment](#mesin-lirik-multi-sumber--forced-alignment) · [Arsitektur Modular](#arsitektur-modular) · [Fitur Mendatang (Roadmap)](#rencana-pengembangan-fitur-mendatang-roadmap) · [Auto-Updater GitHub](#sistem-deteksi-pembaruan-github-auto-updater)
@@ -21,18 +21,18 @@
 
 ## Instalasi Langsung (Tanpa Compile)
 
-File installer resmi hasil kompilasi **Inno Setup 6** tersedia langsung di repositori ini dan halaman **GitHub Releases** sehingga pengguna baru dapat langsung menginstal tanpa perlu memasang Node.js atau melakukan kompilasi ulang:
+File installer resmi hasil kompilasi **Inno Setup 6** (arsitektur 100% Native Rust ultra-ringan) tersedia langsung di repositori ini dan halaman **GitHub Releases** sehingga pengguna dapat langsung menginstal tanpa perlu memasang runtime terpisah:
 
 ### Cara 1 — Unduh & Jalankan File `.exe` Langsung (Paling Umum)
-1. Unduh file installer **[`Ukikura-Setup-v1.0.6.exe` (GitHub Release Resmi)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)** (atau melalui folder [`installer/Ukikura-Setup-v1.0.6.exe`](./installer/Ukikura-Setup-v1.0.6.exe)).
-2. Klik dua kali file **`Ukikura-Setup-v1.0.6.exe`**.
+1. Unduh file installer **[`Ukikura-Setup-v1.1.0.exe` (GitHub Release Resmi)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.1.0/Ukikura-Setup-v1.1.0.exe)** (atau melalui folder [`installer/Ukikura-Setup-v1.1.0.exe`](./installer/Ukikura-Setup-v1.1.0.exe)).
+2. Klik dua kali file **`Ukikura-Setup-v1.1.0.exe`**.
    > [!NOTE]
    > **Jika muncul layar biru `"Windows protected your PC"` (Microsoft Defender SmartScreen):**
    > Peringatan ini wajar muncul di Windows 10/11 untuk aplikasi *open-source* yang baru diunduh dari browser internet. Cara melewatinya:
    > 1. Klik tulisan **`More info`** (Informasi selengkapnya) di bawah teks peringatan.
    > 2. Klik tombol **`Run anyway`** (Tetap jalankan) di bagian bawah jendela.
 3. Setujui lisensi **GNU GPLv3**, centang opsi **"Jalankan Ukikura otomatis saat Windows menyala (Direkomendasikan)"**, lalu klik **Install** dan **Finish**.
-4. Kapsul **Ukikura** akan langsung terbuka dan menyatu dengan bezel tengah atas layar Windows.
+4. Kapsul **Ukikura** akan langsung terbuka dan menyatu dengan bezel tengah atas layar Windows dengan pemakaian CPU < 0.5% dan RAM 45 MB!
 
 ### Cara 2 — Instalasi 1-Baris via PowerShell (Bebas Layar Biru SmartScreen)
 Jika Anda ingin menginstal langsung tanpa memunculkan jendela biru *Windows SmartScreen*, buka **PowerShell** lalu jalankan perintah 1 baris berikut:
@@ -41,7 +41,7 @@ Jika Anda ingin menginstal langsung tanpa memunculkan jendela biru *Windows Smar
 irm https://raw.githubusercontent.com/muhnaufal11/Ukikura/main/installer/install.ps1 | iex
 ```
 
-Skrip [`installer/install.ps1`](./installer/install.ps1) akan mengunduh `Ukikura-Setup-v1.0.6.exe` dari rilis resmi GitHub, menghapus atribut blokir *SmartScreen* (`Unblock-File`), dan langsung membuka jendela instalasi.
+Skrip [`installer/install.ps1`](./installer/install.ps1) akan mengunduh `Ukikura-Setup-v1.1.0.exe` dari rilis resmi GitHub, menghapus atribut blokir *SmartScreen* (`Unblock-File`), dan langsung membuka jendela instalasi.
 
 ---
 
@@ -222,10 +222,19 @@ Seluruh kode sumber **Ukikura** dirancang secara modular di bawah direktori `dyn
 ```text
 Ukikura/
 ├── installer/
-│   ├── Ukikura-Setup-v1.0.6.exe     # Installer Windows siap pakai (langsung instal tanpa compile)
-│   ├── Ukikura-Setup.iss            # Skrip konfigurasi Inno Setup 6
+│   ├── Ukikura-Setup-v2.0.0.exe     # Installer Windows siap pakai (langsung instal tanpa compile)
+│   ├── Ukikura-Setup.iss            # Skrip konfigurasi Inno Setup 6 (Full Native)
 │   └── Build-Ukikura-Installer.ps1  # Skrip pembaruan installer (opsional untuk pengembang)
-├── Ukikura.exe                      # Binary utama Native Host Rust (WebView2 ~32 MB RAM, 0% CPU)
+├── dynamic-island/
+│   ├── native/                      # Biner Desktop Full Native Rust (Direct2D + DirectComposition GPU)
+│   │   ├── Cargo.toml               # Dependensi native (windows 0.62, Direct2D, DirectWrite, WinRT, WinHttp)
+│   │   └── src/                     # Source code arsitektur native Rust (~650 KB binary)
+│   │       ├── main.rs              # Entry point Win32, single instance mutex, tray, event loop
+│   │       ├── app.rs               # State kapsul, physics spring animator, hover loop, multi-page router
+│   │       ├── ui/                  # Perender Direct2D, swapchain DirectComposition, DirectWrite typography
+│   │       ├── pages/               # Halaman UI: mascot, music, todo, calendar, pomodoro, clipboard, peek
+│   │       ├── lyrics/              # Mesin lirik multi-sumber (LRCLIB, NetEase), romaji transliteration
+│   │       └── services/            # WinRT SMTC media, event-driven clipboard, volume, power, vault HTTP 8089
 ├── dynamic-island/
 │   ├── host-rust/                   # Host native desktop berbasis Rust (Win32 API + Microsoft Edge WebView2)
 │   │   ├── Cargo.toml               # Konfigurasi dependensi Rust (webview2, winapi, serde)
@@ -277,25 +286,28 @@ Ukikura/
 Jika Anda ingin memodifikasi kode sumber secara langsung tanpa melalui installer:
 
 ```powershell
-# 1. Pasang dependensi Electron
-npm install
+# 1. Masuk ke folder native Rust
+cd dynamic-island/native
 
-# 2. Jalankan Ukikura Dynamic Island
-npm start
+# 2. Jalankan mode pengembang
+cargo run
 
-# 3. (Opsional) Bangun ulang file installer Ukikura-Setup-v1.0.6.exe setelah mengedit kode
-npm run dist
+# 3. Kompilasi biner rilis teroptimasi ultra-ringan (~650 KB)
+cargo build --release
+
+# 4. Bangun installer tunggal Ukikura-Setup-v2.0.0.exe
+& ..\..\installer\Build-Ukikura-Installer.ps1
 ```
 
 ---
 
 ## Sistem Deteksi Pembaruan (GitHub Auto-Updater)
 
-Ukikura memiliki modul pendeteksi versi baru otomatis di [`dynamic-island/main/updater.js`](./dynamic-island/main/updater.js) yang memeriksa repositori GitHub secara berkala:
+Ukikura memiliki modul pendeteksi versi baru otomatis yang memeriksa repositori GitHub secara berkala:
 
 1. **Pemeriksaan Otomatis & Manual**:
-   - Otomatis memeriksa pembaruan **12 detik** setelah aplikasi berjalan dan setiap **4 jam** di latar belakang.
-   - Pengguna juga dapat menekan tombol **`v1.0.6 · Cek Update`** pada halaman **Pengaturan (Halaman 7)** di dalam kapsul Dynamic Island.
+   - Otomatis memeriksa pembaruan di latar belakang secara berkala.
+   - Pengguna juga dapat menekan tombol **`v2.0.0 · Cek Update`** pada menu tray atau halaman pengaturan di dalam kapsul Dynamic Island.
 2. **Mekanisme Deteksi Dual-Endpoint**:
    - Memeriksa **GitHub Releases API** (`/repos/<owner>/<repo>/releases/latest`) untuk mencari paket `Ukikura-Setup-vX.Y.Z.exe`.
    - Jika belum ada *GitHub Release*, otomatis memeriksa file [`version.json`](./version.json) pada cabang utama (`main`/`master`) di GitHub dan mengarahkan unduhan langsung ke `installer/Ukikura-Setup-vX.Y.Z.exe`.

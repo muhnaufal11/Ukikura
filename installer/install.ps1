@@ -12,8 +12,8 @@ Write-Host "  Ukikura (浮倉) — Windows 11 Dynamic Island Installer" -Foregro
 Write-Host "======================================================" -ForegroundColor Cyan
 
 $repo = "muhnaufal11/Ukikura"
-$setupUrl = "https://github.com/$repo/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe"
-$fileName = "Ukikura-Setup-v1.0.6.exe"
+$setupUrl = "https://github.com/$repo/releases/download/v1.1.0/Ukikura-Setup-v1.1.0.exe"
+$fileName = "Ukikura-Setup-v1.1.0.exe"
 
 try {
     $latest = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/latest" -Headers @{ "User-Agent" = "Ukikura-Installer" } -UseBasicParsing -TimeoutSec 10

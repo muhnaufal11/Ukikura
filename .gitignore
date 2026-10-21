@@ -12,4 +12,6 @@ dynamic-island/GEMINI.md
 Ukikura.exe
 WebView2Loader.dll
 dynamic-island/host-rust/target/
+target/
+**/target/
 
