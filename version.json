@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 78,
+  "versionCode": 79,
   "version": "1.0.6",
-  "fixCount": 78,
-  "displayVersion": "1.0.6 (Patch 78 - Auto-ASR Initial Particle Recovery, Smart Phrase Merging, & Long Lyrics Full Display)",
+  "fixCount": 79,
+  "displayVersion": "1.0.6 (Patch 79 - Cover Singer Locking, Warner Music CC Recovery, ALiCE&u Full Trilingual Preservation)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 78): 1) Pemulihan Kata Awal Auto-ASR (.srv3): Memperbaiki bug parsing TimedText format 3 di mana kata pertama pada setiap bait vokal (seperti 'Ku', 'katamu', 'pelengkap', 'sengaja') terlewat karena tidak memiliki atribut waktu relatif eksplisit. Seluruh kata awal kini pulih 100%. 2) Penggabungan Frasa Utuh (Smart Phrase Merging): Mencegah pemotongan lirik menggantung pada partikel dan preposisi ('tak', 'saat', 'saling', 'berbagi', 'dan') sehingga kalimat vokal selalu utuh dan rapi. 3) Tampilan Lirik Panjang (Long Lyrics Display): Memperluas adaptasi dinamis notch hingga 520px serta optimasi auto-marquee sehingga lirik panjang tampil penuh tanpa terpotong."
+  "changelog": "Ukikura v1.0.6 (Patch 79): 1) Penguncian Video Cover (Cover Singer Locking): Mengunci video cover YouTube persis yang ditonton pengguna (seperti Pip🐤 pada Shukusei!! Loli Kami Requiem Versi Indonesia) dan mencegah penggantian salah sasaran ke video cover penyanyi lain. 2) Pemulihan Manual CC Lagu Resmi Warner Music Japan: Memperbaiki deteksi bahasa pada video kanonikal Jepang yang memiliki terjemahan Indonesia di judul video (seperti 'もう恋なんてしない: Takkan Jatuh Cinta Lagi') sehingga CC resmi kreator tidak tertolak dan sinkronisasi tepat di menit 2:24. 3) Pemulihan Lengkap Trilingual ALiCE&u & Anti-Duplikasi Silabel: Mengembalikan aksara asli Jepang Kanji/Kana ('君がいないとできない') dan terjemahan Sub Indo ('Hampa rasanya tanpamu di sini') pada lagu multilingual ALiCE&u serta mengeliminasi duplikasi baris silabel karaoke YouTube ('Un wa vering'). 4) Protokol Uji Wajib Non-Regresi: Memformalkan verifikasi otomatis 5 lagu kanonikal sebelum setiap rilis agar seluruh perbaikan masa lalu tetap terjaga."
 }

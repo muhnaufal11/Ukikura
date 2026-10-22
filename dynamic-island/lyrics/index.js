@@ -314,7 +314,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     const ytHasEnOnly = ytCaptions && ytCaptions.lines && !ytHasNativeLines && ytCaptions.lines.some(l => /[a-zA-Z]{3,}/.test(l.rawText || l.text));
     const ytHasJaOrIdCC = Boolean(ytCaptions && ((Array.isArray(ytCaptions.japaneseLines) && ytCaptions.japaneseLines.length >= 4) || (Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 4)));
     const isDbIndonesian = Boolean(bestDb && Array.isArray(bestDb.lines) && bestDb.lines.length >= 4 && isIndonesianText(bestDb.lines.slice(0, 15).map(l => l.rawText || l.text).join(' ')));
-    const isIdOriginal = Boolean((meta && (meta.isIndonesian || meta.isIndonesianVersion)) || isDbIndonesian || isIndonesianText(rawTitle));
+    const isIdOriginal = Boolean(!isForeignOriginal && ((meta && (meta.isIndonesian || meta.isIndonesianVersion)) || isDbIndonesian || isIndonesianText(rawTitle)));
     const rejectEnglishManualForForeignSong = Boolean(isForeignOriginal && ytHasEnOnly && bestDb && !ytHasJaOrIdCC);
     const rejectForeignManualForIndonesianSong = Boolean(isIdOriginal && ytCaptions && ytCaptions.lines && ytCaptions.lines.some(l => hasJapaneseChars(l.rawText || l.text)));
 

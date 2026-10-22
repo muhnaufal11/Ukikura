@@ -274,15 +274,21 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
                 : [];
             if (tracks.length > 0) {
                 const hasManual = tracks.some(t => t && t.kind !== 'asr');
-                if (hasManual || captionTracks.length === 0) {
+                if (!chosenVideo) {
                     captionTracks = tracks;
                     usedClient = client;
                     chosenVideo = candVid;
-                    if (hasManual) break;
+                    // Pada lagu cover, kunci video persis yang ditonton dan JANGAN ganti dengan video cover penyanyi lain!
+                    if (meta?.isCover || hasManual) break;
+                } else if (!meta?.isCover && candVid.score >= chosenVideo.score - 15 && hasManual) {
+                    captionTracks = tracks;
+                    usedClient = client;
+                    chosenVideo = candVid;
+                    break;
                 }
             }
         }
-        if (captionTracks.length > 0 && captionTracks.some(t => t && t.kind !== 'asr')) {
+        if (chosenVideo && (meta?.isCover || captionTracks.some(t => t && t.kind !== 'asr'))) {
             break;
         }
     }
@@ -291,19 +297,21 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
 
     // Pisahkan kandidat ASR (memiliki <s t="..."> timestamp vokal per kata langsung dari gelombang audio)
     // dan kandidat Manual CC (subtitle dari kreator)
-    const hasJpChars = hasJapaneseChars(rawTitle) || hasJapaneseChars(rawArtist);
+    const hasJpChars = hasJapaneseChars(rawTitle) || hasJapaneseChars(rawArtist) || Boolean(meta && meta.hasJpText);
     const hasRuChars = /[\u0400-\u04ff]/.test(`${rawTitle} ${rawArtist}`);
     const hasKrChars = /[\uac00-\ud7af]/.test(`${rawTitle} ${rawArtist}`);
-    const isIdBranch = /\b(hololive[\s-]*(?:indonesia|id)|holo[\s-]*id|nijisanji[\s-]*id|indonesia|indonesian|indo)\b/i.test(`${rawTitle} ${rawArtist}`);
-    const isIdText = isIndonesianText(meta?.cleanedTitle || rawTitle) || isIndonesianText(rawTitle);
-    const isIdSong = Boolean(meta?.isIndonesianVersion || meta?.isIndonesian || isIdBranch || isIdText);
+    const isIdExplicit = Boolean(meta?.isIndonesianVersion);
+    let isIdSong = false;
+    if (isIdExplicit) {
+        isIdSong = true;
+    } else if (!hasJpChars && !hasRuChars && !hasKrChars) {
+        isIdSong = Boolean(meta?.isIndonesian || isIndonesianText(meta?.cleanedTitle || rawTitle));
+    }
 
-    // Jangan anggap lagu Jepang jika jelas artis/judul Indonesia dan tidak ada aksara Jepang!
-    const isJpMeta = !isIdSong && !hasRuChars && !hasKrChars && /\b(hololive|nijisanji|vshojo|vtuber|anime|vocaloid|j-?pop)\b/i.test(`${rawTitle} ${rawArtist}`);
-    const isJpSong = Boolean(hasJpChars || (meta && (meta.likelyJapanese || meta.isJapaneseVersion)) || (isJpMeta && !isIdSong));
+    const isJpSong = Boolean(hasJpChars || (meta && (meta.likelyJapanese || meta.isJapaneseVersion)));
     const isRuSong = Boolean(hasRuChars);
     const isKrSong = Boolean(hasKrChars || (meta && meta.isKoreanVersion));
-    const isEngSong = Boolean(meta && meta.isEnglishVersion) || (!isJpSong && !isIdSong && !isRuSong && !isKrSong);
+    const isEngSong = Boolean((meta && meta.isEnglishVersion) || (!isJpSong && !isIdSong && !isRuSong && !isKrSong) || /\b(alice&u)\b/i.test(`${rawTitle} ${rawArtist}`));
 
     const scoreLang = (t) => {
         const lang = String(t.languageCode || '').toLowerCase();
@@ -315,12 +323,10 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
             else if (isKrSong && lang.startsWith('ko')) s += 200;
             else if (isJpSong && lang.startsWith('ja')) s += 200;
             else if (isEngSong && lang.startsWith('en')) s += 200;
-            else if (isIdSong && (lang.startsWith('en') || lang.startsWith('ja'))) s += 60; // Terjemahan asing untuk lagu Indonesia bernilai lebih rendah dari vokal asli
-            else if ((isJpSong || isRuSong || isKrSong) && lang.startsWith('en')) s += 85;
-            else if (lang.startsWith('en')) s += 160;
-            else if (lang.startsWith('ja')) s += 150;
+            else if (lang.startsWith('en')) s += 180;
+            else if (lang.startsWith('ja')) s += 170;
+            else if (lang.startsWith('id')) s += 160;
             else if (lang.startsWith('ru')) s += 150;
-            else if (lang.startsWith('id')) s += 140;
             else s += 120;
         } else {
             // Jalur Auto-ASR (Prioritaskan gelombang vokal asli)
@@ -457,36 +463,61 @@ function mergeFragmentedAsrLines(rawLines) {
     });
 }
 
-function sanitizeBilingualManualLines(rawLines) {
+function sanitizeBilingualManualLines(rawLines, isIdSong = false) {
     if (!Array.isArray(rawLines) || rawLines.length <= 2) return rawLines;
     const cleaned = [];
     for (let i = 0; i < rawLines.length; i++) {
         const cur = rawLines[i];
         const next = rawLines[i + 1];
 
-        // 1. Cek pasangan bilingual pada timestamp berdekatan (<= 0.85s)
-        if (next && Math.abs(next.time - cur.time) <= 0.85) {
+        // 1. Cek pasangan bilingual pada timestamp yang benar-benar bersamaan (<= 0.25s)
+        if (next && Math.abs(next.time - cur.time) <= 0.25) {
             const curText = (cur.text || cur.rawText || '').trim();
             const nextText = (next.text || next.rawText || '').trim();
             const isDifferent = curText.toLowerCase() !== nextText.toLowerCase();
 
             if (isDifferent) {
-                let vocal = curText;
-                let trans = nextText;
-                // Jika nextText adalah Bahasa Indonesia dan curText bukan, maka nextText adalah vokal asli lagu Indonesia!
-                if (isIndonesianText(nextText) && !isIndonesianText(curText)) {
-                    vocal = nextText;
-                    trans = curText;
+                // Deteksi apakah kedua baris sebenarnya adalah kalimat yang SAMA namun dipecah per-suku kata karaoke
+                // (Contoh: "Unwavering spirit that you told me" vs "Un wa vering spirit that you told me")
+                const curLetters = curText.toLowerCase().replace(/[^a-z0-9\u3040-\u30ff\u4e00-\u9fff]/g, '');
+                const nextLetters = nextText.toLowerCase().replace(/[^a-z0-9\u3040-\u30ff\u4e00-\u9fff]/g, '');
+                if (curLetters && curLetters === nextLetters) {
+                    const curWordCount = curText.split(/\s+/).length;
+                    const nextWordCount = nextText.split(/\s+/).length;
+                    const cleanText = (nextWordCount < curWordCount) ? nextText : curText;
+                    cleaned.push({
+                        time: cur.time,
+                        endTime: Math.max(cur.endTime || 0, next.endTime || (cur.time + 1.5)),
+                        text: cleanText,
+                        rawText: cleanText
+                    });
+                    i++; // lewati varian suku kata
+                    continue;
                 }
-                cleaned.push({
-                    time: cur.time,
-                    endTime: Math.max(cur.endTime || 0, next.endTime || 0),
-                    text: vocal,
-                    rawText: vocal,
-                    transText: trans
-                });
-                i++; // lewati next karena sudah dipasangkan
-                continue;
+
+                // Cek apakah benar-benar dua bahasa berbeda (misal satu ada aksara Jepang / Bahasa Indonesia dan yang lain Bahasa Inggris)
+                const isCurAscii = /^[a-zA-Z0-9\s,.'\"!?~—–-]+$/.test(curText) && !isIndonesianText(curText);
+                const isNextAscii = /^[a-zA-Z0-9\s,.'\"!?~—–-]+$/.test(nextText) && !isIndonesianText(nextText);
+                const isTrulyBilingual = (isCurAscii !== isNextAscii) || (hasJapaneseChars(curText) !== hasJapaneseChars(nextText));
+
+                if (isTrulyBilingual) {
+                    let vocal = curText;
+                    let trans = nextText;
+                    // Jika nextText adalah Bahasa Indonesia dan lagu terbukti lagu Indonesia, maka nextText adalah vokal asli!
+                    if (isIdSong && isIndonesianText(nextText) && !isIndonesianText(curText)) {
+                        vocal = nextText;
+                        trans = curText;
+                    }
+                    cleaned.push({
+                        time: cur.time,
+                        endTime: Math.max(cur.endTime || 0, next.endTime || 0),
+                        text: vocal,
+                        rawText: vocal,
+                        transText: trans
+                    });
+                    i++; // lewati next karena sudah dipasangkan
+                    continue;
+                }
             }
         }
 
@@ -513,10 +544,13 @@ function sanitizeBilingualManualLines(rawLines) {
         if (prev) {
             const prevLetters = (prev.text || prev.rawText || '').toLowerCase().replace(/[^a-z0-9\u3040-\u30ff\u4e00-\u9fff]/g, '');
             const timeDiff = l.time - prev.time;
-            if (textLetters && textLetters === prevLetters && timeDiff <= 4.2) {
-                prev.endTime = Math.max(prev.endTime || 0, l.endTime || 0);
+            if (textLetters && textLetters === prevLetters && timeDiff <= 5.5) {
+                prev.endTime = Math.max(prev.endTime || 0, l.endTime || (l.time + 1.5));
                 if (!prev.transText && l.transText) prev.transText = l.transText;
-                if ((l.text || '').length < (prev.text || '').length && !l.text.includes('  ')) {
+                if (!prev.jpText && l.jpText) prev.jpText = l.jpText;
+                const curWordCount = (l.text || '').trim().split(/\s+/).length;
+                const prevWordCount = (prev.text || '').trim().split(/\s+/).length;
+                if (curWordCount < prevWordCount) {
                     prev.text = l.text;
                     prev.rawText = l.rawText;
                 }
@@ -535,16 +569,36 @@ function sanitizeBilingualManualLines(rawLines) {
     const useAsrPrimary = !isManualCC && parsedAsr.tokens.length >= 6;
     const primaryTokens = useAsrPrimary ? parsedAsr.tokens : (isManualCC && parsedManual.tokens.length >= 6 ? parsedManual.tokens : parsedAsr.tokens);
     const asrMergedLines = mergeFragmentedAsrLines(parsedAsr.lines);
-    const sanitizedManual = isManualCC ? sanitizeBilingualManualLines(parsedManual.lines) : [];
+    const sanitizedManual = isManualCC ? sanitizeBilingualManualLines(parsedManual.lines, isIdSong) : [];
     const hasRealIdManualCC = Boolean(idTrack && idTrack.kind !== 'asr');
-    const isNaturallyIndonesianInCaptions = Boolean(parsedId.lines.length >= 4 && isIndonesianText(parsedId.lines.slice(0, 5).map(l => l.text).join(' ')));
-    const isForeignManualOnIdSong = Boolean((isIdSong || isNaturallyIndonesianInCaptions) && bestManual && !bestManual.lang.startsWith('id') && parsedId.lines.length >= 4);
+    const isVocalActuallyIndonesian = Boolean(meta?.isIndonesian || meta?.isIndonesianVersion);
+    const isForeignManualOnIdSong = Boolean(isVocalActuallyIndonesian && bestManual && !bestManual.lang.startsWith('id') && parsedId.lines.length >= 4);
     const languageCode = isForeignManualOnIdSong ? 'id' : ((bestManual && bestManual.lang) || (bestAsr && bestAsr.lang) || '');
     const cleanIdLines = idTrack
-        ? (bestManual && idTrack === bestManual.track ? sanitizedManual : (parsedId.lines.length > 0 ? (hasRealIdManualCC ? sanitizeBilingualManualLines(parsedId.lines) : mergeFragmentedAsrLines(parsedId.lines)) : []))
+        ? (bestManual && idTrack === bestManual.track
+            ? sanitizedManual
+            : (parsedId.lines.length > 0
+                ? sanitizeBilingualManualLines(
+                    parsedId.lines.filter(l => {
+                        const t = (l.text || l.rawText || '').trim();
+                        if (!t) return false;
+                        if (isIndonesianText(t)) return true;
+                        const isAscii = /^[a-zA-Z0-9\s,.'\"!?~—–-]+$/.test(t);
+                        return !isAscii;
+                    }),
+                    true
+                )
+                : []))
         : [];
     const cleanJaLines = jaTrack
-        ? (bestManual && jaTrack === bestManual.track ? sanitizedManual : (parsedJa.lines.length > 0 ? sanitizeBilingualManualLines(parsedJa.lines) : []))
+        ? (bestManual && jaTrack === bestManual.track
+            ? sanitizedManual
+            : (parsedJa.lines.length > 0
+                ? sanitizeBilingualManualLines(
+                    parsedJa.lines.filter(l => hasJapaneseChars(l.text || l.rawText || '')),
+                    false
+                )
+                : []))
         : [];
 
     if (isForeignManualOnIdSong && hasRealIdManualCC && sanitizedManual.length > 0 && cleanIdLines.length > 0) {
@@ -569,6 +623,59 @@ function sanitizeBilingualManualLines(rawLines) {
     const effectiveIsManualCC = isForeignManualOnIdSong ? hasRealIdManualCC : isManualCC;
     const primaryLines = isForeignManualOnIdSong ? cleanIdLines : (isManualCC ? sanitizedManual : asrMergedLines);
 
+    // Pada lagu multilingual (seperti ALiCE&u): pasangkan lirik Jepang dan terjemahan Indonesia langsung ke primaryLines
+    if (primaryLines.length > 0 && cleanJaLines.length > 0 && primaryLines !== cleanJaLines) {
+        primaryLines.forEach(l => {
+            if (!l.jpText && !hasJapaneseChars(l.rawText || l.text)) {
+                let bestJa = null;
+                let minDiff = 999;
+                for (const jl of cleanJaLines) {
+                    const diff = Math.abs(jl.time - l.time);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        bestJa = jl;
+                    }
+                }
+                if (bestJa && minDiff <= 3.2) {
+                    const candJa = (bestJa.text && hasJapaneseChars(bestJa.text))
+                        ? bestJa.text
+                        : (bestJa.transText && hasJapaneseChars(bestJa.transText))
+                            ? bestJa.transText
+                            : (bestJa.jpText || bestJa.text || '');
+                    if (hasJapaneseChars(candJa)) {
+                        l.jpText = candJa;
+                    }
+                }
+            }
+        });
+    }
+
+    if (primaryLines.length > 0 && cleanIdLines.length > 0 && primaryLines !== cleanIdLines) {
+        primaryLines.forEach(l => {
+            if (!l.transText) {
+                let bestId = null;
+                let minDiff = 999;
+                for (const idl of cleanIdLines) {
+                    const diff = Math.abs(idl.time - l.time);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        bestId = idl;
+                    }
+                }
+                if (bestId && minDiff <= 3.2) {
+                    const candId = (bestId.text && isIndonesianText(bestId.text))
+                        ? bestId.text
+                        : (bestId.transText && isIndonesianText(bestId.transText))
+                            ? bestId.transText
+                            : (bestId.text || bestId.rawText || '');
+                    if (isIndonesianText(candId) || !hasJapaneseChars(candId)) {
+                        l.transText = candId;
+                    }
+                }
+            }
+        });
+    }
+
     if (primaryTokens.length === 0 && primaryLines.length === 0) return null;
 
     return {
@@ -579,7 +686,7 @@ function sanitizeBilingualManualLines(rawLines) {
         languageCode,
         tokens: primaryTokens,
         lines: primaryLines,
-        japaneseLines: (isIdSong || isNaturallyIndonesianInCaptions) ? [] : cleanJaLines,
+        japaneseLines: (meta?.isIndonesianVersion) ? [] : cleanJaLines,
         indonesianLines: cleanIdLines
     };
 }

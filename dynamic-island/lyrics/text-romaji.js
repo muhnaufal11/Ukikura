@@ -271,13 +271,17 @@ function parseTrackMetadata(rawTitle, rawArtist) {
 
     const uniqueQueries = [...new Set(queries.map(q => q.replace(/\s+/g, ' ').trim()).filter(q => q.length >= 2))].slice(0, 7);
 
-    const isIdBranch = /\b(hololive[\s-]*(?:indonesia|id)|holo[\s-]*id|nijisanji[\s-]*id|indonesia|indonesian|indo)\b/i.test(`${origTitle} ${origArtist}`);
     const hasJpText = hasJapaneseChars(origTitle) || hasJapaneseChars(origArtist) || jpQuotes.length > 0;
-    const isIndonesian = Boolean(isIndonesianVersion || isIdBranch || INDONESIAN_ARTIST_REGEX.test(`${origTitle} ${origArtist}`) || isIndonesianText(cleaned) || isIndonesianText(origTitle));
+    let isIndonesian = false;
+    if (isIndonesianVersion) {
+        isIndonesian = true;
+    } else if (!hasJpText) {
+        isIndonesian = Boolean(INDONESIAN_ARTIST_REGEX.test(`${origTitle} ${origArtist}`) || isIndonesianText(cleaned) || isIndonesianText(origTitle));
+    }
 
     let likelyJapanese =
         hasJpText ||
-        /\b(yoasobi|ado|vaundy|kenshi\s*yonezu|radwimps|lisa|aimer|eve|yorushika|zutomayo|hige\s*dism|official\s*higedandism|mrs\.\s*green\s*apple|fujii\s*kaze|majiko|yuuri|tuyu|mafumafu|kikuo|deco\*27|kanaria|pinocchiop|hoshimachi\s*suisei|shigure\s*ui|hololive|nijisanji|utattemita|kokoronashi|shinunoga|unravel|gurenge|idol|sparkle|zenzenzense|nandemonaiya|suzume|kaijuu|odoriko|lemon|kick\s*back|blinding|specialz|ao\s*no\s*sumika|kaikai\s*kitan)\b/i.test(`${origTitle} ${origArtist}`);
+        (!isIndonesian && /\b(yoasobi|ado|vaundy|kenshi\s*yonezu|radwimps|lisa|aimer|eve|yorushika|zutomayo|hige\s*dism|official\s*higedandism|mrs\.\s*green\s*apple|fujii\s*kaze|majiko|yuuri|tuyu|mafumafu|kikuo|deco\*27|kanaria|pinocchiop|hoshimachi\s*suisei|shigure\s*ui|hololive|nijisanji|utattemita|kokoronashi|shinunoga|unravel|gurenge|idol|sparkle|zenzenzense|nandemonaiya|suzume|kaijuu|odoriko|lemon|kick\s*back|blinding|specialz|ao\s*no\s*sumika|kaikai\s*kitan|alice&u)\b/i.test(`${origTitle} ${origArtist}`));
 
     if (isIndonesian && !hasJpText && !/\b(utattemita|anime|jpop|j-pop|vocaloid)\b/i.test(origTitle)) {
         likelyJapanese = false;
@@ -296,6 +300,7 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         isCover,
         isSpedUp,
         isSlowed,
+        hasJpText,
         isIndonesian,
         isEnglishVersion,
         isIndonesianVersion,
@@ -595,7 +600,7 @@ function attachTranslationLines(baseLines, transLines) {
 
 const TAGALOG_MARKERS = /\b(mga|nang|hindi|bakit|'di\s+ba|naman|lahat|humingang|pumikit|namamalikmata|nababahala|binaon|tinakpan|andito|intindihin)\b/i;
 
-const INDONESIAN_ARTIST_REGEX = /\b(vierra|vierratale|noah|peterpan|sheila\s*on\s*7|dewa\s*19|dewa|padi|gigi|ungu|kotak|d['’]?masiv|geisha|armada|wali|kangen\s*band|tulus|mahalini|tiara\s*andini|lyodra|ziva\s*magnolya|fiersa\s*besari|hindia|\.?feast|judika|afgan|rossa|glenn\s*fredly|chrisye|ebiet\s*g\s*ade|ari\s*lasso|slank|iwan\s*fals|jkt48|kerispatih|samsons|letto|raisa|isyana|bcl|bunga\s*citra\s*lestari|nidji|maliq|yovie|kahitna|sal\s*priadi|bernadya|nadin\s*amizah|last\s*child|virgoun|for\s*revenge|radja|st12|setia\s*band|repvblik|payung\s*teduh|fourtwnty|hivi!?|the\s*changcuters|naif|ada\s*band|kerispatih|seventeen|andra\s*(?:and|&)\s*the\s*backbone|ran|iwa\s*k|project\s*pop|barasuara|efek\s*rumah\s*kaca|danilla|pamungkas|ardhito|rendy\s*pandugo|trio\s*lestari|ten2five|mocca|white\s*shoes|alenka|inventra|digikagi|kobo|kanaeru|moona|hoshinova|ayunda|risu|airani|iofi|kureiji|ollie|anya|melfissa|pavolia|reine|vestia|zeta|kaela|kovalskia|mythia|batford|vtuberid|vtuber\s*id)\b/i;
+const INDONESIAN_ARTIST_REGEX = /\b(vierra|vierratale|noah|peterpan|sheila\s*on\s*7|dewa\s*19|dewa|padi|gigi|ungu|kotak|d['’]?masiv|geisha|armada|wali|kangen\s*band|tulus|mahalini|tiara\s*andini|lyodra|ziva\s*magnolya|fiersa\s*besari|hindia|\.?feast|judika|afgan|rossa|glenn\s*fredly|chrisye|ebiet\s*g\s*ade|ari\s*lasso|slank|iwan\s*fals|jkt48|kerispatih|samsons|letto|raisa|isyana|bcl|bunga\s*citra\s*lestari|nidji|maliq|yovie|kahitna|sal\s*priadi|bernadya|nadin\s*amizah|last\s*child|virgoun|for\s*revenge|radja|st12|setia\s*band|repvblik|payung\s*teduh|fourtwnty|hivi!?|the\s*changcuters|naif|ada\s*band|kerispatih|seventeen|andra\s*(?:and|&)\s*the\s*backbone|ran|iwa\s*k|project\s*pop|barasuara|efek\s*rumah\s*kaca|danilla|pamungkas|ardhito|rendy\s*pandugo|trio\s*lestari|ten2five|mocca|white\s*shoes|alenka|inventra|digikagi|kobo|kanaeru|airani|iofi|kureiji|ollie|anya|melfissa|pavolia|reine|vestia|zeta|kaela|kovalskia|mythia|batford|vtuberid|vtuber\s*id)\b/i;
 
 const INDONESIAN_DISTINCT_WORDS = new Set([
     'yang', 'dan', 'untuk', 'adalah', 'dengan', 'kamu', 'aku', 'kau', 'dia', 'kita', 'mereka', 'bisa', 'ada', 'tidak', 'tak', 'bukan', 'saat', 'sudah', 'lagi', 'hati', 'cinta',
@@ -605,7 +610,8 @@ const INDONESIAN_DISTINCT_WORDS = new Set([
     'seandainya', 'seperti', 'bila', 'jika', 'walau', 'kenangan', 'lupakan', 'melukai', 'lalui', 'tersisa', 'bayangan', 'selamanya', 'hidupmu', 'diriku', 'hatiku', 'jiwaku', 'cintaku', 'bersama', 'pergi',
     'tiada', 'terindah', 'sempurna', 'berharap', 'berjanji', 'menanti', 'menunggu', 'merindukan', 'mencintai', 'menyayangi', 'merelakan', 'terluka', 'menangis', 'terdiam', 'berlalu', 'tanpamu',
     'bersamamu', 'tetap', 'pernah', 'sudahlah', 'mengapa', 'bagaimana', 'kapan', 'dimana', 'kemana', 'semuanya', 'hanyalah', 'dirimu', 'kepadaku', 'kepadamu', 'terbayang', 'dingin', 'hangat', 'pelukan',
-    'penawan', 'taruhan', 'berani', 'sengaja', 'berbagi', 'sapa', 'peduli', 'cerita', 'janji', 'takdir', 'ketemu', 'bertemu', 'putar', 'kuputar', 'menahan', 'berbeda', 'depan', 'semata', 'manja', 'bercanda', 'pagi', 'senang', 'senangku', 'ciptaan', 'vokal', 'lagu', 'aransemen', 'kuberani'
+    'penawan', 'taruhan', 'berani', 'sengaja', 'berbagi', 'sapa', 'peduli', 'cerita', 'janji', 'takdir', 'ketemu', 'bertemu', 'putar', 'kuputar', 'menahan', 'berbeda', 'depan', 'semata', 'manja', 'bercanda', 'pagi', 'senang', 'senangku', 'ciptaan', 'vokal', 'lagu', 'aransemen', 'kuberani',
+    'di', 'ke', 'dari', 'pada', 'sini', 'situ', 'sana', 'rasanya', 'hampa', 'bahkan', 'terasa', 'menjadi', 'pemberian', 'hadiah', 'hadiahku', 'mengapa'
 ]);
 
 function isIndonesianText(sample) {
