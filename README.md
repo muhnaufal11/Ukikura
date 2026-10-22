@@ -64,12 +64,11 @@ Seluruh pratinjau di bawah ini dirender menggunakan geometri vektor dan tata let
 | Mode Kapsul (`data-s`) | Dimensi (`W x H`) | Radius Bawah (`--r`) | Telinga Konkaf (`--e`) | Fungsi Utama |
 | :--- | :---: | :---: | :---: | :--- |
 | **`pet` (Resting Mascot)** | `176px x 25px` | `13px` | `9px` | Maskot mata hidup dengan pelacakan kursor 60 FPS, 11 emosi, equalizer kiri, dan lencana pesan. |
-| **`idle` (Status Bar)** | `176px x 25px` | `13px` | `9px` | Sampul mini lagu / cincin baterai, judul berjalan atau hitung mundur tugas, dan 5 bar equalizer. |
+| **`idle` (Compact Lyrics Notch)** | `360px x 28px` | `14px` | `10px` | Kapsul ramping menempel di bezel atas layar saat musik diputar, menampilkan ikon nada ♫ di kiri dan baris lirik aktif (atau 'Lyrics not available') di tengah secara otomatis. |
 | **`tucked` (Terlipat)** | `140px x 6px` | `6px` | `6px` | Bilah tipis di tepi atas layar saat pengguna membutuhkan ruang pandang penuh. |
 | **`peek` / `charge` / `bt`** | `340px x 64px` | `20px` | `14px` | Popup ekspansi otomatis saat ada pesan WhatsApp baru, stiker masuk, atau perubahan status baterai. |
 | **`music` / `notif` / `todo` / `cal` / `pomo` / `shelf` / `config`** | `480px x 186px` | `32px` | `22px` | Kapsul utama terbuka dengan bilah status atas, panah navigasi kiri-kanan, dan 7 indikator halaman. |
 | **`lyrics` (Synced Lyrics)** | `520px x 186px` | `32px` | `22px` | Kapsul melebar khusus lirik tersinkronisasi dengan kontrol media di sisi kiri dan lirik bergulir di sisi kanan. |
-| **`karaoke` (Mini Floating Overlay)** | `480px x 54px` | `22px` | `15px` | Kapsul ramping melayang semi-transparan (blur) dengan 2 baris lirik aktif + terjemahan, mini album art, kontrol play/pause, dan tembus klik otomatis. |
 
 ---
 

@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 70,
+  "versionCode": 71,
   "version": "1.0.6",
-  "fixCount": 70,
-  "displayVersion": "1.0.6 (Patch 70 - Isolasi Multi-Monitor: Deteksi Fullscreen Browser Hanya pada Layar Pulau)",
+  "fixCount": 71,
+  "displayVersion": "1.0.6 (Patch 71 - Desain Baru Compact Lyrics Notch & Otomatisasi Synced Lyrics)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 70): 1) Isolasi Layar Multi-Monitor untuk Deteksi Browser Maximized/Fullscreen: Memperbaiki masalah di mana browser yang dibuka fullscreen/maximized di layar kedua (layar sebelah / secondary monitor) secara keliru memicu mode lipat tab pada pulau Ukikura di layar utama. 2) Validasi Monitor Native & Koordinat Layar: Bridge C++ kini mengecek HMONITOR dan bendera MONITORINFOF_PRIMARY secara native serta mengukur dimensi layar monitor aktif, dan Electron main loop memverifikasi bahwa browser berada di display yang sama dengan pulau sebelum mengaktifkan mode penghindaran tab."
+  "changelog": "Ukikura v1.0.6 (Patch 71): 1) Desain Baru Compact Lyrics Notch (Closed State): Notch ramping 360px x 28px dengan squircle concave ears menempel di bezel atas layar, menampilkan ikon nada musik beamed ♫ di sisi kiri dan baris lirik aktif yang sedang berputar (atau 'Lyrics not available') di tengah notch secara otomatis dan presisi. 2) Otomatisasi Synced Lyrics: Halaman musik kini otomatis langsung menampilkan antarmuka Synced Lyrics penuh (520px) saat dibuka tanpa perlu tombol aktivasi manual. 3) Pembersihan Mode Karaoke Manual: Menghilangkan overlay mini karaoke mengambang dan tombol mikrofon agar antarmuka lebih bersih, elegan, dan terintegrasi langsung ke kapsul pulau."
 }

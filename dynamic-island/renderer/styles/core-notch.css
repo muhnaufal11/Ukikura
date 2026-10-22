@@ -156,6 +156,23 @@
         pointer-events: none !important;
     }
 
+    /* Mode Closed Lyrics Notch (Sesuai Desain Ukikura di Gambar: 360px x 28px) */
+    .mn[data-s="idle"] {
+        --w: 360px;
+        --h: 28px;
+        --r: 14px;
+        --e: 10px;
+        cursor: pointer;
+        background: #000;
+        transition:
+            width 0.45s cubic-bezier(0.34, 1.25, 0.45, 1),
+            height 0.42s cubic-bezier(0.34, 1.25, 0.45, 1),
+            border-radius 0.3s ease;
+    }
+    .mn[data-s="idle"]:hover {
+        filter: brightness(1.08);
+    }
+
     /* Mode Peek Popup (Notifikasi WA / HP Masuk) */
     .mn[data-s="peek"] {
         --w: 340px;
@@ -210,21 +227,6 @@
             opacity 0.2s ease;
     }
 
-    /* Mode Mini Floating Karaoke Overlay (480px x 54px) */
-    .mn[data-s="karaoke"] {
-        --w: 480px;
-        --h: 54px;
-        --r: 22px;
-        background: rgba(12, 14, 20, 0.82);
-        backdrop-filter: blur(28px) saturate(180%);
-        -webkit-backdrop-filter: blur(28px) saturate(180%);
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.1);
-        transition:
-            width 0.48s cubic-bezier(0.34, 1.2, 0.45, 1),
-            height 0.48s cubic-bezier(0.34, 1.2, 0.45, 1),
-            border-radius 0.38s ease,
-            opacity 0.2s ease;
-    }
 
     /* Layer di dalam Notch dengan transisi halus bebas glitch */
     .ly {
@@ -272,13 +274,6 @@
         transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1) 0.14s, visibility 0s 0.14s;
     }
 
-    /* Mode Mini Floating Karaoke Overlay: Muncul cepat & tajam */
-    .mn[data-s="karaoke"] .l-karaoke {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1) 0.1s, visibility 0s 0.1s;
-    }
 
     .mn:is([data-s="music"], [data-s="lyrics"], [data-s="notif"], [data-s="todo"], [data-s="cal"], [data-s="pomo"], [data-s="shelf"], [data-s="config"]) :is(.l-hdr, .l-dots, .l-nav) {
         opacity: 1;
@@ -743,7 +738,52 @@
         to { height: 100%; }
     }
 
-    /* Baris Tertutup (Idle Mode) */
+    /* ========================================================
+       MODE CLOSED LYRICS NOTCH (SESUAI GAMBAR DESAIN UKIKURA)
+       - Bezel atas layar menempel mulus dengan squircle concave ears
+       - Ikon beamed musical note di sisi kiri
+       - Teks lirik aktif (atau "Lyrics not available") di tengah
+       ======================================================== */
+    .idle-lyrics-row {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 18px;
+        box-sizing: border-box;
+        overflow: hidden;
+        user-select: none;
+    }
+
+    .idle-note-icon {
+        flex-shrink: 0;
+        color: #ffffff;
+        opacity: 0.95;
+        width: 13px;
+        height: 13px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .idle-lyric-text {
+        flex: 1;
+        text-align: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        letter-spacing: -0.15px;
+        padding: 0 10px;
+        /* Kompensasi offset ikon di kiri agar posisi teks benar-benar berada di titik tengah notch */
+        margin-right: 13px;
+    }
+
+    /* Baris Tertutup Legacy (Idle Mode) */
     .idle-row {
         position: absolute;
         inset: 0;

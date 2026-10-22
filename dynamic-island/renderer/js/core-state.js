@@ -40,7 +40,6 @@ const PAGES = ['music', 'notif', 'todo', 'cal', 'pomo', 'shelf', 'config'];
 const PAGE_TITLES = {
     music: '<span>Now</span><span style="color:#5ec2ff">Playing</span>',
     lyrics: '<span>Synced</span><span style="color:#5ec2ff">Lyrics</span>',
-    karaoke: '<span>Mini</span><span style="color:#5ec2ff">Karaoke</span>',
     notif: '<span>Phone</span><span style="color:#25d366">&amp; WA</span>',
     todo: '<span>LMS</span><span style="color:#38d36f">Tasks</span>',
     cal: '<span>Smart</span><span style="color:#38bdf8">Calendar</span>',
@@ -54,7 +53,7 @@ let lastUpdated = null;
 let urgentThresholdHours = 24;
 var currentFilter = 'active';
 var currentPage = 'todo';
-var lyricsMode = false;
+var lyricsMode = true;
 var closedStyle = 'pet'; // 'pet' | 'idle'
 var isExpanded = false;
 var isPinned = false;
@@ -129,26 +128,16 @@ function escapeHtml(str) {
 }
 
 function getEffectiveState() {
-    if (currentPage === 'karaoke') return 'karaoke';
     if (currentPage === 'music' && lyricsMode) return 'lyrics';
     return currentPage;
 }
 
 function setPage(page) {
-    if (page === 'karaoke') {
-        currentPage = 'karaoke';
-        mnEl.dataset.s = 'karaoke';
-        isExpanded = true;
-        isPinned = true;
-        if (btnPinEl) btnPinEl.classList.add('active');
-        ipcRenderer.send('island-pin', true);
-        if (typeof updateKaraokeOverlay === 'function') {
-            updateKaraokeOverlay();
-        }
-        return;
-    }
     if (!PAGES.includes(page)) return;
     currentPage = page;
+    if (page === 'music') {
+        lyricsMode = true;
+    }
     const eff = getEffectiveState();
     hdrTitleEl.innerHTML = PAGE_TITLES[eff] || PAGE_TITLES.todo;
     if (isExpanded) {
@@ -239,10 +228,14 @@ document.querySelectorAll('[data-mcmd]').forEach(btn => {
 function expandIsland(targetPage) {
     isExpanded = true;
     window.isExpanded = true;
+    ipcRenderer.send('island-idle-music', false);
     if (holderEl) holderEl.classList.add('is-expanded');
     if (targetPage && PAGES.includes(targetPage)) {
         currentPage = targetPage;
         window.currentPage = targetPage;
+        if (targetPage === 'music') {
+            lyricsMode = true;
+        }
     }
     const eff = getEffectiveState();
     mnEl.dataset.s = eff;
@@ -258,7 +251,9 @@ function collapseIsland() {
         clearTimeout(peekTimer);
         peekTimer = null;
     }
-    mnEl.dataset.s = getClosedVisualMode();
+    const mode = getClosedVisualMode();
+    mnEl.dataset.s = mode;
+    ipcRenderer.send('island-idle-music', mode === 'idle');
     if (typeof window.ensureLivingEyesLoop === 'function') {
         window.ensureLivingEyesLoop();
     }
@@ -272,6 +267,7 @@ window.setPage = setPage;
 // Klik pada mode tertutup langsung membuka Dynamic Island
 document.getElementById('l-pet').addEventListener('click', () => {
     if (mediaState.status === 'Playing' && currentPage === 'todo') {
+        lyricsMode = true;
         expandIsland('music');
     } else {
         expandIsland();
@@ -279,7 +275,8 @@ document.getElementById('l-pet').addEventListener('click', () => {
 });
 
 document.getElementById('l-idle').addEventListener('click', () => {
-    expandIsland();
+    lyricsMode = true;
+    expandIsland('music');
 });
 
 document.getElementById('l-peek').addEventListener('click', (e) => {
@@ -402,7 +399,7 @@ ipcRenderer.on('nusa-state', (event, state) => {
                 window.ensureLivingEyesLoop();
             }
         }
-        if ((state.mode === 'passthrough' || state.mode === 'ghost') && !peekTimer) {
+        if (state.mode === 'passthrough' || state.mode === 'ghost') {
             if (holderEl) holderEl.classList.add('ghost-passthrough');
         } else {
             if (holderEl) holderEl.classList.remove('ghost-passthrough');

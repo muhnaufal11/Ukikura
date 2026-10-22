@@ -19,6 +19,7 @@ let tray = null;
 let serverProcess = null;
 let isExpanded = false;
 let isPeekActive = false;
+let isMusicIdleActive = false;
 let peekActiveSince = 0;
 const PEEK_MAX_MS = 9000;
 
@@ -355,10 +356,12 @@ function startNusaHoverLoop() {
             // =====================================================================
             applyGhost(false, false);
 
-            // Kursor berada tepat di atas kapsul pulau (176px x 25px):
-            // IZINKAN KLIK MOUSE agar kapsul pulau BISA DITEKAN untuk masuk island!
-            // Di luar kapsul pulau, seluruh kanvas 100% tembus klik!
-            const onNormalNotch = relDistX <= 88 && relY >= 0 && relY <= 26;
+            // Kursor berada tepat di atas kapsul pulau:
+            // Jika musik sedang diputar (compact lyrics notch: 360px x 28px): relDistX <= 180 && relY >= 0 && relY <= 29
+            // Jika resting mascot normal (176px x 25px): relDistX <= 88 && relY >= 0 && relY <= 26
+            const notchHalfW = isMusicIdleActive ? 180 : 88;
+            const notchMaxH = isMusicIdleActive ? 29 : 26;
+            const onNormalNotch = relDistX <= notchHalfW && relY >= 0 && relY <= notchMaxH;
             applyIgnore(!onNormalNotch, forceIgnore);
         }
     }, 45);
@@ -646,6 +649,9 @@ ipcMain.on('island-peek-active', (event, active) => {
     //  sehingga seluruh kanvas 580x240 terkunci menghalangi tab browser selamanya.)
     isPeekActive = Boolean(active);
     if (isPeekActive) peekActiveSince = Date.now();
+});
+ipcMain.on('island-idle-music', (event, active) => {
+    isMusicIdleActive = Boolean(active);
 });
 ipcMain.on('island-open-phonelink', () => shell.openExternal('ms-phone:'));
 ipcMain.on('island-open-url', (event, targetUrl) => { if (targetUrl && typeof targetUrl === 'string') shell.openExternal(targetUrl); });

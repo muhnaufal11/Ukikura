@@ -32,14 +32,18 @@
             </span>
         </div>
 
-        <!-- 2. MODE CLOSED: RING/ART + LAGU/COUNTDOWN + BARS KHAS NUSA -->
-        <div class="ly l-idle" id="l-idle" title="Sentuh untuk membuka Dynamic Island">
-            <div class="idle-row">
-                <span class="idle-art" id="idle-art"></span>
-                <span class="ring" id="idle-ring"></span>
-                <span class="idle-center" id="idle-center">--:--</span>
-                <span class="bars"><i></i><i></i><i></i><i></i><i></i></span>
+        <!-- 2. MODE CLOSED: COMPACT NOTCH LYRICS (SESUAI GAMBAR) -->
+        <div class="ly l-idle" id="l-idle" title="Klik untuk membuka lirik & pemutar musik">
+            <div class="idle-lyrics-row">
+                <svg class="idle-note-icon" viewBox="0 0 16 16" width="13" height="13" fill="currentColor">
+                    <path d="M6 13c0 1.105-1.12 2-2.5 2S1 14.105 1 13s1.12-2 2.5-2c.352 0 .687.06 1 .17V3.5a.5.5 0 0 1 .379-.485l7-2A.5.5 0 0 1 12.5 1.5v8.67A2.69 2.69 0 0 1 11.5 10c-1.38 0-2.5.895-2.5 2s1.12 2 2.5 2 2.5-.895 2.5-2V2.414l-6 1.714V13c0 .034-.002.067-.005.1l.005-.1z"/>
+                </svg>
+                <span class="idle-lyric-text" id="idle-lyric-text">Lyrics not available</span>
             </div>
+            <!-- Elemen kompatibilitas mundur jika dibutuhkan skrip pendukung -->
+            <span id="idle-center" style="display:none"></span>
+            <span id="idle-art" style="display:none"></span>
+            <span id="idle-ring" style="display:none"></span>
         </div>
 
         <!-- 3. MODE PEEK POPUP: SAAT ADA NOTIFIKASI WA / HP BARU MASUK -->
@@ -100,28 +104,6 @@
             </span>
         </div>
 
-        <!-- 3D. MODE MINI FLOATING KARAOKE OVERLAY KHAS UKIKURA (Tinggi ~54px) -->
-        <div class="ly l-karaoke" id="l-karaoke" title="Klik ganda untuk membuka lirik penuh, drag untuk geser">
-            <span class="art-mini" id="karaoke-art" style="left:10px;top:10px;width:34px;height:34px"></span>
-            <button class="ctl-btn mini" data-mcmd="PLAYPAUSE" id="karaoke-play-btn" style="left:50px;top:15px;width:24px;height:24px" title="Putar / Jeda">
-                <svg class="ctl" id="play-icon-k" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            </button>
-            <div class="karaoke-center" id="karaoke-center-box" style="left:82px;right:92px">
-                <div class="k-line-1" id="karaoke-line-1">Memuat lirik karaoke...</div>
-                <div class="k-line-2" id="karaoke-line-2">...</div>
-            </div>
-            <div class="karaoke-actions">
-                <button class="hdr-icon-btn" id="btn-karaoke-sub" title="Beralih Dual-Sub (Romaji / Terjemahan)">
-                    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-                </button>
-                <button class="hdr-icon-btn" id="btn-karaoke-expand" title="Perluas ke Mode Synced Lyrics Penuh (520px)">
-                    <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-                </button>
-                <button class="hdr-icon-btn" id="btn-karaoke-close" title="Tutup Mode Karaoke">
-                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
-        </div>
 
         <!-- HEADER SAAT TERBUKA -->
         <div class="ly l-hdr">
@@ -247,9 +229,6 @@
             <div class="lyrics-ctl-row">
                 <button class="bub-btn" id="btn-close-lyrics" title="Kembali ke Pemutar Standar">
                     <svg class="bub" viewBox="0 0 18 16"><path d="M4 .8h10a3.2 3.2 0 0 1 3.2 3.2v4.6a3.2 3.2 0 0 1-3.2 3.2H8.4L4.6 15l.5-3.2H4A3.2 3.2 0 0 1 .8 8.6V4A3.2 3.2 0 0 1 4 .8z" fill="#fff"/><circle cx="6.3" cy="5.4" r="1.3" fill="#000"/><circle cx="11.3" cy="5.4" r="1.3" fill="#000"/></svg>
-                </button>
-                <button class="bub-btn" id="btn-open-karaoke" title="Mode Mini Floating Karaoke Overlay (Melayang ramping di atas layar)">
-                    <svg class="bub" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
                 </button>
                 <button class="ctl-btn" data-mcmd="PREV" title="Sebelumnya">
                     <svg class="ctl" viewBox="0 0 24 24"><path d="M11 6 3 12l8 6zM21 6l-8 6 8 6z"/></svg>

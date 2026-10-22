@@ -76,7 +76,16 @@ function renderMediaUI() {
         updateCoverDominantColor(bg);
     }
 
+    if (!isExpanded) {
+        const closedMode = typeof getClosedVisualMode === 'function' ? getClosedVisualMode() : (isPlaying ? 'idle' : 'pet');
+        if (mnEl.dataset.s !== closedMode) {
+            mnEl.dataset.s = closedMode;
+        }
+        ipcRenderer.send('island-idle-music', closedMode === 'idle');
+    }
+
     updateMediaProgressUI();
+    updateIdleLyricDisplay();
 }
 
 let lyricTrackDuration = 0;
@@ -256,14 +265,15 @@ function updateMediaProgressUI() {
 }
 
 function scrollLyricsToActive() {
-    const isLyricsVisible = (isExpanded && (currentPage === 'lyrics' || currentPage === 'music')) || (mnEl && mnEl.dataset.s === 'karaoke');
+    updateIdleLyricDisplay();
+
+    const isLyricsVisible = isExpanded && (currentPage === 'lyrics' || currentPage === 'music');
     if (!isLyricsVisible) {
         return;
     }
 
     const items = lyrListEl.querySelectorAll('li');
     if (!items.length) {
-        if (typeof updateKaraokeOverlay === 'function') updateKaraokeOverlay();
         return;
     }
     const targetIdx = Math.max(0, Math.min(items.length - 1, activeLyricIndex >= 0 ? activeLyricIndex : 0));
@@ -273,7 +283,6 @@ function scrollLyricsToActive() {
         const offset = 62 - activeLi.offsetTop - activeLi.offsetHeight / 2;
         lyrListEl.style.transform = `translateY(${offset}px)`;
     }
-    if (typeof updateKaraokeOverlay === 'function') updateKaraokeOverlay();
 }
 
 // Interaksi badge SYNC: Klik untuk reset 0s, scroll wheel untuk atur offset secara presisi
@@ -342,144 +351,62 @@ if (btnSubToggleEl) {
     });
 }
 
-let karaokeSubMode = localStorage.getItem('ukikura_karaoke_sub_mode') !== 'false';
+// ==================== CLOSED NOTCH LYRICS & IDLE DISPLAY ====================
+function updateIdleLyricDisplay() {
+    const idleTextEl = document.getElementById('idle-lyric-text');
+    if (!idleTextEl) return;
 
-function updateKaraokeOverlay() {
-    const kLine1 = document.getElementById('karaoke-line-1');
-    const kLine2 = document.getElementById('karaoke-line-2');
-    if (!kLine1 || !kLine2) return;
+    if (!mediaState.active || mediaState.status !== 'Playing') {
+        if (idleTextEl.textContent !== 'Lyrics not available') {
+            idleTextEl.textContent = 'Lyrics not available';
+        }
+        return;
+    }
 
     if (!syncedLyrics || !syncedLyrics.length) {
-        kLine1.textContent = mediaState.title || 'Ukikura Karaoke';
-        kLine2.textContent = mediaState.artist || 'Memuat lirik karaoke...';
+        if (idleTextEl.textContent !== 'Lyrics not available') {
+            idleTextEl.textContent = 'Lyrics not available';
+        }
         return;
     }
 
     const idx = Math.max(0, Math.min(syncedLyrics.length - 1, activeLyricIndex >= 0 ? activeLyricIndex : 0));
     const curLine = syncedLyrics[idx];
-    const nextLine = syncedLyrics[idx + 1];
-
-    let curMain = '';
-    let curSub = '';
-    if (curLine) {
-        const rawLine = curLine.rawText || curLine.text || '';
-        const hasJpVocal = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(rawLine) || Boolean(curLine.roma && curLine.jp);
-        const hasJpSub = Boolean(curLine.jpText && /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(curLine.jpText));
-
-        if (hasJpVocal && curLine.romaText) {
-            // Lagu vokal Jepang: Romaji di baris utama!
-            curMain = curLine.romaText;
-            const jp = curLine.jp || curLine.rawText || '';
-            const t = curLine.transText || '';
-            curSub = (jp && t) ? `${jp} · ${t}` : (jp || t || '');
-        } else if (hasJpSub) {
-            // Lagu multilingual (seperti ALiCE&u): Vokal di baris utama, Romaji/Kanji + Sub Indo di baris kedua
-            curMain = rawLine;
-            const r = curLine.romaText || '';
-            const jp = curLine.jpText || '';
-            const t = curLine.transText || '';
-            const combinedSub = (r && jp && r.toLowerCase() !== rawLine.toLowerCase()) ? `${r} (${jp})` : (jp || r);
-            curSub = (combinedSub && t) ? `${combinedSub} · ${t}` : (combinedSub || t || '');
-        } else if (curLine.rawText && curLine.romaText && curLine.romaText.toLowerCase() !== curLine.rawText.toLowerCase()) {
-            curMain = curLine.rawText;
-            const r = curLine.romaText;
-            const t = curLine.transText;
-            curSub = (r && t) ? `${r} · ${t}` : (r || t || '');
-        } else if (curLine.text && curLine.text.includes(' · ')) {
-            const parts = curLine.text.split(' · ');
-            curMain = parts[0].trim();
-            const r = parts.slice(1).join(' · ').trim();
-            const t = curLine.transText;
-            curSub = (r && t && r.toLowerCase() !== t.toLowerCase()) ? `${r} · ${t}` : (t || r || '');
-        } else {
-            curMain = curLine.rawText || curLine.text || '';
-            const r = (curLine.romaText && curLine.romaText.toLowerCase() !== curMain.toLowerCase()) ? curLine.romaText : '';
-            const t = curLine.transText;
-            curSub = (r && t) ? `${r} · ${t}` : (t || r || '');
+    if (!curLine) {
+        if (idleTextEl.textContent !== 'Lyrics not available') {
+            idleTextEl.textContent = 'Lyrics not available';
         }
-
-        if (curSub && /[\u4e00-\u9fa5]/.test(curSub)) {
-            const titleArtist = typeof mediaState !== 'undefined' ? `${mediaState.title || ''} ${mediaState.artist || ''}` : '';
-            if (!/[\u4e00-\u9fa5]/.test(titleArtist)) {
-                curSub = curLine.romaText || '';
-            }
-        }
+        return;
     }
 
-    if (karaokeSubMode && curSub) {
-        kLine1.textContent = curMain || '...';
-        kLine2.textContent = curSub;
+    const rawLine = curLine.rawText || curLine.text || '';
+    const hasJpVocal = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(rawLine) || Boolean(curLine.roma && curLine.jp);
+
+    let displayLyric = '';
+    if (hasJpVocal && curLine.romaText) {
+        // Aturan Baku Lirik: Tampilkan Romaji agar pengguna bisa langsung membaca/menyanyi
+        displayLyric = curLine.romaText.trim();
+    } else if (curLine.romaText && curLine.romaText.trim()) {
+        displayLyric = curLine.romaText.trim();
+    } else if (rawLine && rawLine.trim()) {
+        displayLyric = rawLine.trim();
     } else {
-        kLine1.textContent = curMain || '...';
-        if (nextLine) {
-            let nextText = nextLine.rawText || nextLine.text || '';
-            if (nextText.includes(' · ')) nextText = nextText.split(' · ').slice(1).join(' · ');
-            kLine2.textContent = nextText;
-        } else {
-            kLine2.textContent = '...';
-        }
+        displayLyric = curLine.text ? curLine.text.trim() : '';
     }
 
-    const coverSrc = lyricCoverUrl || (mediaState && mediaState.thumb ? `data:image/jpeg;base64,${mediaState.thumb}` : '');
-    if (coverSrc) {
-        setMediaDom('karaoke-art', 'bg', `url("${coverSrc.replace(/"/g, '\\"')}")`);
+    if (!displayLyric || displayLyric === '...' || displayLyric === '♪' || displayLyric === '♫') {
+        displayLyric = mediaState.title || 'Lyrics not available';
     }
 
-    setMediaDom('play-icon-k', 'innerHTML', (mediaState.status === 'Playing') ? PAUSE_SVG_PATH : PLAY_SVG_PATH);
+    if (idleTextEl.textContent !== displayLyric) {
+        idleTextEl.textContent = displayLyric;
+        idleTextEl.title = displayLyric;
+    }
 }
 
-const btnOpenKaraoke = document.getElementById('btn-open-karaoke');
-if (btnOpenKaraoke) {
-    btnOpenKaraoke.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setPage('karaoke');
-    });
-}
-
-const btnKaraokeExpand = document.getElementById('btn-karaoke-expand');
-if (btnKaraokeExpand) {
-    btnKaraokeExpand.addEventListener('click', (e) => {
-        e.stopPropagation();
-        lyricsMode = true;
-        setPage('music');
-        mnEl.dataset.s = 'lyrics';
-    });
-}
-
-const btnKaraokeClose = document.getElementById('btn-karaoke-close');
-if (btnKaraokeClose) {
-    btnKaraokeClose.addEventListener('click', (e) => {
-        e.stopPropagation();
-        isPinned = false;
-        if (btnPinEl) btnPinEl.classList.remove('active');
-        ipcRenderer.send('island-pin', false);
-        lyricsMode = false;
-        currentPage = 'music';
-        isExpanded = false;
-        mnEl.dataset.s = getClosedVisualMode();
-    });
-}
-
-const btnKaraokeSub = document.getElementById('btn-karaoke-sub');
-if (btnKaraokeSub) {
-    btnKaraokeSub.classList.toggle('active', karaokeSubMode);
-    btnKaraokeSub.addEventListener('click', (e) => {
-        e.stopPropagation();
-        karaokeSubMode = !karaokeSubMode;
-        try { localStorage.setItem('ukikura_karaoke_sub_mode', String(karaokeSubMode)); } catch (_) {}
-        btnKaraokeSub.classList.toggle('active', karaokeSubMode);
-        updateKaraokeOverlay();
-    });
-}
-
-const lKaraokeEl = document.getElementById('l-karaoke');
-if (lKaraokeEl) {
-    lKaraokeEl.addEventListener('dblclick', (e) => {
-        e.stopPropagation();
-        lyricsMode = true;
-        setPage('music');
-        mnEl.dataset.s = 'lyrics';
-    });
+function updateKaraokeOverlay() {
+    // Deprecated: digantikan oleh mode compact lyrics notch otomatis
+    updateIdleLyricDisplay();
 }
 
 let lastProgressTick = 0;
@@ -494,7 +421,7 @@ function ensureMediaProgressLoop() {
             return;
         }
         const now = performance.now();
-        const isInteractive = isExpanded || lyricsMode || (mnEl && mnEl.dataset.s === 'karaoke');
+        const isInteractive = isExpanded || lyricsMode || (mnEl && mnEl.dataset.s === 'idle');
         const delay = isInteractive ? 50 : 250;
         if (now - lastProgressTick < delay) return;
         lastProgressTick = now;
@@ -568,13 +495,16 @@ ipcRenderer.on('media-update', (event, msg) => {
     // Jika musik baru mulai berputar, otomatis tampilkan halaman musik / status bar musik
     if (!wasPlaying && isNowPlaying) {
         currentPage = 'music';
+        lyricsMode = true;
         if (!isExpanded && mnEl.dataset.s !== 'tucked' && !peekTimer) {
             mnEl.dataset.s = 'idle';
+            ipcRenderer.send('island-idle-music', true);
         } else if (isExpanded) {
             setPage('music');
         }
     } else if (wasPlaying && !isNowPlaying && !isExpanded && mnEl.dataset.s === 'idle' && closedStyle === 'pet') {
         mnEl.dataset.s = 'pet';
+        ipcRenderer.send('island-idle-music', false);
     }
 
     renderMediaUI();
@@ -603,9 +533,11 @@ ipcRenderer.on('lyrics-update', (event, payload) => {
             activeLyricIndex = -1;
             updateMediaProgressUI();
         }
+        updateIdleLyricDisplay();
     } else {
         syncedLyrics = [];
         lyricTrackDuration = 0;
+        updateIdleLyricDisplay();
         const noLyrArtist = mediaState.artist || (mediaState.app ? `Aplikasi: ${cleanAppName(mediaState.app)}` : 'Live Audio Stream');
         lyrListEl.innerHTML = `
             <li class="on">
