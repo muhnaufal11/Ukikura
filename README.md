@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch70-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch72-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -123,7 +123,11 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
   - **Baris 2 (`.lyr-sub`)**: Aksara asli Jepang (**Kanji / Katakana / Hiragana**) + transliterasi Romaji alami beraksen lembut.
   - **Baris 3 (`.lyr-trans`)**: **Terjemahan Bahasa Indonesia (Sub Indo)** resmi dari TimedText YouTube maupun database terjemahan berirama emas lembut (*italic*).
   - Dilengkapi tombol beralih cepat `[SUB: ON]` / `[SUB: OFF]` di bilah kontrol musik.
-- **Mini Floating Karaoke Overlay (`480px x 54px`)**: Mode pin ramping mengambang bebas di atas layar dengan latar belakang blur semi-transparan (`backdrop-filter: blur(28px)`), menampilkan baris vokal/Romaji aktif di atas dan aksara asli beserta terjemahan di bawah, mini artwork, kontrol putar/jeda, serta *click-through passthrough* otomatis saat kursor berada di luar kapsul.
+- **Desain Compact Lyrics Notch & Otomatisasi Synced Lyrics (Patch 71)**: Notch ramping 360px x 28px dengan squircle concave ears menempel di bezel atas layar, menampilkan ikon nada musik beamed ♫ di sisi kiri dan baris lirik aktif yang sedang berputar (atau *Lyrics not available*) di tengah notch secara presisi. Halaman musik kini otomatis langsung menampilkan antarmuka Synced Lyrics penuh (520px) saat dibuka tanpa perlu tombol aktivasi manual.
+- **2-Pass Forced Alignment & Dynamic Drift Tracking (Patch 72)**:
+  - **Pemisahan 2-Pass (Lead vs Ad-Lib)**: Mengisolasi baris vokal utama (`Pass 1`) dan baris ad-libs/backing choir (`Pass 2`), mencegah ad-libs dalam tanda kurung membajak token vokal utama pada lagu cover di mana backing vocals dihilangkan oleh penyanyi.
+  - **Dynamic Running Drift Tracking**: Menggantikan perbandingan waktu statis dengan pelacakan pergeseran dinamis (`runningDrift = tokTime - canonicalTime`) yang otomatis menyesuaikan ekspektasi waktu bait berikutnya saat aransemen cover memangkas jeda intro atau solo instrumental, menjamin lirik tetap tersinkronisasi 100% dari awal hingga akhir lagu.
+  - **Suffix Matching & Prefix Dropping Fallback**: Mendukung pencocokan akhiran kata dan mengatasi pelafalan vokal cover yang menyingkat awalan frasa (misal *"engkau"* alih-alih *"kuingin"*) tanpa penalti skor kecocokan.
 - **Audio-to-Text Forced Alignment untuk Lagu Cover, Remix, & Koplo**: Mengambil lirik versi kanonikal bersih dari database (NetEase, LRCLIB, KuGou) tanpa penalti kemiripan (*similarity penalty*), lalu menyinkronkan ketukan teks resmi tersebut menggunakan algoritma *Needleman-Wunsch Dynamic Programming* dan regresi *RANSAC* langsung ke aliran audio vokal cover/remix yang sedang berputar.
 - **Ekstraksi Subtitle Asli YouTube (`.srv3` TimedText) & Anti-Pemotongan Frasa**: Mengambil trek *Manual CC* resmi (selalu diprioritaskan di atas Auto-ASR) maupun *Auto-Generated ASR* langsung dari video YouTube, dengan proteksi otomatis terhadap pemotongan kata sambung/preposisi menggantung (`dan`, `yang`, `untuk`, dll.).
 - **Penyaringan Subtitle Palsu & Komentar Vlog YouTube CC (Anti-Bogus Commentary Filter)**: Sistem deteksi cerdas berbasis *bigram n-gram similarity* terhadap database lirik kanonikal serta pemfilteran kata kunci obrolan/vlog kreator (`撮影`, `横須賀`, `思い出スポット`, `うみかぜ公園`, `スケボー`, `古着屋`, `カワイイネェ`, `だよーん`, `お待たせしました`, `担当しますよ`, dll.). Mencegah penyerapan teks diari/komentar sutradara sebagai lirik lagu, dan menjamin kepatuhan Rule 3 agar lagu Cover/Remix/Koplo selalu menampilkan lirik kanonikal bersih yang sinkron dengan ketukan vokal penyanyi.

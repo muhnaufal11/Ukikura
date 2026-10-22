@@ -1,14 +1,14 @@
 ; ==============================================================================
 ; UKIKURA (浮倉) — INNO SETUP 6 DISTRIBUTION SCRIPT (CLOUD LIGHTWEIGHT INSTALLER)
 ; Uki (Terapung / Floating Island) + Kura (Gudang Penyimpanan Data & Tugas)
-; Versi: 1.0.6 (Kode Versi: 57 - Zero-Latency Play/Pause, Precision Sync Lead & 100% 3-Tier Multilingual Display)
+; Versi: 1.0.6 (Kode Versi: 72 - 2-Pass Forced Alignment & Dynamic Drift Compensation)
 ; License: GNU General Public License v3.0 (GPLv3)
 ; ==============================================================================
 
 #define MyAppName "Ukikura"
 #define MyAppFullTitle "Ukikura (浮倉) — Floating Island & Task Vault"
 #define MyAppVersion "1.0.6"
-#define MyAppVersionCode "71"
+#define MyAppVersionCode "72"
 #define MyAppPublisher "Nauflix (muhnaufal11)"
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
 #define MyAppExeName "Ukikura.exe"

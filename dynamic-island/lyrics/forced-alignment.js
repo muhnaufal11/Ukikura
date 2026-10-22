@@ -5,7 +5,9 @@ const { katakanaToHiragana, normalizePhoneticLatin } = require("./text-romaji");
 
 function extractMatchFeatures(textStr) {
     const raw = String(textStr || '').trim();
-    const normLatin = normalizePhoneticLatin(raw);
+    const isAdLib = /^\(.*\)$/.test(raw) || /^\[.*\]$/.test(raw);
+    const cleanText = raw.replace(/[()[\]]/g, '');
+    const normLatin = normalizePhoneticLatin(cleanText);
     const words = normLatin.split(/\s+/).filter(w => w.length >= 2);
     const hira = katakanaToHiragana(raw).replace(/[^\u3040-\u309f\u3400-\u4dbf\u4e00-\u9fff]/g, '');
     const cjkChars = [...hira];
@@ -15,6 +17,7 @@ function extractMatchFeatures(textStr) {
     }
     return {
         raw,
+        isAdLib,
         normLatin,
         words,
         cjkChars,
@@ -27,6 +30,7 @@ function tokenSimilarity(wordA, wordB) {
     if (wordA === wordB) return 1.0;
     if (wordA.length >= 4 && wordB.length >= 4) {
         if (wordA.startsWith(wordB) || wordB.startsWith(wordA)) return 0.85;
+        if (wordA.endsWith(wordB) || wordB.endsWith(wordA)) return 0.85;
         if (wordA.includes(wordB) || wordB.includes(wordA)) return 0.72;
     }
     // Levenshtein DP untuk akurasi kata yang tergabung / salah eja tipis di ASR (misal "kucoba" vs "kuoba")
@@ -82,10 +86,12 @@ function forceAlignLyricsToAudioStream(canonicalLines, ytCaptionData, hasStudioL
         const words = f2 && f2.words.length > f1.words.length ? [...new Set([...f1.words, ...f2.words])] : f1.words;
         const firstWord = f1.words[0] || (f2 && f2.words[0]) || '';
         const joinedFirstTwo = words.length >= 2 ? `${words[0]}${words[1]}` : '';
+        const isAdLib = Boolean(f1.isAdLib || /^\(.*\)$/.test(primaryRaw.trim()) || /^\[.*\]$/.test(primaryRaw.trim()));
         return {
             words,
             firstWord,
             joinedFirstTwo,
+            isAdLib,
             cjkChars: f1.cjkChars,
             cjkBigrams: f1.cjkBigrams,
             firstCjk: f1.cjkChars.slice(0, 2).join('')
@@ -94,10 +100,15 @@ function forceAlignLyricsToAudioStream(canonicalLines, ytCaptionData, hasStudioL
 
     // Temukan kandidat anchor akustik untuk setiap baris lirik i pada indeks token k
     const anchors = new Array(N).fill(null);
+
+    // PASS 1: Anchor baris vokal utama (lead vocals) terlebih dahulu dengan dynamic running drift
     let minTokenSearchIdx = 0;
+    let runningDrift = 0;
+    let lastAnchorIdx = -1;
 
     for (let i = 0; i < N; i++) {
         const lf = lineFeatures[i];
+        if (lf.isAdLib) continue; // Tunda ad-libs / backing vocal di Pass 1 agar tidak membajak vokal utama
         const isCjkLine = lf.cjkChars.length >= 2;
         if (!isCjkLine && lf.words.length === 0) continue;
 
@@ -108,17 +119,15 @@ function forceAlignLyricsToAudioStream(canonicalLines, ytCaptionData, hasStudioL
         let bestK = -1;
         let bestScore = 0;
 
-        const expectedTime = hasStudioLrc ? canonicalLines[i].time : ((i / Math.max(1, N)) * (mediaDur || 200));
-        const prevAnchorTime = i > 0 ? findLastAnchorTime(anchors, i - 1) : -1;
-        const maxIntroShift = (hasStudioLrc && mediaDur > 30 && dbDur > 30)
-            ? Math.max(5, Math.min(75, (mediaDur - dbDur) + 6))
-            : 75;
+        const expectedTime = hasStudioLrc ? (canonicalLines[i].time + runningDrift) : ((i / Math.max(1, N)) * (mediaDur || 200));
+        const prevAnchorTime = lastAnchorIdx >= 0 ? anchors[lastAnchorIdx].time : -1;
+        const minGap = Math.max(1.0, Math.min(3.5, (lf.words.length || 3) * 0.35));
 
         for (let k = minTokenSearchIdx; k < M; k++) {
             const tokTime = tokens[k].time;
-            if (prevAnchorTime >= 0 && tokTime < prevAnchorTime + 0.25) continue;
-            // Batasi offset intro MV sesuai selisih durasi video vs durasi studio agar Auto-ASR tidak melompat ke reff akhir
-            if (hasStudioLrc && (tokTime - expectedTime < -12 || tokTime - expectedTime > maxIntroShift)) continue;
+            if (prevAnchorTime >= 0 && tokTime < prevAnchorTime + minGap) continue;
+            // Toleransi drift dinamis hingga 35s agar cover/remix dengan tempo berbeda tetap terlacak sempurna
+            if (hasStudioLrc && Math.abs(tokTime - expectedTime) > 35) continue;
 
             let matchScore = 0;
 
@@ -146,12 +155,13 @@ function forceAlignLyricsToAudioStream(canonicalLines, ytCaptionData, hasStudioL
                 // Pencocokan kata & fonetik untuk lagu Indonesia / Inggris / Romaji
                 const directFirstSim = tokenSimilarity(lf.firstWord, tokens[k].norm);
                 const mergedFirstSim = lf.joinedFirstTwo ? tokenSimilarity(lf.joinedFirstTwo, tokens[k].norm) : 0;
-                const firstSim = Math.max(directFirstSim, mergedFirstSim);
+                let leadSim = Math.max(directFirstSim, mergedFirstSim);
 
-                if (firstSim < 0.6 && lf.words.length >= 2) {
-                    // Izinkan kata ke-2 jika kata ke-1 terlewat di ASR
+                if (leadSim < 0.6 && lf.words.length >= 2) {
+                    // Izinkan kata ke-2 jika kata ke-1 (misal awalan "ku-", "ter-", "di-") dilewati penyanyi
                     const secondSim = tokenSimilarity(lf.words[1], tokens[k].norm);
                     if (secondSim < 0.72) continue;
+                    leadSim = secondSim * 0.88;
                 }
 
                 let wordHits = 0;
@@ -169,13 +179,13 @@ function forceAlignLyricsToAudioStream(canonicalLines, ytCaptionData, hasStudioL
                     wordHits += bestW;
                 }
                 const wordRatio = wordHits / lf.words.length;
-                matchScore = wordRatio * 0.72 + (firstSim * 0.35);
+                matchScore = wordRatio * 0.72 + (leadSim * 0.35);
             }
 
-            // Kedekatan waktu dengan ekspektasi LRC (sebagai tie-breaker untuk lirik reff yang berulang)
+            // Kedekatan waktu relatif terhadap expectedTime yang sudah terkompensasi runningDrift
             if (hasStudioLrc) {
                 const timeDiff = Math.abs(tokTime - expectedTime);
-                const proximityBonus = Math.max(0, 0.16 - (timeDiff / 220));
+                const proximityBonus = Math.max(0, 0.20 - (timeDiff / 80));
                 matchScore += proximityBonus;
             }
 
@@ -192,10 +202,71 @@ function forceAlignLyricsToAudioStream(canonicalLines, ytCaptionData, hasStudioL
                 time: tokens[bestK].time,
                 score: bestScore
             };
-            // Hanya majukan minTokenSearchIdx jika tidak melompat terlalu jauh dari ekspektasi agar paruh akhir lagu tidak terdorong delay
-            if (!hasStudioLrc || (tokens[bestK].time - expectedTime) <= 22) {
-                minTokenSearchIdx = bestK + 1;
+            lastAnchorIdx = i;
+            if (hasStudioLrc) {
+                runningDrift = tokens[bestK].time - canonicalLines[i].time;
             }
+            minTokenSearchIdx = bestK + 1;
+        }
+    }
+
+    // PASS 2: Anchor baris ad-lib / backing vocal strictly di antara anchor lead tetangganya
+    for (let i = 0; i < N; i++) {
+        const lf = lineFeatures[i];
+        if (!lf.isAdLib || anchors[i]) continue;
+        const isCjkLine = lf.cjkChars.length >= 2;
+        if (!isCjkLine && lf.words.length === 0) continue;
+
+        const pIdx = findPrevAnchorIdx(anchors, i - 1);
+        const nIdx = findNextAnchorIdx(anchors, i + 1);
+        const pTime = pIdx >= 0 ? anchors[pIdx].time + 1.0 : 0;
+        const nTime = nIdx >= 0 ? anchors[nIdx].time - 1.0 : (mediaDur || 9999);
+        if (nTime <= pTime) continue;
+
+        const startK = pIdx >= 0 ? anchors[pIdx].tokenIdx + 1 : 0;
+        const endK = nIdx >= 0 ? anchors[nIdx].tokenIdx : M;
+
+        let bestK = -1;
+        let bestScore = 0;
+        const winSize = Math.max(2, Math.min(8, lf.words.length + 1));
+
+        for (let k = startK; k < endK; k++) {
+            const tokTime = tokens[k].time;
+            if (tokTime < pTime || tokTime > nTime) continue;
+
+            let wordHits = 0;
+            const checkLen = Math.min(endK, k + winSize);
+            const firstSim = tokenSimilarity(lf.words[0], tokens[k].norm);
+            let leadSim = firstSim;
+            if (firstSim < 0.6 && lf.words.length >= 2) {
+                const secondSim = tokenSimilarity(lf.words[1], tokens[k].norm);
+                if (secondSim >= 0.72) leadSim = secondSim * 0.88;
+            }
+
+            for (let wi = 0; wi < lf.words.length; wi++) {
+                const lw = lf.words[wi];
+                let bestW = 0;
+                for (let w = k; w < checkLen; w++) {
+                    const s = tokenSimilarity(lw, tokens[w].norm);
+                    if (s > bestW) bestW = s;
+                }
+                wordHits += bestW;
+            }
+            const wordRatio = wordHits / lf.words.length;
+            const matchScore = wordRatio * 0.72 + (leadSim * 0.35);
+
+            if (matchScore > bestScore) {
+                bestScore = matchScore;
+                bestK = k;
+            }
+        }
+
+        if (bestK >= 0 && bestScore >= 0.72) {
+            anchors[i] = {
+                tokenIdx: bestK,
+                time: tokens[bestK].time,
+                score: bestScore
+            };
         }
     }
 
