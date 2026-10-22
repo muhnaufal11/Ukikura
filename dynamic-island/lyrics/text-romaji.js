@@ -37,24 +37,15 @@ const KANA_ROMAJI_DIGRAPHS = {
 };
 
 const KANA_ROMAJI_MONO = {
-    'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
-    'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
-    'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so',
-    'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
-    'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
-    'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
-    'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
-    'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
-    'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
-    'わ': 'wa', 'ゐ': 'i', 'ゑ': 'e', 'を': 'o', 'ん': 'n',
-    'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go',
-    'ざ': 'za', 'じ': 'ji', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo',
-    'だ': 'da', 'ぢ': 'ji', 'づ': 'zu', 'で': 'de', 'ど': 'do',
-    'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo',
-    'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po',
-    'ぁ': 'a', 'ぃ': 'i', 'ぅ': 'u', 'ぇ': 'e', 'ぉ': 'o',
-    'ゃ': 'ya', 'ゅ': 'yu', 'ょ': 'yo', 'ゎ': 'wa', 'ゔ': 'vu',
-    'ー': ''
+    'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o', 'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
+    'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so', 'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
+    'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no', 'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
+    'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo', 'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
+    'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro', 'わ': 'wa', 'ゐ': 'i', 'ゑ': 'e', 'を': 'o', 'ん': 'n',
+    'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go', 'ざ': 'za', 'じ': 'ji', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo',
+    'だ': 'da', 'ぢ': 'ji', 'づ': 'zu', 'で': 'de', 'ど': 'do', 'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo',
+    'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po', 'ぁ': 'a', 'ぃ': 'i', 'ぅ': 'u', 'ぇ': 'e', 'ぉ': 'o',
+    'ゃ': 'ya', 'ゅ': 'yu', 'ょ': 'yo', 'ゎ': 'wa', 'ゔ': 'vu', 'ー': ''
 };
 
 function kanaToRomaji(input) {
@@ -96,21 +87,10 @@ function normalizePhoneticLatin(str) {
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
-        .replace(/shi/g, 'si')
-        .replace(/chi/g, 'ti')
-        .replace(/tsu/g, 'tu')
-        .replace(/fu/g, 'hu')
-        .replace(/sy/g, 's')
-        .replace(/kh/g, 'k')
-        .replace(/dj/g, 'j')
-        .replace(/tj/g, 'c')
-        .replace(/oe/g, 'u')
-        .replace(/ou/g, 'o')
-        .replace(/uu/g, 'u')
-        .replace(/aa/g, 'a')
-        .replace(/ii/g, 'i')
-        .replace(/ee/g, 'e')
-        .replace(/oo/g, 'o')
+        .replace(/shi/g, 'si').replace(/chi/g, 'ti').replace(/tsu/g, 'tu').replace(/fu/g, 'hu')
+        .replace(/sy/g, 's').replace(/kh/g, 'k').replace(/dj/g, 'j').replace(/tj/g, 'c')
+        .replace(/oe/g, 'u').replace(/ou/g, 'o').replace(/uu/g, 'u').replace(/aa/g, 'a')
+        .replace(/ii/g, 'i').replace(/ee/g, 'e').replace(/oo/g, 'o')
         .replace(/[^a-z0-9\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\s]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
@@ -161,6 +141,9 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         (/\b(cover|covered)\b/i.test(`${origTitle} ${origArtist}`) && /[\uac00-\ud7af]/.test(origTitle));
 
     const isSpanishVersion = /\b(spanish\s*ver(?:sion)?|espa[nñ]ol\s*ver|cover\s*en\s*espa[nñ]ol)\b/i.test(`${origTitle} ${origArtist}`);
+
+    const isSpedUp = /\b(sped\s*up|speed\s*up|spedup|night\s*core|fast\s*ver(?:sion)?)\b/i.test(`${origTitle} ${origArtist}`);
+    const isSlowed = /\b(slowed|slow\s*ver(?:sion)?|daycore)\b/i.test(`${origTitle} ${origArtist}`);
 
     const isCover = isEnglishVersion || isIndonesianVersion || isJapaneseVersion || isKoreanVersion || isSpanishVersion ||
         /\b(cover|covered|utattemita|self\s*cover|acoustic\s*cover|metal\s*cover|rock\s*cover|lofi\s*cover|jazz\s*cover|piano\s*cover|guitar\s*cover|band\s*cover|remix\s*cover|vtuber\s*cover)\b|歌ってみた|うたってみた|翻唱/i.test(`${origTitle} ${origArtist}`);
@@ -288,7 +271,7 @@ function parseTrackMetadata(rawTitle, rawArtist) {
 
     const isIdBranch = /\b(hololive[\s-]*(?:indonesia|id)|holo[\s-]*id|nijisanji[\s-]*id|indonesia|indonesian|indo)\b/i.test(`${origTitle} ${origArtist}`);
     const hasJpText = hasJapaneseChars(origTitle) || hasJapaneseChars(origArtist) || jpQuotes.length > 0;
-    const isIndonesian = Boolean(isIndonesianVersion || isIdBranch || isIndonesianText(cleaned) || isIndonesianText(origTitle));
+    const isIndonesian = Boolean(isIndonesianVersion || isIdBranch || INDONESIAN_ARTIST_REGEX.test(`${origTitle} ${origArtist}`) || isIndonesianText(cleaned) || isIndonesianText(origTitle));
 
     let likelyJapanese =
         hasJpText ||
@@ -309,6 +292,8 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         cleanChannel,
         isLyricChannel,
         isCover,
+        isSpedUp,
+        isSlowed,
         isIndonesian,
         isEnglishVersion,
         isIndonesianVersion,
@@ -602,20 +587,23 @@ function attachTranslationLines(baseLines, transLines) {
 }
 
 const TAGALOG_MARKERS = /\b(mga|nang|hindi|bakit|'di\s+ba|naman|lahat|humingang|pumikit|namamalikmata|nababahala|binaon|tinakpan|andito|intindihin)\b/i;
+
+const INDONESIAN_ARTIST_REGEX = /\b(vierra|vierratale|noah|peterpan|sheila\s*on\s*7|dewa\s*19|dewa|padi|gigi|ungu|kotak|d['’]?masiv|geisha|armada|wali|kangen\s*band|tulus|mahalini|tiara\s*andini|lyodra|ziva\s*magnolya|fiersa\s*besari|hindia|\.?feast|judika|afgan|rossa|glenn\s*fredly|chrisye|ebiet\s*g\s*ade|ari\s*lasso|slank|iwan\s*fals|jkt48|kerispatih|samsons|letto|raisa|isyana|bcl|bunga\s*citra\s*lestari|nidji|maliq|yovie|kahitna|sal\s*priadi|bernadya|nadin\s*amizah|last\s*child|virgoun|for\s*revenge|radja|st12|setia\s*band|repvblik|payung\s*teduh|fourtwnty|hivi!?|the\s*changcuters|naif|ada\s*band|kerispatih|seventeen|andra\s*(?:and|&)\s*the\s*backbone)\b/i;
+
 const INDONESIAN_DISTINCT_WORDS = new Set([
-    'yang', 'dan', 'untuk', 'adalah', 'dengan', 'kamu', 'aku', 'kau', 'dia', 'kita', 'mereka',
-    'bisa', 'ada', 'tidak', 'tak', 'bukan', 'saat', 'sudah', 'lagi', 'hati', 'cinta',
-    'sebelum', 'kuberikan', 'semua', 'hidup', 'masih', 'mata', 'luka', 'rasa', 'ini', 'itu',
-    'lucu', 'juga', 'muka', 'kayak', 'bersalah', 'muncul', 'mana', 'melewatiku', 'tahu', 'tau',
-    'sesungguhnya', 'pikir', 'sendiri', 'jelas', 'cantik', 'lihat', 'liat', 'rindu', 'sayang',
-    'tapi', 'selalu', 'jangan', 'hanya', 'apa', 'kembali', 'mimpi', 'malam', 'indah', 'bintang',
-    'senyum', 'bahagia', 'duka', 'kasih', 'jiwa', 'sepi', 'sunyi', 'usai', 'pulang', 'hilang',
-    'teman', 'kawan', 'sahabat', 'jalan', 'waktu', 'tentang', 'bukan', 'engkau', 'dariku', 'buaya', 'darat'
+    'yang', 'dan', 'untuk', 'adalah', 'dengan', 'kamu', 'aku', 'kau', 'dia', 'kita', 'mereka', 'bisa', 'ada', 'tidak', 'tak', 'bukan', 'saat', 'sudah', 'lagi', 'hati', 'cinta',
+    'sebelum', 'kuberikan', 'semua', 'hidup', 'masih', 'mata', 'luka', 'rasa', 'ini', 'itu', 'lucu', 'juga', 'muka', 'kayak', 'bersalah', 'muncul', 'mana', 'melewatiku', 'tahu', 'tau',
+    'sesungguhnya', 'pikir', 'sendiri', 'jelas', 'cantik', 'lihat', 'liat', 'rindu', 'sayang', 'tapi', 'selalu', 'jangan', 'hanya', 'apa', 'kembali', 'mimpi', 'malam', 'indah', 'bintang',
+    'senyum', 'bahagia', 'duka', 'kasih', 'jiwa', 'sepi', 'sunyi', 'usai', 'pulang', 'hilang', 'teman', 'kawan', 'sahabat', 'jalan', 'waktu', 'tentang', 'bukan', 'engkau', 'dariku', 'buaya', 'darat',
+    'seandainya', 'seperti', 'bila', 'jika', 'walau', 'kenangan', 'lupakan', 'melukai', 'lalui', 'tersisa', 'bayangan', 'selamanya', 'hidupmu', 'diriku', 'hatiku', 'jiwaku', 'cintaku', 'bersama', 'pergi',
+    'tiada', 'terindah', 'sempurna', 'berharap', 'berjanji', 'menanti', 'menunggu', 'merindukan', 'mencintai', 'menyayangi', 'merelakan', 'terluka', 'menangis', 'terdiam', 'berlalu', 'tanpamu',
+    'bersamamu', 'tetap', 'pernah', 'sudahlah', 'mengapa', 'bagaimana', 'kapan', 'dimana', 'kemana', 'semuanya', 'hanyalah', 'dirimu', 'kepadaku', 'kepadamu', 'terbayang', 'dingin', 'hangat', 'pelukan'
 ]);
 
 function isIndonesianText(sample) {
     if (!sample || typeof sample !== 'string') return false;
     if (TAGALOG_MARKERS.test(sample)) return false;
+    if (INDONESIAN_ARTIST_REGEX.test(sample)) return true;
     const words = sample.toLowerCase().split(/[^a-zA-Z\u00C0-\u024F]+/).filter(Boolean);
     const matchedDistinct = new Set();
     for (const w of words) {
@@ -638,16 +626,11 @@ function isMoraSpacedRomaji(str) {
 
 const JP_PARTICLES = new Set(['wa', 'ga', 'o', 'wo', 'ni', 'de', 'to', 'mo', 'no', 'e', 'ka', 'ya', 'sa', 'ne', 'yo']);
 const COMMON_ROMAJI_WORDS = new Set([
-    'moshi', 'mada', 'tokidoki', 'korigori', 'nanoni', 'kimi', 'boku', 'watashi',
-    'anata', 'koko', 'soko', 'doko', 'ima', 'kako', 'mirai', 'zutto', 'motto',
-    'subete', 'hitori', 'futari', 'jibun', 'kokoro', 'namida', 'egao', 'kotoba',
-    'sekai', 'hikari', 'yoru', 'ashita', 'kaze', 'sora', 'yume', 'hitorijime',
-    'sasete', 'tashite', 'aitai', 'tatoeba', 'omoidasu', 'kizanda', 'ushiro',
-    'sugata', 'denpa', 'akai', 'ribon', 'tsutsunde', 'hanbunko', 'kaesu',
-    'ashimoto', 'sarau', 'yunagi', 'higure', 'futatsu', 'chigiru', 'mahou',
-    'sayonara', 'eien', 'koukai', 'shiawase', 'arigatou', 'gomen', 'hontou',
-    'kiseki', 'mainichi', 'kinenbini', 'shite', 'iwaou', 'atarimae', 'zettai',
-    'negai', 'kanau', 'dareka', 'nanika', 'itsu', 'omou', 'tsuyoku', 'yasashiku'
+    'moshi', 'mada', 'tokidoki', 'korigori', 'nanoni', 'kimi', 'boku', 'watashi', 'anata', 'koko', 'soko', 'doko', 'ima', 'kako', 'mirai', 'zutto', 'motto',
+    'subete', 'hitori', 'futari', 'jibun', 'kokoro', 'namida', 'egao', 'kotoba', 'sekai', 'hikari', 'yoru', 'ashita', 'kaze', 'sora', 'yume', 'hitorijime',
+    'sasete', 'tashite', 'aitai', 'tatoeba', 'omoidasu', 'kizanda', 'ushiro', 'sugata', 'denpa', 'akai', 'ribon', 'tsutsunde', 'hanbunko', 'kaesu',
+    'ashimoto', 'sarau', 'yunagi', 'higure', 'futatsu', 'chigiru', 'mahou', 'sayonara', 'eien', 'koukai', 'shiawase', 'arigatou', 'gomen', 'hontou',
+    'kiseki', 'mainichi', 'kinenbini', 'shite', 'iwaou', 'atarimae', 'zettai', 'negai', 'kanau', 'dareka', 'nanika', 'itsu', 'omou', 'tsuyoku', 'yasashiku'
 ]);
 
 function collapseMoraSpacedRomaji(str) {
@@ -697,6 +680,7 @@ module.exports = {
     isUnwantedForeignTranslation,
     computeMetadataSimilarity,
     isIndonesianText,
+    INDONESIAN_ARTIST_REGEX,
     isMoraSpacedRomaji,
     collapseMoraSpacedRomaji
 };

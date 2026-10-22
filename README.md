@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch75-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch76-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -118,6 +118,12 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
 ## Fitur Utama
 
 ### 1. Mesin Lirik Multi-Sumber & Forced Alignment (`dynamic-island/lyrics/`)
+- **Restorasi Bahasa Lirik Utama Indonesia & Sinkronisasi Tempo Sped-Up / Slowed (Patch 76)**:
+  - **Restorasi Bahasa Vokal Asli Lagu Indonesia**: Memperbaiki anomali di mana lagu-lagu pop/rock Indonesia (seperti Vierra, Noah, Sheila On 7, Dewa 19, dll.) secara keliru menampilkan lirik utama berbahasa Inggris karena YouTube TimedText menyediakan track manual CC multi-bahasa. Korpus kosakata bahasa Indonesia dan regex nama musisi tanah air diperluas secara komprehensif sehingga vokal asli Indonesia selalu tampil 100% sebagai lirik utama (`.lyr-main`), dan terjemahan asing dijadikan sub-lirik.
+  - **Sinkronisasi Otomatis Tempo Lagu Sped-Up / Slowed / Nightcore**: Menghadirkan penskalaan tempo adaptif (`timeScale = mediaDur / canonDur`). Jika memutar lagu yang dipercepat atau diperlambat (1.15x, 1.25x, nightcore, sped up, slowed), seluruh timestamp lirik kanonikal diskalakan secara matematis sehingga lirik tersinkronisasi presisi dan tidak pernah drift tertinggal.
+- **Tampilan Penuh Lirik Panjang via Notch Dinamis & Auto-Marquee (Patch 75)**:
+  - **Pelebaran Adaptif (360px - 480px)**: Notch kapsul karaoke kini dapat melebar secara adaptif mengikuti panjang karakter lirik lagu tanpa memotong kata dengan ellipsis.
+  - **Smooth Horizontal Auto-Marquee**: Untuk lirik yang sangat panjang, otomatis diaktifkan scrolling bolak-balik halus (*gliding alternate scroll*) pada lapisan inner konten sehingga seluruh baris lirik dapat dibaca tuntas dari awal hingga akhir.
 - **Hierarki Lirik Multibahasa 3 Tingkat (Romaji, Aksara Asli, & Sub Indo)**:
   - **Baris 1 (`.lyr-main`)**: Alfabet Latin **Romaji** (pada lagu Jepang) atau vokal asli yang dinyanyikan (pada lagu multibahasa seperti *ALiCE&u*).
   - **Baris 2 (`.lyr-sub`)**: Aksara asli Jepang (**Kanji / Katakana / Hiragana**) + transliterasi Romaji alami beraksen lembut.

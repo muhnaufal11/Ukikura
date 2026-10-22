@@ -318,6 +318,16 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     const rejectEnglishManualForForeignSong = Boolean(isForeignOriginal && ytHasEnOnly && bestDb && !ytHasJaOrIdCC);
     const rejectForeignManualForIndonesianSong = Boolean(isIdOriginal && ytCaptions && ytCaptions.lines && ytCaptions.lines.some(l => hasJapaneseChars(l.rawText || l.text)));
 
+    if (isIdOriginal && ytCaptions && Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 4) {
+        const idLinesSample = ytCaptions.indonesianLines.slice(0, 10).map(l => l.text || l.rawText).join(' ');
+        const mainLinesSample = (ytCaptions.lines || []).slice(0, 10).map(l => l.text || l.rawText).join(' ');
+        if (isIndonesianText(idLinesSample) && !isIndonesianText(mainLinesSample)) {
+            const foreignLines = ytCaptions.lines;
+            ytCaptions.lines = ytCaptions.indonesianLines;
+            ytCaptions.indonesianLines = foreignLines;
+        }
+    }
+
     const hasManualCC = Boolean(ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4 && !rejectEnglishManualForForeignSong && !rejectForeignManualForIndonesianSong);
     if (hasManualCC) {
         // Cek apakah ada Japanese Lines dari manual CC (seperti ALiCE&u yang memiliki track JA terpisah):
@@ -510,6 +520,34 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             };
         });
         syncMethod = 'YouTube Captions Stream (.srv3)';
+    }
+
+    // Kompensasi Otomatis Tempo Lagu Sped-Up / Slowed / Nightcore:
+    const isSpedOrSlowed = Boolean(meta && (meta.isSpedUp || meta.isSlowed)) ||
+        /\b(sped\s*up|speed\s*up|spedup|night\s*core|fast\s*ver|slowed|slow\s*ver|daycore)\b/i.test(rawTitle);
+    const canonDur = (ytCaptions && ytCaptions.videoDur) || (bestDb && Number(bestDb.duration)) || (finalLines.length > 0 ? (finalLines[finalLines.length - 1].endTime || (finalLines[finalLines.length - 1].time + 5)) : 0);
+
+    if (isSpedOrSlowed && canonDur > 30 && mediaDur > 30 && finalLines.length > 0) {
+        const speedRatio = mediaDur / canonDur;
+        if (speedRatio >= 0.50 && speedRatio <= 1.80 && Math.abs(speedRatio - 1.0) >= 0.02) {
+            const timeScale = speedRatio;
+            finalLines = finalLines.map(l => ({
+                ...l,
+                time: Math.round(l.time * timeScale * 100) / 100,
+                endTime: l.endTime ? Math.round(l.endTime * timeScale * 100) / 100 : undefined
+            }));
+            if (Array.isArray(ytCaptions?.indonesianLines)) {
+                ytCaptions.indonesianLines = ytCaptions.indonesianLines.map(l => ({
+                    ...l,
+                    time: Math.round(l.time * timeScale * 100) / 100,
+                    endTime: l.endTime ? Math.round(l.endTime * timeScale * 100) / 100 : undefined
+                }));
+            }
+            trackDuration = mediaDur;
+            const multiplier = canonDur / mediaDur;
+            const label = multiplier > 1.0 ? `Sped-Up ${multiplier.toFixed(2)}x` : `Slowed ${multiplier.toFixed(2)}x`;
+            syncMethod = syncMethod ? `${syncMethod} (${label})` : label;
+        }
     }
 
     // 1. Lengkapi Romaji untuk SEMUA lagu Jepang atau bersihkan morfem renggang

@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 75,
+  "versionCode": 76,
   "version": "1.0.6",
-  "fixCount": 75,
-  "displayVersion": "1.0.6 (Patch 75 - Tampilan Penuh Lirik Panjang via Notch Dinamis & Auto-Marquee)",
+  "fixCount": 76,
+  "displayVersion": "1.0.6 (Patch 76 - Restorasi Bahasa Lirik Indonesia & Sinkronisasi Otomatis Tempo Lagu Sped-Up/Slowed)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 75): 1) Tampilan Penuh Lirik Panjang (Adaptasi Dinamis & Auto-Marquee): Notch kapsul karaoke kini dapat melebar secara adaptif (360px - 480px) mengikuti panjang karakter lirik lagu tanpa memotong kata dengan ellipsis. Untuk kalimat yang sangat panjang, otomatis diaktifkan smooth horizontal auto-marquee (gliding alternate scroll) pada lapisan inner konten sehingga seluruh baris lirik dapat dibaca tuntas dari awal hingga akhir. 2) Penyesuaian Hit-Testing Mouse Dinamis: Jembatan Electron main process secara otomatis memperbarui area klik-tembus sesuai lebar dinamis notch saat memutar musik."
+  "changelog": "Ukikura v1.0.6 (Patch 76): 1) Restorasi Bahasa Lirik Utama Lagu Indonesia: Memperbaiki kesalahan pemilihan subtitle bahasa Inggris pada lagu-lagu Indonesia (seperti Vierra, Noah, Sheila On 7, Dewa 19, dll.) dengan memperluas korpus kosakata dan regex pengenal musisi Indonesia sehingga lirik utama selalu menampilkan bahasa vokal asli Indonesia dan terjemahan asing sebagai sub-lirik. 2) Sinkronisasi Otomatis Tempo Lagu Sped-Up / Slowed / Nightcore: Mengimplementasikan dynamic speed scaling proporsional antara durasi pemutaran media dan durasi lagu kanonikal (rasio mediaDur / canonDur) sehingga ketukan lirik lagu yang dipercepat/diperlambat (1.15x, 1.25x, nightcore, slowed) langsung pas dan sinkron sempurna tanpa jeda."
 }

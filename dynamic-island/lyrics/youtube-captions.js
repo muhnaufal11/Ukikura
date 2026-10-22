@@ -443,14 +443,19 @@ function sanitizeBilingualManualLines(rawLines) {
             const isDifferent = curText.toLowerCase() !== nextText.toLowerCase();
 
             if (isDifferent) {
-                // Di subtitle resmi YouTube (TimedText), baris pertama (cur) selalu merupakan lirik/vokal yang dinyanyikan!
-                // Sedangkan baris kedua (next) adalah terjemahan resmi track tersebut!
+                let vocal = curText;
+                let trans = nextText;
+                // Jika nextText adalah Bahasa Indonesia dan curText bukan, maka nextText adalah vokal asli lagu Indonesia!
+                if (isIndonesianText(nextText) && !isIndonesianText(curText)) {
+                    vocal = nextText;
+                    trans = curText;
+                }
                 cleaned.push({
                     time: cur.time,
                     endTime: Math.max(cur.endTime || 0, next.endTime || 0),
-                    text: curText,
-                    rawText: curText,
-                    transText: nextText
+                    text: vocal,
+                    rawText: vocal,
+                    transText: trans
                 });
                 i++; // lewati next karena sudah dipasangkan
                 continue;
@@ -481,14 +486,35 @@ function sanitizeBilingualManualLines(rawLines) {
     const primaryTokens = useAsrPrimary ? parsedAsr.tokens : (isManualCC && parsedManual.tokens.length >= 6 ? parsedManual.tokens : parsedAsr.tokens);
     const asrMergedLines = mergeFragmentedAsrLines(parsedAsr.lines);
     const sanitizedManual = isManualCC ? sanitizeBilingualManualLines(parsedManual.lines) : [];
-    const isForeignManualOnIdSong = Boolean(isIdSong && bestManual && !bestManual.lang.startsWith('id') && parsedId.lines.length >= 4);
-    const languageCode = (bestManual && bestManual.lang) || (bestAsr && bestAsr.lang) || '';
+    const isNaturallyIndonesianInCaptions = Boolean(parsedId.lines.length >= 4 && isIndonesianText(parsedId.lines.slice(0, 5).map(l => l.text).join(' ')));
+    const isForeignManualOnIdSong = Boolean((isIdSong || isNaturallyIndonesianInCaptions) && bestManual && !bestManual.lang.startsWith('id') && parsedId.lines.length >= 4);
+    const languageCode = isForeignManualOnIdSong ? 'id' : ((bestManual && bestManual.lang) || (bestAsr && bestAsr.lang) || '');
     const cleanIdLines = idTrack
         ? (bestManual && idTrack === bestManual.track ? sanitizedManual : (parsedId.lines.length > 0 ? sanitizeBilingualManualLines(parsedId.lines) : []))
         : [];
     const cleanJaLines = jaTrack
         ? (bestManual && jaTrack === bestManual.track ? sanitizedManual : (parsedJa.lines.length > 0 ? sanitizeBilingualManualLines(parsedJa.lines) : []))
         : [];
+
+    if (isForeignManualOnIdSong && sanitizedManual.length > 0 && cleanIdLines.length > 0) {
+        cleanIdLines.forEach(l => {
+            if (!l.transText) {
+                let bestEn = null;
+                let minDiff = 999;
+                for (const enLine of sanitizedManual) {
+                    const diff = Math.abs(enLine.time - l.time);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        bestEn = enLine;
+                    }
+                }
+                if (bestEn && minDiff <= 2.2) {
+                    l.transText = bestEn.rawText || bestEn.text;
+                }
+            }
+        });
+    }
+
     const primaryLines = isForeignManualOnIdSong ? cleanIdLines : (isManualCC ? sanitizedManual : asrMergedLines);
 
     if (primaryTokens.length === 0 && primaryLines.length === 0) return null;
