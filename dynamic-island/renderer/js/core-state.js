@@ -168,6 +168,30 @@ document.querySelectorAll('.dots button').forEach(btn => {
     });
 });
 
+if (hdrTitleEl) {
+    hdrTitleEl.style.cursor = 'pointer';
+    hdrTitleEl.title = 'Klik untuk beralih halaman (Musik, Baterai & Notif, LMS Tasks, Kalender, Pomodoro, Shelf, Pengaturan)';
+    hdrTitleEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const nextIdx = (PAGES.indexOf(currentPage) + 1) % PAGES.length;
+        setPage(PAGES[nextIdx]);
+    });
+}
+
+if (holderEl) {
+    holderEl.addEventListener('wheel', (e) => {
+        if (e.target && e.target.closest('#lyr-box, #todo-list, #notif-list, #cal-grid, #shelf-canvas, #battery-cards-wrap, .vol-track')) {
+            return;
+        }
+        if (Math.abs(e.deltaX) > 25 || (e.shiftKey && Math.abs(e.deltaY) > 25)) {
+            e.preventDefault();
+            const dir = (e.deltaX > 0 || e.deltaY > 0) ? 1 : -1;
+            const nextIdx = (PAGES.indexOf(currentPage) + dir + PAGES.length) % PAGES.length;
+            setPage(PAGES[nextIdx]);
+        }
+    }, { passive: false });
+}
+
 // Toggle Lirik Melebar (520px)
 document.getElementById('btn-open-lyrics').addEventListener('click', (e) => {
     e.stopPropagation();

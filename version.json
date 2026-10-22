@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 72,
+  "versionCode": 73,
   "version": "1.0.6",
-  "fixCount": 72,
-  "displayVersion": "1.0.6 (Patch 72 - 2-Pass Forced Alignment & Dynamic Drift Compensation)",
+  "fixCount": 73,
+  "displayVersion": "1.0.6 (Patch 73 - Isolasi Bahasa Asli & Navigasi Terpadu Seluruh Fitur)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 72): 1) 2-Pass Audio-to-Text Forced Alignment: Memisahkan anchoring vokal utama (Pass 1) dan ad-libs / backing vocals (Pass 2) sehingga baris ad-lib dalam kurung tidak dapat membajak token vokal utama di lagu cover. 2) Dynamic Running Drift Tracking: Menggantikan window perbandingan waktu statis dengan running drift adaptif sehingga aransemen cover yang memangkas interlude/intro tetap sinkron 100% sampai akhir lagu. 3) Suffix Matching & Prefix Dropping Fallback: Mengenali akhiran kata dan mengatasi vokal cover yang menyingkat awalan frasa tanpa penalti skor."
+  "changelog": "Ukikura v1.0.6 (Patch 73): 1) Isolasi Bahasa Asli (Lirik Indonesia vs Terjemahan Asing): Memperbaiki kendala di mana subtitle terjemahan Jepang resmi (Manual CC YouTube) pada lagu Indonesia (seperti Airani Iofifteen - Lucu Juga) secara keliru diidentifikasi sebagai lirik utama berbahasa Jepang dan ditransliterasi menjadi Romaji. Sistem kini memprioritaskan vokal asli Indonesia dan database kanonikal (NetEase/LRCLIB) di atas terjemahan asing. 2) Navigasi Terpadu Seluruh Fitur: Mengembalikan titik navigasi (.dots) dan panah samping (btn-prev / btn-next) agar selalu aktif dan terlihat pada mode lirik 520px sehingga pengguna leluasa berpindah ke LMS Tasks, Kalender Pintar, Pomodoro Timer, Baterai & Notifikasi WA, serta File Shelf. Ditambahkan navigasi 1-klik pada judul header dan gesture swipe/scroll horizontal."
 }

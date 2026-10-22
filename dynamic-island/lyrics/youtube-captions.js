@@ -1,6 +1,6 @@
 "use strict";
 const { ANDROID_CLIENT, IOS_CLIENT, WEB_CLIENT, httpRequestRaw, httpRequestJson } = require("./http-client");
-const { normalizePhoneticLatin, hasJapaneseChars } = require("./text-romaji");
+const { normalizePhoneticLatin, hasJapaneseChars, isIndonesianText } = require("./text-romaji");
 
 // ==================== ENGINE 2: YOUTUBE CAPTIONS STREAM (.SRV3 / TIMEDTEXT) ====================
 
@@ -295,9 +295,13 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     const hasJpChars = hasJapaneseChars(rawTitle) || hasJapaneseChars(rawArtist);
     const hasRuChars = /[\u0400-\u04ff]/.test(`${rawTitle} ${rawArtist}`);
     const hasKrChars = /[\uac00-\ud7af]/.test(`${rawTitle} ${rawArtist}`);
-    const isJpMeta = /\b(hololive|nijisanji|vshojo|vtuber|anime|vocaloid|j-?pop)\b/i.test(`${rawTitle} ${rawArtist}`);
-    const isJpSong = Boolean(meta && (meta.likelyJapanese || meta.isJapaneseVersion || hasJpChars || isJpMeta));
-    const isIdSong = Boolean(meta && meta.isIndonesianVersion);
+    const isIdBranch = /\b(hololive[\s-]*(?:indonesia|id)|holo[\s-]*id|nijisanji[\s-]*id|indonesia|indonesian|indo)\b/i.test(`${rawTitle} ${rawArtist}`);
+    const isIdText = isIndonesianText(meta?.cleanedTitle || rawTitle) || isIndonesianText(rawTitle);
+    const isIdSong = Boolean(meta?.isIndonesianVersion || meta?.isIndonesian || isIdBranch || isIdText);
+
+    // Jangan anggap lagu Jepang jika jelas artis/judul Indonesia dan tidak ada aksara Jepang!
+    const isJpMeta = !isIdSong && !hasRuChars && !hasKrChars && /\b(hololive|nijisanji|vshojo|vtuber|anime|vocaloid|j-?pop)\b/i.test(`${rawTitle} ${rawArtist}`);
+    const isJpSong = Boolean(hasJpChars || (meta && (meta.likelyJapanese || meta.isJapaneseVersion)) || (isJpMeta && !isIdSong));
     const isRuSong = Boolean(hasRuChars);
     const isKrSong = Boolean(hasKrChars || (meta && meta.isKoreanVersion));
     const isEngSong = Boolean(meta && meta.isEnglishVersion) || (!isJpSong && !isIdSong && !isRuSong && !isKrSong);
@@ -307,11 +311,12 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         let s = 0;
         if (t.kind !== 'asr') {
             // Manual CC resmi yang diunggah kreator video cover/lagu (Prioritas Utama!)
-            if (isIdSong && lang.startsWith('id')) s += 200;
+            if (isIdSong && lang.startsWith('id')) s += 220;
             else if (isRuSong && lang.startsWith('ru')) s += 200;
             else if (isKrSong && lang.startsWith('ko')) s += 200;
             else if (isJpSong && lang.startsWith('ja')) s += 200;
             else if (isEngSong && lang.startsWith('en')) s += 200;
+            else if (isIdSong && (lang.startsWith('en') || lang.startsWith('ja'))) s += 60; // Terjemahan asing untuk lagu Indonesia bernilai lebih rendah dari vokal asli
             else if ((isJpSong || isRuSong || isKrSong) && lang.startsWith('en')) s += 85;
             else if (lang.startsWith('en')) s += 160;
             else if (lang.startsWith('ja')) s += 150;
@@ -319,14 +324,14 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
             else if (lang.startsWith('id')) s += 140;
             else s += 120;
         } else {
-            // Jalur Auto-ASR (Maksimal 75-80, tidak boleh mengalahkan Manual CC)
-            if (isEngSong) {
+            // Jalur Auto-ASR (Prioritaskan gelombang vokal asli)
+            if (isIdSong) {
+                if (lang.startsWith('id')) s += 185; // Auto-ASR vokal Indonesia mengalahkan terjemahan asing manual
+                else s = -999;
+            } else if (isEngSong) {
                 if (lang.startsWith('en')) s += 80;
                 else if (lang.startsWith('id')) s += 50;
                 else s = -999; // Tolak ASR bahasa yang salah
-            } else if (isIdSong) {
-                if (lang.startsWith('id')) s += 80;
-                else s = -999;
             } else if (isRuSong) {
                 if (lang.startsWith('ru')) s += 80;
                 else s = -999;
@@ -476,7 +481,7 @@ function sanitizeBilingualManualLines(rawLines) {
     const primaryTokens = useAsrPrimary ? parsedAsr.tokens : (isManualCC && parsedManual.tokens.length >= 6 ? parsedManual.tokens : parsedAsr.tokens);
     const asrMergedLines = mergeFragmentedAsrLines(parsedAsr.lines);
     const sanitizedManual = isManualCC ? sanitizeBilingualManualLines(parsedManual.lines) : [];
-    const primaryLines = isManualCC ? sanitizedManual : asrMergedLines;
+    const isForeignManualOnIdSong = Boolean(isIdSong && bestManual && !bestManual.lang.startsWith('id') && parsedId.lines.length >= 4);
     const languageCode = (bestManual && bestManual.lang) || (bestAsr && bestAsr.lang) || '';
     const cleanIdLines = idTrack
         ? (bestManual && idTrack === bestManual.track ? sanitizedManual : (parsedId.lines.length > 0 ? sanitizeBilingualManualLines(parsedId.lines) : []))
@@ -484,6 +489,7 @@ function sanitizeBilingualManualLines(rawLines) {
     const cleanJaLines = jaTrack
         ? (bestManual && jaTrack === bestManual.track ? sanitizedManual : (parsedJa.lines.length > 0 ? sanitizeBilingualManualLines(parsedJa.lines) : []))
         : [];
+    const primaryLines = isForeignManualOnIdSong ? cleanIdLines : (isManualCC ? sanitizedManual : asrMergedLines);
 
     if (primaryTokens.length === 0 && primaryLines.length === 0) return null;
 

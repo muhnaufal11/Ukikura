@@ -291,19 +291,27 @@
         pointer-events: auto;
     }
 
-    /* Mode Lirik Melebar (520px): Sembunyikan panah navigasi samping & dots agar lirik leluasa tanpa tumpang tindih */
+    /* Mode Lirik Melebar (520px): Tampilkan dots dan panah navigasi samping agar pengguna tetap leluasa beralih ke LMS, Kalender, Notifikasi, dsb. */
     .mn[data-s="lyrics"] .l-nav {
-        opacity: 0 !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-        transition: opacity 0.15s ease !important;
+        opacity: 0.72;
+        visibility: visible;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .mn[data-s="lyrics"]:hover .l-nav {
+        opacity: 1;
     }
 
     .mn[data-s="lyrics"] .dots {
-        opacity: 0 !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-        transition: opacity 0.15s ease !important;
+        opacity: 0.88;
+        visibility: visible;
+        pointer-events: auto;
+        transition: opacity 0.2s ease;
+    }
+
+    .mn[data-s="lyrics"] .dots:hover {
+        opacity: 1;
     }
 
     /* Cahaya Ambient Bawah Khas Nusa (Living Aurora Flow) */

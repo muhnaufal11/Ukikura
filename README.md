@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch72-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch73-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -123,6 +123,12 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
   - **Baris 2 (`.lyr-sub`)**: Aksara asli Jepang (**Kanji / Katakana / Hiragana**) + transliterasi Romaji alami beraksen lembut.
   - **Baris 3 (`.lyr-trans`)**: **Terjemahan Bahasa Indonesia (Sub Indo)** resmi dari TimedText YouTube maupun database terjemahan berirama emas lembut (*italic*).
   - Dilengkapi tombol beralih cepat `[SUB: ON]` / `[SUB: OFF]` di bilah kontrol musik.
+- **Isolasi Bahasa Asli & Pencegahan Romaji Liar pada Lagu Indonesia (Patch 73)**:
+  - **Pemisahan Bahasa Vokal vs Terjemahan Asing**: Memperbaiki anomali di mana video lagu Indonesia yang memuat subtitle terjemahan resmi multibahasa di YouTube (seperti lagu *Airani Iofifteen - Lucu Juga* yang menyediakan subtitle manual CC bahasa Jepang dan Inggris untuk penonton internasional) secara keliru memicu deteksi lagu Jepang karena metadata agensi (*hololive*) dan menampilkan transliterasi Romaji dari terjemahan Jepang sebagai lirik utama.
+  - **Validasi Kosakata Indonesia & Kanal VTuber ID**: Sistem kini mengisolasi cabang agensi (*hololive Indonesia, Nijisanji ID, dsb.*) dan memvalidasi kosakata bahasa Indonesia (`isIndonesianText`), menjamin vokal asli bahasa Indonesia dan database kanonikal (NetEase / LRCLIB / YouTube ASR) selalu tampil 100% sebagai lirik utama (`.lyr-main`), sementara terjemahan aksara Jepang hanya tampil sebagai baris kedua (`.lyr-sub`).
+- **Navigasi Terpadu Seluruh Fitur (LMS, Kalender, Pomodoro, Notifikasi, Shelf) (Patch 73)**:
+  - **Akses Tanpa Terkunci pada Mode Lirik 520px**: Memulihkan dan memastikan titik navigasi halaman bawah (`.dots`) serta panah samping (`btn-prev` / `btn-next`) selalu aktif dan terlihat pada mode lirik 520px, sehingga pengguna tidak terkunci pada halaman musik dan dapat langsung berpindah ke Halaman 2 (Baterai & Notifikasi WA), Halaman 3 (LMS Tasks & Kuis), Halaman 4 (Smart Calendar Pintar), Halaman 5 (Pomodoro Focus Timer), Halaman 6 (File Shelf Liquid Canvas), dan Halaman 7 (Pengaturan).
+  - **Navigasi 1-Klik Header & Swipe Roda Mouse**: Menambahkan fitur klik pada judul header (`#hdr-title`) untuk siklus rotasi cepat antar-halaman serta dukungan navigasi geser/scroll horizontal menggunakan roda mouse (wheel) di seluruh notch.
 - **Desain Compact Lyrics Notch & Otomatisasi Synced Lyrics (Patch 71)**: Notch ramping 360px x 28px dengan squircle concave ears menempel di bezel atas layar, menampilkan ikon nada musik beamed ♫ di sisi kiri dan baris lirik aktif yang sedang berputar (atau *Lyrics not available*) di tengah notch secara presisi. Halaman musik kini otomatis langsung menampilkan antarmuka Synced Lyrics penuh (520px) saat dibuka tanpa perlu tombol aktivasi manual.
 - **2-Pass Forced Alignment & Dynamic Drift Tracking (Patch 72)**:
   - **Pemisahan 2-Pass (Lead vs Ad-Lib)**: Mengisolasi baris vokal utama (`Pass 1`) dan baris ad-libs/backing choir (`Pass 2`), mencegah ad-libs dalam tanda kurung membajak token vokal utama pada lagu cover di mana backing vocals dihilangkan oleh penyanyi.

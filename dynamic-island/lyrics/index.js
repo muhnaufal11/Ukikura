@@ -313,9 +313,12 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     const ytHasNativeLines = ytCaptions && ytCaptions.lines && ytCaptions.lines.some(l => hasJapaneseChars(l.rawText || l.text) || /[\u0400-\u04ff]/.test(l.rawText || l.text) || /[\uac00-\ud7af]/.test(l.rawText || l.text));
     const ytHasEnOnly = ytCaptions && ytCaptions.lines && !ytHasNativeLines && ytCaptions.lines.some(l => /[a-zA-Z]{3,}/.test(l.rawText || l.text));
     const ytHasJaOrIdCC = Boolean(ytCaptions && ((Array.isArray(ytCaptions.japaneseLines) && ytCaptions.japaneseLines.length >= 4) || (Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 4)));
+    const isDbIndonesian = Boolean(bestDb && Array.isArray(bestDb.lines) && bestDb.lines.length >= 4 && isIndonesianText(bestDb.lines.slice(0, 15).map(l => l.rawText || l.text).join(' ')));
+    const isIdOriginal = Boolean((meta && (meta.isIndonesian || meta.isIndonesianVersion)) || isDbIndonesian || isIndonesianText(rawTitle));
     const rejectEnglishManualForForeignSong = Boolean(isForeignOriginal && ytHasEnOnly && bestDb && !ytHasJaOrIdCC);
+    const rejectForeignManualForIndonesianSong = Boolean(isIdOriginal && ytCaptions && ytCaptions.lines && ytCaptions.lines.some(l => hasJapaneseChars(l.rawText || l.text)));
 
-    const hasManualCC = Boolean(ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4 && !rejectEnglishManualForForeignSong);
+    const hasManualCC = Boolean(ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4 && !rejectEnglishManualForForeignSong && !rejectForeignManualForIndonesianSong);
     if (hasManualCC) {
         // Cek apakah ada Japanese Lines dari manual CC (seperti ALiCE&u yang memiliki track JA terpisah):
         if (Array.isArray(ytCaptions.japaneseLines) && ytCaptions.japaneseLines.length >= 4) {
@@ -512,7 +515,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     // 1. Lengkapi Romaji untuk SEMUA lagu Jepang atau bersihkan morfem renggang
     const hasJpCharsInLines = finalLines.some(l => hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText));
     const hasMoraSpacedInLines = finalLines.some(l => isMoraSpacedRomaji(l.romaText || l.rawText || l.text));
-    if (finalLines.length > 0 && (hasJpCharsInLines || hasMoraSpacedInLines || meta.likelyJapanese || isForeignOriginal)) {
+    if (finalLines.length > 0 && !isIdOriginal && (hasJpCharsInLines || hasMoraSpacedInLines || meta.likelyJapanese || isForeignOriginal)) {
         finalLines = await enrichWithRomaji(finalLines, meta, bestDb, hasManualCC, trackDuration);
     }
 
@@ -520,7 +523,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     const combinedSample = finalLines.slice(0, 20).map(l => l.rawText || l.text || '').join(' ');
     const hasForeignChars = hasJapaneseChars(combinedSample) || /[\u0400-\u04ff]/.test(combinedSample) || /[\uac00-\ud7af]/.test(combinedSample);
     const isNaturallyIndonesian = !hasForeignChars && isIndonesianText(combinedSample);
-    const isAlreadyIndonesian = Boolean(meta.isIndonesianVersion || isNaturallyIndonesian);
+    const isAlreadyIndonesian = Boolean((meta && meta.isIndonesian) || meta.isIndonesianVersion || isNaturallyIndonesian || isIdOriginal);
 
     if (!isAlreadyIndonesian && ytCaptions && Array.isArray(ytCaptions.indonesianLines) && ytCaptions.indonesianLines.length >= 3 && finalLines.length > 0) {
         finalLines = attachTranslationLines(finalLines, ytCaptions.indonesianLines);

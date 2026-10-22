@@ -131,11 +131,14 @@ function stripParensNoise(str) {
 function cleanArtistName(rawArtist) {
     if (!rawArtist || typeof rawArtist !== 'string') return '';
     return stripParensNoise(rawArtist)
+        .replace(/[.…]+$/g, '')
         .replace(/-\s*topic$/i, '')
         .replace(/VEVO$/i, '')
         .replace(/\b(?:official\s*youtube\s*channel|youtube\s*channel|official\s*channel)\b/gi, '')
         .replace(/\b(?:ch\.|channel)\s*(?:hololive(?:[-_ ]?[a-z0-9]+)?|nijisanji|vshojo|774inc|kamitsubaki|production\s*kawaii|idol\s*corp|brave\s*group)?(?:\s*[-–—]\s*[a-z0-9]+)?\b/gi, '')
         .replace(/\b(?:ch\.|channel)\b/gi, '')
+        .replace(/\b(?:holo(?:live)?|niji(?:sanji)?)\b.*$/gi, '')
+        .replace(/[.…]+$/g, '')
         .replace(/\s+/g, ' ')
         .trim();
 }
@@ -283,14 +286,15 @@ function parseTrackMetadata(rawTitle, rawArtist) {
 
     const uniqueQueries = [...new Set(queries.map(q => q.replace(/\s+/g, ' ').trim()).filter(q => q.length >= 2))].slice(0, 7);
 
-    const isIdBranch = /\b(hololive[\s-]*(?:indonesia|id)|nijisanji[\s-]*id)\b/i.test(`${origTitle} ${origArtist}`);
+    const isIdBranch = /\b(hololive[\s-]*(?:indonesia|id)|holo[\s-]*id|nijisanji[\s-]*id|indonesia|indonesian|indo)\b/i.test(`${origTitle} ${origArtist}`);
     const hasJpText = hasJapaneseChars(origTitle) || hasJapaneseChars(origArtist) || jpQuotes.length > 0;
+    const isIndonesian = Boolean(isIndonesianVersion || isIdBranch || isIndonesianText(cleaned) || isIndonesianText(origTitle));
 
     let likelyJapanese =
         hasJpText ||
         /\b(yoasobi|ado|vaundy|kenshi\s*yonezu|radwimps|lisa|aimer|eve|yorushika|zutomayo|hige\s*dism|official\s*higedandism|mrs\.\s*green\s*apple|fujii\s*kaze|majiko|yuuri|tuyu|mafumafu|kikuo|deco\*27|kanaria|pinocchiop|hoshimachi\s*suisei|shigure\s*ui|hololive|nijisanji|utattemita|kokoronashi|shinunoga|unravel|gurenge|idol|sparkle|zenzenzense|nandemonaiya|suzume|kaijuu|odoriko|lemon|kick\s*back|blinding|specialz|ao\s*no\s*sumika|kaikai\s*kitan)\b/i.test(`${origTitle} ${origArtist}`);
 
-    if (isIdBranch && !hasJpText && !/\b(utattemita|anime|jpop|j-pop|vocaloid)\b/i.test(origTitle)) {
+    if (isIndonesian && !hasJpText && !/\b(utattemita|anime|jpop|j-pop|vocaloid)\b/i.test(origTitle)) {
         likelyJapanese = false;
     }
 
@@ -305,6 +309,7 @@ function parseTrackMetadata(rawTitle, rawArtist) {
         cleanChannel,
         isLyricChannel,
         isCover,
+        isIndonesian,
         isEnglishVersion,
         isIndonesianVersion,
         isJapaneseVersion,
@@ -600,13 +605,18 @@ const TAGALOG_MARKERS = /\b(mga|nang|hindi|bakit|'di\s+ba|naman|lahat|humingang|
 const INDONESIAN_DISTINCT_WORDS = new Set([
     'yang', 'dan', 'untuk', 'adalah', 'dengan', 'kamu', 'aku', 'kau', 'dia', 'kita', 'mereka',
     'bisa', 'ada', 'tidak', 'tak', 'bukan', 'saat', 'sudah', 'lagi', 'hati', 'cinta',
-    'sebelum', 'kuberikan', 'semua', 'hidup', 'masih', 'mata', 'luka', 'rasa', 'ini', 'itu'
+    'sebelum', 'kuberikan', 'semua', 'hidup', 'masih', 'mata', 'luka', 'rasa', 'ini', 'itu',
+    'lucu', 'juga', 'muka', 'kayak', 'bersalah', 'muncul', 'mana', 'melewatiku', 'tahu', 'tau',
+    'sesungguhnya', 'pikir', 'sendiri', 'jelas', 'cantik', 'lihat', 'liat', 'rindu', 'sayang',
+    'tapi', 'selalu', 'jangan', 'hanya', 'apa', 'kembali', 'mimpi', 'malam', 'indah', 'bintang',
+    'senyum', 'bahagia', 'duka', 'kasih', 'jiwa', 'sepi', 'sunyi', 'usai', 'pulang', 'hilang',
+    'teman', 'kawan', 'sahabat', 'jalan', 'waktu', 'tentang', 'bukan', 'engkau', 'dariku', 'buaya', 'darat'
 ]);
 
 function isIndonesianText(sample) {
     if (!sample || typeof sample !== 'string') return false;
     if (TAGALOG_MARKERS.test(sample)) return false;
-    const words = sample.toLowerCase().split(/[^a-zA-Z\u00C0-\u024F]+/);
+    const words = sample.toLowerCase().split(/[^a-zA-Z\u00C0-\u024F]+/).filter(Boolean);
     const matchedDistinct = new Set();
     for (const w of words) {
         if (INDONESIAN_DISTINCT_WORDS.has(w)) {
@@ -614,6 +624,7 @@ function isIndonesianText(sample) {
             if (matchedDistinct.size >= 2) return true;
         }
     }
+    if (words.length <= 4 && matchedDistinct.size >= 1) return true;
     return false;
 }
 
