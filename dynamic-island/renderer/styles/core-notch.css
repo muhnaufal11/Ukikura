@@ -156,9 +156,9 @@
         pointer-events: none !important;
     }
 
-    /* Mode Closed Lyrics Notch (Sesuai Desain Ukikura di Gambar: 360px x 28px) */
+    /* Mode Closed Lyrics Notch (Adaptif & Simetris: 360px - 480px x 28px) */
     .mn[data-s="idle"] {
-        --w: 360px;
+        --w: var(--idle-w, 360px);
         --h: 28px;
         --r: 14px;
         --e: 10px;
@@ -851,7 +851,6 @@
         color: #ffffff;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;
         letter-spacing: -0.15px;
         padding: 0 4px;
         text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
@@ -882,6 +881,32 @@
         opacity: 0;
         filter: blur(1.5px);
         pointer-events: none;
+    }
+
+    /* Konten Lirik di dalam Baris: Menampung Auto-Marquee Horizontal */
+    .idle-lyric-content {
+        display: inline-block;
+        white-space: nowrap;
+        max-width: 100%;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        will-change: transform;
+    }
+
+    .idle-lyric-content.has-marquee {
+        max-width: none;
+        overflow: visible;
+        text-overflow: clip;
+        animation: idle-marquee var(--marquee-dur, 6s) ease-in-out infinite alternate;
+    }
+
+    @keyframes idle-marquee {
+        0%, 20% {
+            transform: translateX(0);
+        }
+        75%, 100% {
+            transform: translateX(var(--marquee-offset, -40px));
+        }
     }
 
     /* Equalizer Mini Audio di Sisi Kanan (Penyelaras Simetri) */

@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch74-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch75-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -329,7 +329,7 @@ Berikut daftar rencana fitur baru yang sedang disiapkan untuk pembaruan **Ukikur
 - [x] **1. Interactive Seek Bar & Volume Wheel**: Klik atau geser (*drag*) langsung pada garis durasi lagu (`#music-prog-1` / `#music-prog-2`) untuk melompat ke menit tertentu via perintah WinRT `TryChangePlaybackPositionAsync`, serta *scroll* roda mouse di atas sampul album untuk mengatur volume aplikasi pemutar musik secara langsung.
 - [x] **2. Real-Time Audio Ambient Visualizer (WASAPI Loopback)**: Mesin visualisasi Canvas 2D audio-reaktif (*3 fluid morphing color orbs* + undulasi pita gelombang audio di dasar notch) yang bergerak dinamis mengikuti frekuensi bass dan vokal asli dari output audio Windows secara *real-time*.
 - [x] **3. Hierarki Lirik Multibahasa 3 Tingkat (Romaji + Aksara Asli Jepang + Terjemahan Indonesia)**: Romaji di baris utama (lagu Jepang) atau vokal asli (lagu multibahasa seperti *ALiCE&u*), aksara Jepang di baris kedua, dan Sub Indo resmi di baris ketiga. Dilengkapi Audio-to-Text Forced Alignment untuk lagu Cover/Remix/Koplo, sistem deteksi cerdas anti-vlog/anti-komentar YouTube CC yang menjamin Rule 3 untuk lagu cover/remix (selalu memprioritaskan lirik kanonikal bersih dari NetEase/LRCLIB yang disinkronkan ke tempo vokal cover), serta tombol toggle `[SUB: ON]` / `[SUB: OFF]`.
-- [x] **4. Compact Lyrics Notch (Mode Karaoke Tertutup dengan Animasi Pergantian Kinetik)**: Mode kapsul ramping 360px x 28px saat musik berputar dengan badge media beamed note icon / mini album art di kiri, equalizer audio jumping bars di kanan untuk simetri sempurna, serta transisi kinetik teks lirik vertical slide (Apple-style push roll) 60fps bebas glitch dan bebas chromatic fringing.
+- [x] **4. Compact Lyrics Notch (Mode Karaoke Tertutup dengan Notch Adaptif & Auto-Marquee)**: Mode kapsul ramping (360px - 480px x 28px) yang secara dinamis melebar mengikuti panjang lirik lagu, dilengkapi auto-marquee gliding horizontal untuk kalimat sangat panjang, badge media beamed note icon / mini album art di kiri, equalizer audio jumping bars di kanan untuk simetri sempurna, serta transisi kinetik teks lirik vertical slide 60fps bebas glitch dan bebas chromatic fringing.
 
 ### 2. Modul Kura Vault, File Shelf, & Akademik (`shelf-actions.js`, `lms-pomodoro.js`, & `smart-calendar.js`)
 - [x] **5. Clipboard History & Snippet Vault di Halaman Shelf**: Menyimpan riwayat 15 teks, kode, tautan, atau gambar (*screenshot*) terakhir yang disalin (`Ctrl+C`) secara otomatis ke dalam tab di halaman **File Shelf**, lengkap dengan filter kategori (`Semua`, `Kode`, `Link`, `Teks`, `Gambar`), badge warna tipe, tombol *Clear*, dan 1-klik salin ulang dengan feedback visual `✓ Tersalin!`.

@@ -253,6 +253,7 @@ function expandIsland(targetPage) {
     isExpanded = true;
     window.isExpanded = true;
     ipcRenderer.send('island-idle-music', false);
+    if (mnEl) mnEl.style.removeProperty('--idle-w');
     if (holderEl) holderEl.classList.add('is-expanded');
     if (targetPage && PAGES.includes(targetPage)) {
         currentPage = targetPage;
@@ -277,6 +278,9 @@ function collapseIsland() {
     }
     const mode = getClosedVisualMode();
     mnEl.dataset.s = mode;
+    if (mode !== 'idle' && mnEl) {
+        mnEl.style.removeProperty('--idle-w');
+    }
     ipcRenderer.send('island-idle-music', mode === 'idle');
     if (typeof window.ensureLivingEyesLoop === 'function') {
         window.ensureLivingEyesLoop();

@@ -20,6 +20,7 @@ let serverProcess = null;
 let isExpanded = false;
 let isPeekActive = false;
 let isMusicIdleActive = false;
+let currentIdleNotchWidth = 360;
 let peekActiveSince = 0;
 const PEEK_MAX_MS = 9000;
 
@@ -359,7 +360,7 @@ function startNusaHoverLoop() {
             // Kursor berada tepat di atas kapsul pulau:
             // Jika musik sedang diputar (compact lyrics notch: 360px x 28px): relDistX <= 180 && relY >= 0 && relY <= 29
             // Jika resting mascot normal (176px x 25px): relDistX <= 88 && relY >= 0 && relY <= 26
-            const notchHalfW = isMusicIdleActive ? 180 : 88;
+            const notchHalfW = isMusicIdleActive ? Math.round(currentIdleNotchWidth / 2) : 88;
             const notchMaxH = isMusicIdleActive ? 29 : 26;
             const onNormalNotch = relDistX <= notchHalfW && relY >= 0 && relY <= notchMaxH;
             applyIgnore(!onNormalNotch, forceIgnore);
@@ -650,8 +651,13 @@ ipcMain.on('island-peek-active', (event, active) => {
     isPeekActive = Boolean(active);
     if (isPeekActive) peekActiveSince = Date.now();
 });
-ipcMain.on('island-idle-music', (event, active) => {
+ipcMain.on('island-idle-music', (event, active, customWidth) => {
     isMusicIdleActive = Boolean(active);
+    if (customWidth && typeof customWidth === 'number') {
+        currentIdleNotchWidth = Math.max(320, Math.min(500, customWidth));
+    } else if (!active) {
+        currentIdleNotchWidth = 360;
+    }
 });
 ipcMain.on('island-open-phonelink', () => shell.openExternal('ms-phone:'));
 ipcMain.on('island-open-url', (event, targetUrl) => { if (targetUrl && typeof targetUrl === 'string') shell.openExternal(targetUrl); });

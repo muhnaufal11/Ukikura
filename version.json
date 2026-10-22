@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 74,
+  "versionCode": 75,
   "version": "1.0.6",
-  "fixCount": 74,
-  "displayVersion": "1.0.6 (Patch 74 - Animasi Pergantian Lirik Kinetik & Penataan Simetri Mode Karaoke)",
+  "fixCount": 75,
+  "displayVersion": "1.0.6 (Patch 75 - Tampilan Penuh Lirik Panjang via Notch Dinamis & Auto-Marquee)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 74): 1) Animasi Pergantian Lirik Kinetik (Mode Karaoke Tertutup): Mengimplementasikan transisi teks lirik kinetik vertical slide (Apple-style push roll) 60fps dengan double requestAnimationFrame, GPU acceleration, dan font smoothing grayscale anti-fringing pada jendela transparan. 2) Penataan Simetri & Kerapihan Mode Karaoke: Menambahkan badge media squircle berbingkai frosted glass dengan beamed note icon/mini album art di sisi kiri, serta mini visualizer equalizer dancing bars di sisi kanan untuk menjaga keseimbangan visual simetris 100% tepat di tengah notch kapsul."
+  "changelog": "Ukikura v1.0.6 (Patch 75): 1) Tampilan Penuh Lirik Panjang (Adaptasi Dinamis & Auto-Marquee): Notch kapsul karaoke kini dapat melebar secara adaptif (360px - 480px) mengikuti panjang karakter lirik lagu tanpa memotong kata dengan ellipsis. Untuk kalimat yang sangat panjang, otomatis diaktifkan smooth horizontal auto-marquee (gliding alternate scroll) pada lapisan inner konten sehingga seluruh baris lirik dapat dibaca tuntas dari awal hingga akhir. 2) Penyesuaian Hit-Testing Mouse Dinamis: Jembatan Electron main process secara otomatis memperbarui area klik-tembus sesuai lebar dinamis notch saat memutar musik."
 }

@@ -354,6 +354,16 @@ if (btnSubToggleEl) {
 // ==================== CLOSED NOTCH LYRICS & IDLE DISPLAY ====================
 let currentIdleLyric = '';
 let idleLyricAnimTimer = null;
+let _measureCtx = null;
+
+function measureLyricTextWidth(text) {
+    if (!_measureCtx) {
+        const c = document.createElement('canvas');
+        _measureCtx = c.getContext('2d');
+    }
+    _measureCtx.font = "600 12.5px -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif";
+    return _measureCtx.measureText(text || '').width;
+}
 
 function setIdleLyricWithAnimation(newText) {
     if (!newText) newText = 'Lyrics not available';
@@ -362,6 +372,16 @@ function setIdleLyricWithAnimation(newText) {
 
     const viewportEl = document.getElementById('idle-lyric-viewport');
     let currentLineEl = document.getElementById('idle-lyric-text');
+
+    // Adaptasi dinamis lebar notch kapsul (360px - 480px) agar lirik panjang muat seutuhnya
+    const textW = measureLyricTextWidth(newText);
+    const isDefaultState = (newText === 'Lyrics not available' && (!mediaState || !mediaState.active));
+    const targetWidth = isDefaultState ? 360 : Math.max(360, Math.min(480, Math.round(textW + 104)));
+
+    if (mnEl) {
+        mnEl.style.setProperty('--idle-w', `${targetWidth}px`);
+    }
+    ipcRenderer.send('island-idle-music', true, targetWidth);
 
     if (!viewportEl) {
         if (currentLineEl && currentLineEl.textContent !== newText) {
@@ -380,20 +400,37 @@ function setIdleLyricWithAnimation(newText) {
     }
     viewportEl.querySelectorAll('.is-exiting').forEach(el => el.remove());
 
+    const availableW = targetWidth - 92;
+    const isOverflowing = textW > availableW;
+    const overflowDist = isOverflowing ? Math.ceil(textW - availableW + 14) : 0;
+    const marqueeDur = isOverflowing ? Math.max(4.5, Math.min(9.5, (overflowDist / 20) + 2.5)) : 0;
+
+    function buildContentSpan(str) {
+        const span = document.createElement('span');
+        span.className = 'idle-lyric-content' + (isOverflowing ? ' has-marquee' : '');
+        span.textContent = str;
+        if (isOverflowing) {
+            span.style.setProperty('--marquee-offset', `-${overflowDist}px`);
+            span.style.setProperty('--marquee-dur', `${marqueeDur.toFixed(1)}s`);
+        }
+        return span;
+    }
+
     if (!currentLineEl) {
         currentLineEl = document.createElement('span');
         currentLineEl.id = 'idle-lyric-text';
         currentLineEl.className = 'idle-lyric-line is-active';
-        currentLineEl.textContent = newText;
         currentLineEl.title = newText;
+        currentLineEl.appendChild(buildContentSpan(newText));
         viewportEl.appendChild(currentLineEl);
         return;
     }
 
     // Jika render awal atau dari status default tidak aktif, langsung set tanpa animasi berlebihan
-    if (!currentLineEl.textContent || (currentLineEl.textContent === 'Lyrics not available' && !mediaState.active)) {
-        currentLineEl.textContent = newText;
+    if (!currentLineEl.textContent || (currentLineEl.textContent === 'Lyrics not available' && (!mediaState || !mediaState.active))) {
+        currentLineEl.textContent = '';
         currentLineEl.title = newText;
+        currentLineEl.appendChild(buildContentSpan(newText));
         return;
     }
 
@@ -406,8 +443,8 @@ function setIdleLyricWithAnimation(newText) {
     const newLineEl = document.createElement('span');
     newLineEl.id = 'idle-lyric-text';
     newLineEl.className = 'idle-lyric-line is-entering';
-    newLineEl.textContent = newText;
     newLineEl.title = newText;
+    newLineEl.appendChild(buildContentSpan(newText));
     viewportEl.appendChild(newLineEl);
 
     // Frame ganda untuk memastikan GPU transition berjalan mulus di 60fps
