@@ -331,7 +331,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     const hasManualCC = Boolean(ytCaptions && ytCaptions.isManualCC && ytCaptions.lines.length >= 4 && !rejectEnglishManualForForeignSong && !rejectForeignManualForIndonesianSong);
     if (hasManualCC) {
         // Cek apakah ada Japanese Lines dari manual CC (seperti ALiCE&u yang memiliki track JA terpisah):
-        if (Array.isArray(ytCaptions.japaneseLines) && ytCaptions.japaneseLines.length >= 4) {
+        if (!isIdOriginal && Array.isArray(ytCaptions.japaneseLines) && ytCaptions.japaneseLines.length >= 4) {
             ytCaptions.lines.forEach(l => {
                 if (!l.jpText && !hasJapaneseChars(l.rawText || l.text)) {
                     if (l.transText && hasJapaneseChars(l.transText)) {
@@ -455,7 +455,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
                 roma = mixedMatch[2].trim();
                 mainDisplay = mixedMatch[1].trim();
                 rawClean = mixedMatch[1].trim();
-            } else if (!roma) {
+            } else if (!roma && !isIdOriginal) {
                 const targetKana = l.jpText || rawNormalized;
                 const isPureKana = !hasKanji(targetKana) && hasHiraganaOrKatakana(targetKana);
                 roma = isPureKana ? kanaToRomaji(targetKana) : '';

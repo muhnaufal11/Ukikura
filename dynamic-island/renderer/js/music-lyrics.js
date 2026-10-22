@@ -178,16 +178,13 @@ function renderLyricItemHtml(l, i) {
         }
     } else {
         // Lagu umum (Indonesia, Inggris, dll.)
-        if (l && l.rawText && l.romaText) {
-            mainText = l.rawText;
-            subText = l.romaText;
-        } else if (l && typeof l.text === 'string' && l.text.includes(' · ')) {
+        if (l && typeof l.text === 'string' && l.text.includes(' · ')) {
             const parts = l.text.split(' · ');
             mainText = parts[0].trim();
             subText = parts.slice(1).join(' · ').trim();
         } else {
             mainText = rawVal || (l && l.text) || '';
-            subText = (l && l.romaText) || '';
+            subText = (l && l.transText) || '';
         }
     }
 
@@ -490,10 +487,10 @@ function updateIdleLyricDisplay() {
     if (hasJpVocal && curLine.romaText) {
         // Aturan Baku Lirik: Tampilkan Romaji agar pengguna bisa langsung membaca/menyanyi
         displayLyric = curLine.romaText.trim();
-    } else if (curLine.romaText && curLine.romaText.trim()) {
-        displayLyric = curLine.romaText.trim();
     } else if (rawLine && rawLine.trim()) {
         displayLyric = rawLine.trim();
+    } else if (curLine.romaText && curLine.romaText.trim()) {
+        displayLyric = curLine.romaText.trim();
     } else {
         displayLyric = curLine.text ? curLine.text.trim() : '';
     }

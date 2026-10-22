@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 76,
+  "versionCode": 77,
   "version": "1.0.6",
-  "fixCount": 76,
-  "displayVersion": "1.0.6 (Patch 76 - Restorasi Bahasa Lirik Indonesia & Sinkronisasi Otomatis Tempo Lagu Sped-Up/Slowed)",
+  "fixCount": 77,
+  "displayVersion": "1.0.6 (Patch 77 - Eliminasi Romaji Liar Lagu Indonesia & Forced Alignment Cover Song)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 76): 1) Restorasi Bahasa Lirik Utama Lagu Indonesia: Memperbaiki kesalahan pemilihan subtitle bahasa Inggris pada lagu-lagu Indonesia (seperti Vierra, Noah, Sheila On 7, Dewa 19, dll.) dengan memperluas korpus kosakata dan regex pengenal musisi Indonesia sehingga lirik utama selalu menampilkan bahasa vokal asli Indonesia dan terjemahan asing sebagai sub-lirik. 2) Sinkronisasi Otomatis Tempo Lagu Sped-Up / Slowed / Nightcore: Mengimplementasikan dynamic speed scaling proporsional antara durasi pemutaran media dan durasi lagu kanonikal (rasio mediaDur / canonDur) sehingga ketukan lirik lagu yang dipercepat/diperlambat (1.15x, 1.25x, nightcore, slowed) langsung pas dan sinkron sempurna tanpa jeda."
+  "changelog": "Ukikura v1.0.6 (Patch 77): 1) Eliminasi Romaji Liar pada Lagu Indonesia: Mencegah subtitle terjemahan bahasa Jepang pada lagu berbahasa Indonesia (seperti pada video cover hololive Indonesia) diubah menjadi Romaji dan menimpa teks lirik vokal di notch. Vokal asli Indonesia kini 100% diprioritaskan di notch maupun daftar lirik tanpa Romaji. 2) Audio-to-Text Forced Alignment Lagu Cover: Mengatasi masalah Auto-ASR YouTube yang terpotong/hilang kalimatnya dengan secara cerdas mengambil lirik kanonikal bersih (seperti RAN - Selamat Pagi) dari database dan menyinkronkannya langsung ke gelombang audio vokal penyanyi via Forced Alignment."
 }

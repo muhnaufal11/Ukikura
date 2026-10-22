@@ -98,7 +98,7 @@ function normalizePhoneticLatin(str) {
 
 // ==================== PARSER METADATA LAGU & COVER YOUTUBE ====================
 
-const NOISE_BRACKET_RE = /^(?:official.*|mv|music\s*video|lyric.*|lirik.*|audio.*|video.*|visualizer.*|cover.*|歌ってみた.*|うたってみた.*|utattemita.*|karaoke.*|instrumental.*|off\s*vocal.*|romaji.*|kanji.*|sub\s*indo.*|indo\s*sub.*|terjemahan.*|hd|4k|hq|live.*|pv|オリジナル.*|original.*|full.*|tv\s*size.*|short\s*ver.*|english\s*ver.*|eng\s*ver.*|japanese\s*ver.*|jp\s*ver.*|indonesian\s*ver.*|indo\s*ver.*|koplo.*|remix.*|dj.*|sped\s*up.*|speed\s*up.*|slowed.*|bootleg.*|mashup.*)$/i;
+const NOISE_BRACKET_RE = /^(?:#.*|.*anniv.*|.*anniversary.*|.*周年.*|.*special.*|.*collab.*|.*collaboration.*|official.*|mv|music\s*video|lyric.*|lirik.*|audio.*|video.*|visualizer.*|cover.*|歌ってみた.*|うたってみた.*|utattemita.*|karaoke.*|instrumental.*|off\s*vocal.*|romaji.*|kanji.*|sub\s*indo.*|indo\s*sub.*|terjemahan.*|hd|4k|hq|live.*|pv|オリジナル.*|original.*|full.*|tv\s*size.*|short\s*ver.*|english\s*ver.*|eng\s*ver.*|japanese\s*ver.*|jp\s*ver.*|indonesian\s*ver.*|indo\s*ver.*|koplo.*|remix.*|dj.*|sped\s*up.*|speed\s*up.*|slowed.*|bootleg.*|mashup.*)$/i;
 
 function stripParensNoise(str) {
     return String(str || '')
@@ -117,6 +117,8 @@ function cleanArtistName(rawArtist) {
         .replace(/\b(?:official\s*youtube\s*channel|youtube\s*channel|official\s*channel)\b/gi, '')
         .replace(/\b(?:ch\.|channel)\s*(?:hololive(?:[-_ ]?[a-z0-9]+)?|nijisanji|vshojo|774inc|kamitsubaki|production\s*kawaii|idol\s*corp|brave\s*group)?(?:\s*[-–—]\s*[a-z0-9]+)?\b/gi, '')
         .replace(/\b(?:ch\.|channel)\b/gi, '')
+        .replace(/\b(?:hololive|nijisanji|vshojo)\s*(?:id|en|jp)?\s*(?:[0-9]+(?:st|nd|rd|th)?\s*(?:gen(?:eration)?)?|gamers|advent|promise|myth|council)?\b/gi, '')
+        .replace(/\bholoh[0-9]+ro\b/gi, '')
         .replace(/\b(?:holo(?:live)?|niji(?:sanji)?)\b.*$/gi, '')
         .replace(/[.…]+$/g, '')
         .replace(/\s+/g, ' ')
@@ -532,6 +534,11 @@ function computeMetadataSimilarity(candidateTitle, candidateArtist, meta) {
         }
     }
 
+    // Pada lagu cover Indonesia, jika artis kandidat adalah musisi kanonikal tanah air (seperti RAN, Dewa 19, JKT48, Noah, dll.), berikan bonus prioritas
+    if (meta && meta.isCover && meta.isIndonesian && INDONESIAN_ARTIST_REGEX.test(candidateArtist || '')) {
+        artistScore += 45;
+    }
+
     let score = titleScore + artistScore;
 
     // Penalti untuk versi remix / DJ / 合唱 (chorus) / live / tv size kecuali diminta di judul asli
@@ -588,7 +595,7 @@ function attachTranslationLines(baseLines, transLines) {
 
 const TAGALOG_MARKERS = /\b(mga|nang|hindi|bakit|'di\s+ba|naman|lahat|humingang|pumikit|namamalikmata|nababahala|binaon|tinakpan|andito|intindihin)\b/i;
 
-const INDONESIAN_ARTIST_REGEX = /\b(vierra|vierratale|noah|peterpan|sheila\s*on\s*7|dewa\s*19|dewa|padi|gigi|ungu|kotak|d['’]?masiv|geisha|armada|wali|kangen\s*band|tulus|mahalini|tiara\s*andini|lyodra|ziva\s*magnolya|fiersa\s*besari|hindia|\.?feast|judika|afgan|rossa|glenn\s*fredly|chrisye|ebiet\s*g\s*ade|ari\s*lasso|slank|iwan\s*fals|jkt48|kerispatih|samsons|letto|raisa|isyana|bcl|bunga\s*citra\s*lestari|nidji|maliq|yovie|kahitna|sal\s*priadi|bernadya|nadin\s*amizah|last\s*child|virgoun|for\s*revenge|radja|st12|setia\s*band|repvblik|payung\s*teduh|fourtwnty|hivi!?|the\s*changcuters|naif|ada\s*band|kerispatih|seventeen|andra\s*(?:and|&)\s*the\s*backbone)\b/i;
+const INDONESIAN_ARTIST_REGEX = /\b(vierra|vierratale|noah|peterpan|sheila\s*on\s*7|dewa\s*19|dewa|padi|gigi|ungu|kotak|d['’]?masiv|geisha|armada|wali|kangen\s*band|tulus|mahalini|tiara\s*andini|lyodra|ziva\s*magnolya|fiersa\s*besari|hindia|\.?feast|judika|afgan|rossa|glenn\s*fredly|chrisye|ebiet\s*g\s*ade|ari\s*lasso|slank|iwan\s*fals|jkt48|kerispatih|samsons|letto|raisa|isyana|bcl|bunga\s*citra\s*lestari|nidji|maliq|yovie|kahitna|sal\s*priadi|bernadya|nadin\s*amizah|last\s*child|virgoun|for\s*revenge|radja|st12|setia\s*band|repvblik|payung\s*teduh|fourtwnty|hivi!?|the\s*changcuters|naif|ada\s*band|kerispatih|seventeen|andra\s*(?:and|&)\s*the\s*backbone|ran|iwa\s*k|project\s*pop|barasuara|efek\s*rumah\s*kaca|danilla|pamungkas|ardhito|rendy\s*pandugo|trio\s*lestari|ten2five|mocca|white\s*shoes)\b/i;
 
 const INDONESIAN_DISTINCT_WORDS = new Set([
     'yang', 'dan', 'untuk', 'adalah', 'dengan', 'kamu', 'aku', 'kau', 'dia', 'kita', 'mereka', 'bisa', 'ada', 'tidak', 'tak', 'bukan', 'saat', 'sudah', 'lagi', 'hati', 'cinta',

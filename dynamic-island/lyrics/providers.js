@@ -10,7 +10,8 @@ const {
     attachTranslationLines,
     isUnwantedForeignTranslation,
     computeMetadataSimilarity,
-    isIndonesianText
+    isIndonesianText,
+    INDONESIAN_ARTIST_REGEX
 } = require("./text-romaji");
 
 // ==================== DATABASE 1: NETEASE CLOUD MUSIC (JEPANG KANJI+ROMAJI, INDONESIA, GLOBAL) ====================
@@ -225,6 +226,10 @@ async function searchLrclibLyrics(meta, mediaDur) {
                 } else if (/\b(kimi|boku|watashi|kokoro|yume|namida|kotoba|sekai|hikari|ashita|yoru|kaze|sora|uta|ai)\b/i.test(lyrSample)) {
                     score += 20;
                 }
+            }
+
+            if (meta && meta.isCover && INDONESIAN_ARTIST_REGEX.test(item.artistName || '')) {
+                score += 45;
             }
 
             const d = Number(item.duration) || 0;

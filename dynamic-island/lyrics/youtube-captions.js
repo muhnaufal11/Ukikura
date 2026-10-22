@@ -411,9 +411,10 @@ function mergeFragmentedAsrLines(rawLines) {
         const gap = item.time - (cur.endTime || cur.time);
         const endsWithPunct = /[.!?]$/.test(curText);
         const curDur = (cur.endTime || (item.time + 1.5)) - cur.time;
-        const endsWithDangling = /\b(dan|dan\s+juga|atau|yang|untuk|dengan|saat|walau|karena|tapi|agar|bila|jika|ku|kau|and|to|with|of|the|in|on|at|for|that|which|as|so|but|or),?$/i.test(curText) || /[,，、…—–]$/.test(curText);
+        const endsWithDangling = /\b(dan|dan\s+juga|atau|yang|untuk|dengan|saat|walau|karena|tapi|agar|bila|jika|ku|kau|and|to|with|of|the|in|on|at|for|that|which|as|so|but|or|mengawali|memulai|menjadi|melihat|mendengar|mengatakan|seperti|bagai|bagaikan|tentang|ke|di|dari|pada|dalam|atas|bawah|antara|tanpa|demi|hingga|sampai|hari|malam|pagi|siang|sore),?$/i.test(curText) || /[,，、…—–]$/.test(curText);
+        const startsWithContinuation = /^(?:ini|itu|lagi|pun|lah|kah|juga|saja|nanti|esok|bersama|sendiri)\b/i.test(text);
 
-        const shouldMerge = endsWithDangling || (!endsWithPunct && (wordCount < 4 || curDur < 2.4) && gap < 1.6 && (wordCount + text.split(/\s+/).length <= 11));
+        const shouldMerge = endsWithDangling || startsWithContinuation || (!endsWithPunct && (wordCount < 4 || curDur < 2.4) && gap < 2.2 && (wordCount + text.split(/\s+/).length <= 13));
 
         if (shouldMerge) {
             const separator = hasJapaneseChars(curText + text) ? '' : ' ';
@@ -486,17 +487,18 @@ function sanitizeBilingualManualLines(rawLines) {
     const primaryTokens = useAsrPrimary ? parsedAsr.tokens : (isManualCC && parsedManual.tokens.length >= 6 ? parsedManual.tokens : parsedAsr.tokens);
     const asrMergedLines = mergeFragmentedAsrLines(parsedAsr.lines);
     const sanitizedManual = isManualCC ? sanitizeBilingualManualLines(parsedManual.lines) : [];
+    const hasRealIdManualCC = Boolean(idTrack && idTrack.kind !== 'asr');
     const isNaturallyIndonesianInCaptions = Boolean(parsedId.lines.length >= 4 && isIndonesianText(parsedId.lines.slice(0, 5).map(l => l.text).join(' ')));
     const isForeignManualOnIdSong = Boolean((isIdSong || isNaturallyIndonesianInCaptions) && bestManual && !bestManual.lang.startsWith('id') && parsedId.lines.length >= 4);
     const languageCode = isForeignManualOnIdSong ? 'id' : ((bestManual && bestManual.lang) || (bestAsr && bestAsr.lang) || '');
     const cleanIdLines = idTrack
-        ? (bestManual && idTrack === bestManual.track ? sanitizedManual : (parsedId.lines.length > 0 ? sanitizeBilingualManualLines(parsedId.lines) : []))
+        ? (bestManual && idTrack === bestManual.track ? sanitizedManual : (parsedId.lines.length > 0 ? (hasRealIdManualCC ? sanitizeBilingualManualLines(parsedId.lines) : mergeFragmentedAsrLines(parsedId.lines)) : []))
         : [];
     const cleanJaLines = jaTrack
         ? (bestManual && jaTrack === bestManual.track ? sanitizedManual : (parsedJa.lines.length > 0 ? sanitizeBilingualManualLines(parsedJa.lines) : []))
         : [];
 
-    if (isForeignManualOnIdSong && sanitizedManual.length > 0 && cleanIdLines.length > 0) {
+    if (isForeignManualOnIdSong && hasRealIdManualCC && sanitizedManual.length > 0 && cleanIdLines.length > 0) {
         cleanIdLines.forEach(l => {
             if (!l.transText) {
                 let bestEn = null;
@@ -515,6 +517,7 @@ function sanitizeBilingualManualLines(rawLines) {
         });
     }
 
+    const effectiveIsManualCC = isForeignManualOnIdSong ? hasRealIdManualCC : isManualCC;
     const primaryLines = isForeignManualOnIdSong ? cleanIdLines : (isManualCC ? sanitizedManual : asrMergedLines);
 
     if (primaryTokens.length === 0 && primaryLines.length === 0) return null;
@@ -522,12 +525,12 @@ function sanitizeBilingualManualLines(rawLines) {
     return {
         videoId: chosenVideo.id,
         videoDur: chosenVideo.dur,
-        isManualCC,
+        isManualCC: effectiveIsManualCC,
         isAsrTokens: useAsrPrimary,
         languageCode,
         tokens: primaryTokens,
         lines: primaryLines,
-        japaneseLines: cleanJaLines,
+        japaneseLines: (isIdSong || isNaturallyIndonesianInCaptions) ? [] : cleanJaLines,
         indonesianLines: cleanIdLines
     };
 }
