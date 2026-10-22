@@ -148,6 +148,9 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
 - **WhatsApp Companion**: Mendeteksi pesan dan stiker WhatsApp masuk secara *real-time* dan menampilkannya melalui *Peek Popup* tanpa harus membuka jendela browser penuh.
 
 ### 4. Interaksi Kapsul, Maskot, & Pengaturan Hemat Daya (`mascot-engine.js` & `core-state.js`)
+- **Pembersihan Repositori & Sanitasi Eksperimen Prototipe (Workspace Sanitization)**:
+  - **Eliminasi Direktori Eksperimen Rust**: Menghapus seluruh direktori prototipe eksperimental (`dynamic-island/host-rust/`, `dynamic-island/native/`, dan `tauri-preview/`) beserta file biner uji coba dan cache build `target/`, membebaskan lebih dari 2.5 GB ruang disk.
+  - **Penyelarasan Arsitektur Produksi**: Memastikan struktur repositori murni difokuskan pada stack produksi utama yang stabil (Electron Desktop Runtime, mesin lirik `dynamic-island/lyrics/`, antarmuka terpisah `dynamic-island/renderer/`, dan bridge hardware native C++ `ukikura-bridge.exe`).
 - **Isolasi Multi-Monitor: Deteksi Fullscreen Browser Hanya pada Layar Pulau (Patch 70)**:
   - **Pencegahan False-Positive pada Multi-Monitor / Layar Kedua**: Memperbaiki kendala di mana browser yang dibuka fullscreen/maximized di monitor kedua (layar sebelah / secondary display) secara keliru memicu mode lipat tab pada kapsul pulau Ukikura di monitor utama.
   - **Validasi Monitor Native & Koordinat Layar**: Bridge C++ (`ukikura-bridge.cpp`) kini mengecek `HMONITOR` dan bendera `MONITORINFOF_PRIMARY` secara native serta mengukur dimensi layar monitor aktif, dan Electron main loop (`winrt-client.js` & `main.js`) memverifikasi bahwa browser berada di display yang sama dengan pulau sebelum mengaktifkan mode penghindaran tab.
@@ -236,16 +239,12 @@ Ukikura/
 │   ├── Ukikura-Setup-v1.0.6.exe     # Installer Windows siap pakai (langsung instal tanpa compile)
 │   ├── Ukikura-Setup.iss            # Skrip konfigurasi Inno Setup 6
 │   └── Build-Ukikura-Installer.ps1  # Skrip pembaruan installer (opsional untuk pengembang)
-├── Ukikura.exe                      # Binary utama Native Host Rust (WebView2 ~32 MB RAM, 0% CPU)
 ├── dynamic-island/
-│   ├── host-rust/                   # Host native desktop berbasis Rust (Win32 API + Microsoft Edge WebView2)
-│   │   ├── Cargo.toml               # Konfigurasi dependensi Rust (webview2, winapi, serde)
-│   │   └── src/main.rs              # Loop event Win32, transparent layered window, hit testing, & tray
 │   ├── bridge/
-│   │   ├── ukikura-bridge.exe       # Jembatan hardware C# ultra-ringan (SMTC Media, Battery, Toast Notif)
+│   │   ├── ukikura-bridge.cpp       # Kode sumber bridge native C++ (LLVM-MinGW clang++)
+│   │   ├── ukikura-bridge.exe       # Jembatan hardware C++ native (SMTC Media, Battery, Phone Link, Browser Monitor)
 │   │   └── winrt-bridge.ps1         # Jembatan fallback PowerShell WinRT
 │   ├── main/
-│   │   ├── kura-server.js           # Server penyimpanan lokal mandiri & API Lirik (port 8089)
 │   │   ├── winrt-client.js          # Spawner bridge & pengirim komando media
 │   │   ├── whatsapp-companion.js    # Jendela pendamping WhatsApp Web & ekstraktor notifikasi/stiker
 │   │   ├── lms-crawler.js           # Klien SSO LMS & background Moodle scraper
@@ -258,22 +257,22 @@ Ukikura/
 │   │   ├── providers.js             # Konektor database LRCLIB, NetEase Cloud Music, & KuGou
 │   │   ├── youtube-captions.js      # Ekstraktor subtitle asli YouTube (.srv3 TimedText)
 │   │   └── forced-alignment.js      # Mesin Audio-to-Text Forced Alignment & RANSAC Global Offset
-├── renderer/
-│   ├── index.html                   # Kerangka markup DOM murni (~420 baris)
-│   ├── styles/
-│   │   ├── core-notch.css           # Geometri kapsul .mn, telinga konkaf, mata maskot, & Peek Popup
-│   │   ├── pages-media-notif.css    # Gaya visual halaman Musik, Lirik, & Baterai/Notifikasi
-│   │   ├── pages-lms-tools.css      # Gaya visual halaman LMS Todo, Pomodoro, File Shelf, & Config
-│   │   └── calendar-modals.css      # Gaya visual Kalender Pintar & dialog modal
-│   └── js/
-│       ├── core-state.js            # State global UI, navigasi 7 halaman, & pengelola pembaruan GitHub
-│       ├── music-lyrics.js          # Interpolasi waktu SMTC, sampul album, & perender lirik
-│       ├── power-bluetooth.js       # Kartu baterai Laptop, HP, TWS, & periferal Bluetooth
-│       ├── notifications-wa.js      # Daftar notifikasi WhatsApp/HP & pemicu Peek Popup
-│       ├── lms-pomodoro.js          # Daftar tugas LMS, filter, & penghitung waktu Pomodoro
-│       ├── shelf-actions.js         # Kanvas animasi Island Gulp File Shelf & koneksi AI LMS
-│       ├── smart-calendar.js        # Logika Kalender Pintar & penyimpanan catatan tanggal
-│       └── mascot-engine.js         # Fisika mata maskot (pelacakan kursor & 11 ekspresi)
+│   └── renderer/
+│       ├── index.html               # Kerangka markup DOM murni (~420 baris)
+│       ├── styles/
+│       │   ├── core-notch.css       # Geometri kapsul .mn, telinga konkaf, mata maskot, & Peek Popup
+│       │   ├── pages-media-notif.css# Gaya visual halaman Musik, Lirik, & Baterai/Notifikasi
+│       │   ├── pages-lms-tools.css  # Gaya visual halaman LMS Todo, Pomodoro, File Shelf, & Config
+│       │   └── calendar-modals.css  # Gaya visual Kalender Pintar & dialog modal
+│       └── js/
+│           ├── core-state.js        # State global UI, navigasi 7 halaman, & pengelola pembaruan GitHub
+│           ├── music-lyrics.js      # Interpolasi waktu SMTC, sampul album, & perender lirik
+│           ├── power-bluetooth.js   # Kartu baterai Laptop, HP, TWS, & periferal Bluetooth
+│           ├── notifications-wa.js  # Daftar notifikasi WhatsApp/HP & pemicu Peek Popup
+│           ├── lms-pomodoro.js      # Daftar tugas LMS, filter, & penghitung waktu Pomodoro
+│           ├── shelf-actions.js     # Kanvas animasi Island Gulp File Shelf & koneksi AI LMS
+│           ├── smart-calendar.js    # Logika Kalender Pintar & penyimpanan catatan tanggal
+│           └── mascot-engine.js     # Fisika mata maskot (pelacakan kursor & 11 ekspresi)
 ├── assets/
 │   ├── ukikura-hero.svg             # Animasi SVG interaktif kapsul Ukikura (100% sesuai UI asli)
 │   └── ukikura-live-demo.svg        # Pratinjau 4 panel halaman utama Ukikura
