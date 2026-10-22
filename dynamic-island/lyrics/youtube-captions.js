@@ -244,6 +244,35 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     let captionTracks = [];
     let usedClient = IOS_CLIENT;
 
+    const hasJpChars = hasJapaneseChars(rawTitle) || hasJapaneseChars(rawArtist) || Boolean(meta && meta.hasJpText);
+    const hasRuChars = /[\u0400-\u04ff]/.test(`${rawTitle} ${rawArtist}`);
+    const hasKrChars = /[\uac00-\ud7af]/.test(`${rawTitle} ${rawArtist}`);
+    const isIdExplicit = Boolean(meta?.isIndonesianVersion);
+    let isIdSong = false;
+    if (isIdExplicit) {
+        isIdSong = true;
+    } else if (!hasJpChars && !hasRuChars && !hasKrChars) {
+        isIdSong = Boolean(meta?.isIndonesian || isIndonesianText(meta?.cleanedTitle || rawTitle));
+    }
+
+    const isJpSong = Boolean(hasJpChars || (meta && (meta.likelyJapanese || meta.isJapaneseVersion)));
+    const isRuSong = Boolean(hasRuChars);
+    const isKrSong = Boolean(hasKrChars || (meta && meta.isKoreanVersion));
+    const isEngSong = Boolean((meta && meta.isEnglishVersion) || (!isJpSong && !isIdSong && !isRuSong && !isKrSong) || /\b(alice&u)\b/i.test(`${rawTitle} ${rawArtist}`));
+
+    const hasNativeManualTrack = (tracks) => {
+        if (!Array.isArray(tracks)) return false;
+        return tracks.some(t => {
+            if (!t || t.kind === 'asr') return false;
+            const l = String(t.languageCode || '').toLowerCase();
+            if (isJpSong && l.startsWith('ja')) return true;
+            if (isIdSong && l.startsWith('id')) return true;
+            if (isKrSong && l.startsWith('ko')) return true;
+            if (isRuSong && l.startsWith('ru')) return true;
+            return false;
+        });
+    };
+
     // Periksa hingga 3 kandidat video teratas untuk menemukan video dengan captionTracks (menghindari video topik statis tanpa subtitle)
     for (const candVid of videoIds.slice(0, 3)) {
         for (const client of [IOS_CLIENT, ANDROID_CLIENT]) {
@@ -274,55 +303,58 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
                 : [];
             if (tracks.length > 0) {
                 const hasManual = tracks.some(t => t && t.kind !== 'asr');
+                const hasNative = hasNativeManualTrack(tracks);
                 if (!chosenVideo) {
                     captionTracks = tracks;
                     usedClient = client;
                     chosenVideo = candVid;
                     // Pada lagu cover, kunci video persis yang ditonton dan JANGAN ganti dengan video cover penyanyi lain!
-                    if (meta?.isCover || hasManual) break;
-                } else if (!meta?.isCover && candVid.score >= chosenVideo.score - 15 && hasManual) {
-                    captionTracks = tracks;
-                    usedClient = client;
-                    chosenVideo = candVid;
-                    break;
+                    if (meta?.isCover || hasNative) break;
+                } else if (!meta?.isCover) {
+                    const currentHasNative = hasNativeManualTrack(captionTracks);
+                    if (!currentHasNative && hasNative) {
+                        captionTracks = tracks;
+                        usedClient = client;
+                        chosenVideo = candVid;
+                        break;
+                    } else if (candVid.score >= chosenVideo.score - 15 && hasManual && !currentHasNative) {
+                        captionTracks = tracks;
+                        usedClient = client;
+                        chosenVideo = candVid;
+                    }
                 }
             }
         }
-        if (chosenVideo && (meta?.isCover || captionTracks.some(t => t && t.kind !== 'asr'))) {
+        const chosenHasNative = hasNativeManualTrack(captionTracks);
+        if (chosenVideo && (meta?.isCover || chosenHasNative)) {
             break;
         }
     }
 
     if (!chosenVideo || captionTracks.length === 0) return null;
 
-    // Pisahkan kandidat ASR (memiliki <s t="..."> timestamp vokal per kata langsung dari gelombang audio)
-    // dan kandidat Manual CC (subtitle dari kreator)
-    const hasJpChars = hasJapaneseChars(rawTitle) || hasJapaneseChars(rawArtist) || Boolean(meta && meta.hasJpText);
-    const hasRuChars = /[\u0400-\u04ff]/.test(`${rawTitle} ${rawArtist}`);
-    const hasKrChars = /[\uac00-\ud7af]/.test(`${rawTitle} ${rawArtist}`);
-    const isIdExplicit = Boolean(meta?.isIndonesianVersion);
-    let isIdSong = false;
-    if (isIdExplicit) {
-        isIdSong = true;
-    } else if (!hasJpChars && !hasRuChars && !hasKrChars) {
-        isIdSong = Boolean(meta?.isIndonesian || isIndonesianText(meta?.cleanedTitle || rawTitle));
-    }
-
-    const isJpSong = Boolean(hasJpChars || (meta && (meta.likelyJapanese || meta.isJapaneseVersion)));
-    const isRuSong = Boolean(hasRuChars);
-    const isKrSong = Boolean(hasKrChars || (meta && meta.isKoreanVersion));
-    const isEngSong = Boolean((meta && meta.isEnglishVersion) || (!isJpSong && !isIdSong && !isRuSong && !isKrSong) || /\b(alice&u)\b/i.test(`${rawTitle} ${rawArtist}`));
+    const isRomaTrack = (t) => {
+        if (!t) return false;
+        const name = String(t.name?.simpleText || t.name?.runs?.[0]?.text || t.name || '');
+        const vss = String(t.vssId || '');
+        return /roman\s*alphabet|romaji|latn/i.test(name) || /ja-latn|\.latn/i.test(vss);
+    };
 
     const scoreLang = (t) => {
         const lang = String(t.languageCode || '').toLowerCase();
         let s = 0;
         if (t.kind !== 'asr') {
+            if (isRomaTrack(t)) {
+                // Romaji track resmi (misal 'English - Roman alphabet') tidak dijadikan vokal kanji utama
+                return { track: t, lang: 'roma', langScore: 100, isRoma: true };
+            }
             // Manual CC resmi yang diunggah kreator video cover/lagu (Prioritas Utama!)
             if (isIdSong && lang.startsWith('id')) s += 220;
             else if (isRuSong && lang.startsWith('ru')) s += 200;
             else if (isKrSong && lang.startsWith('ko')) s += 200;
-            else if (isJpSong && lang.startsWith('ja')) s += 200;
+            else if (isJpSong && lang.startsWith('ja')) s += 220;
             else if (isEngSong && lang.startsWith('en')) s += 200;
+            else if (isJpSong && lang.startsWith('en')) s += 140; // Terjemahan bahasa Inggris tidak boleh mengalahkan vokal Jepang!
             else if (lang.startsWith('en')) s += 180;
             else if (lang.startsWith('ja')) s += 170;
             else if (lang.startsWith('id')) s += 160;
@@ -372,15 +404,18 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     const bestAsr = asrCandidates[0] || null;
     const bestManual = manualCandidates[0] || null;
 
+    const romaTrack = captionTracks.find(t => t && t.baseUrl && isRomaTrack(t));
     const idTrack = captionTracks.find(t => t && t.baseUrl && String(t.languageCode || '').toLowerCase().startsWith('id') && t.kind !== 'asr') ||
                     captionTracks.find(t => t && t.baseUrl && String(t.languageCode || '').toLowerCase().startsWith('id'));
-    const jaTrack = captionTracks.find(t => t && t.baseUrl && String(t.languageCode || '').toLowerCase().startsWith('ja') && t.kind !== 'asr');
+    const jaTrack = captionTracks.find(t => t && t.baseUrl && String(t.languageCode || '').toLowerCase().startsWith('ja') && t.kind !== 'asr') ||
+                    captionTracks.find(t => t && t.baseUrl && String(t.languageCode || '').toLowerCase().startsWith('ja'));
 
-    const [asrXmlRes, manualXmlRes, idXmlRes, jaXmlRes] = await Promise.all([
+    const [asrXmlRes, manualXmlRes, idXmlRes, jaXmlRes, romaXmlRes] = await Promise.all([
         bestAsr ? httpRequestRaw(`${bestAsr.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 5000 }) : Promise.resolve({ body: '' }),
         bestManual ? httpRequestRaw(`${bestManual.track.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 5000 }) : Promise.resolve({ body: '' }),
         (idTrack && (!bestManual || idTrack !== bestManual.track)) ? httpRequestRaw(`${idTrack.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 5000 }).catch(() => ({ body: '' })) : Promise.resolve({ body: '' }),
-        (jaTrack && (!bestManual || jaTrack !== bestManual.track)) ? httpRequestRaw(`${jaTrack.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 5000 }).catch(() => ({ body: '' })) : Promise.resolve({ body: '' })
+        (jaTrack && (!bestManual || jaTrack !== bestManual.track)) ? httpRequestRaw(`${jaTrack.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 5000 }).catch(() => ({ body: '' })) : Promise.resolve({ body: '' }),
+        (romaTrack && (!bestManual || romaTrack !== bestManual.track)) ? httpRequestRaw(`${romaTrack.baseUrl}&fmt=srv3`, { ua: usedClient.ua, timeout: 5000 }).catch(() => ({ body: '' })) : Promise.resolve({ body: '' })
     ]);
 
     const parsedAsr = (asrXmlRes && asrXmlRes.body && asrXmlRes.body.length > 50)
@@ -394,6 +429,9 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         : { tokens: [], lines: [] };
     const parsedJa = (jaXmlRes && jaXmlRes.body && jaXmlRes.body.length > 50)
         ? parseSrv3Stream(jaXmlRes.body)
+        : { tokens: [], lines: [] };
+    const parsedRoma = (romaXmlRes && romaXmlRes.body && romaXmlRes.body.length > 50)
+        ? parseSrv3Stream(romaXmlRes.body)
         : { tokens: [], lines: [] };
 
 const STRICT_DANGLING_REGEX = /\b(tak|tidak|bukan|belum|jangan|tanpa|mau|akan|ingin|sedang|sudah|telah|saat|ketika|waktu|sebelum|sesudah|setelah|sementara|jikalau|andaikan|seandainya|umpama|ibarat|laksana|bagai|seperti|antara|hingga|sampai|demi|bagi|guna|buat|tentang|mengenai|terhadap|oleh|karena|sebab|maka|sehingga|padahal|sedangkan|melainkan|tetapi|namun|walau|meski|kendati|biar|dan|dan\s+juga|serta|atau|yang|di|ke|dari|pada|dalam|atas|bawah|saling|berbagi|not|no|never|can|cannot|could|would|should|will|shall|might|may|must|have|has|had|is|am|are|was|were|be|been|being|if|when|while|since|until|till|before|after|because|as|though|although|even|whether|like|about|into|onto|through|over|under|above|below|between|among|without|within|with|for|by|at|on|in|to|of|from|and|or|nor|but|yet|so|the|a|an|that),?$/i;
@@ -676,6 +714,31 @@ function sanitizeBilingualManualLines(rawLines, isIdSong = false) {
         });
     }
 
+    const cleanRomaLines = parsedRoma.lines.length > 0 ? parsedRoma.lines : [];
+    if (primaryLines.length > 0 && cleanRomaLines.length > 0 && primaryLines !== cleanRomaLines) {
+        primaryLines.forEach((l, idx) => {
+            if (!l.romaText) {
+                let bestRo = null;
+                if (cleanRomaLines[idx] && Math.abs(cleanRomaLines[idx].time - l.time) <= 1.2) {
+                    bestRo = cleanRomaLines[idx];
+                } else {
+                    let minDiff = 999;
+                    for (const rl of cleanRomaLines) {
+                        const diff = Math.abs(rl.time - l.time);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            bestRo = rl;
+                        }
+                    }
+                    if (minDiff > 2.2) bestRo = null;
+                }
+                if (bestRo && bestRo.text) {
+                    l.romaText = bestRo.text.trim();
+                }
+            }
+        });
+    }
+
     if (primaryTokens.length === 0 && primaryLines.length === 0) return null;
 
     return {
@@ -687,7 +750,8 @@ function sanitizeBilingualManualLines(rawLines, isIdSong = false) {
         tokens: primaryTokens,
         lines: primaryLines,
         japaneseLines: (meta?.isIndonesianVersion) ? [] : cleanJaLines,
-        indonesianLines: cleanIdLines
+        indonesianLines: cleanIdLines,
+        romaLines: cleanRomaLines
     };
 }
 

@@ -126,7 +126,8 @@ function cleanArtistName(rawArtist) {
 }
 
 function parseTrackMetadata(rawTitle, rawArtist) {
-    const origTitle = String(rawTitle || '').trim();
+    const cleanRawTitle = String(rawTitle || '').replace(/^\(\d+\+?\)\s*/, '').trim();
+    const origTitle = cleanRawTitle;
     const origArtist = String(rawArtist || '').replace(/-\s*topic$/i, '').replace(/VEVO$/i, '').trim();
 
     const isEnglishVersion = /\b(english\s*ver(?:sion)?|eng\s*ver(?:sion)?|english\s*cover|eng\s*cover|cover\s*in\s*english|en\s*ver)\b/i.test(`${origTitle} ${origArtist}`) ||
@@ -281,7 +282,7 @@ function parseTrackMetadata(rawTitle, rawArtist) {
 
     let likelyJapanese =
         hasJpText ||
-        (!isIndonesian && /\b(yoasobi|ado|vaundy|kenshi\s*yonezu|radwimps|lisa|aimer|eve|yorushika|zutomayo|hige\s*dism|official\s*higedandism|mrs\.\s*green\s*apple|fujii\s*kaze|majiko|yuuri|tuyu|mafumafu|kikuo|deco\*27|kanaria|pinocchiop|hoshimachi\s*suisei|shigure\s*ui|hololive|nijisanji|utattemita|kokoronashi|shinunoga|unravel|gurenge|idol|sparkle|zenzenzense|nandemonaiya|suzume|kaijuu|odoriko|lemon|kick\s*back|blinding|specialz|ao\s*no\s*sumika|kaikai\s*kitan|alice&u)\b/i.test(`${origTitle} ${origArtist}`));
+        (!isIndonesian && /\b(yoasobi|ado|vaundy|kenshi\s*yonezu|radwimps|lisa|aimer|eve|yorushika|zutomayo|hige\s*dism|official\s*higedandism|mrs\.\s*green\s*apple|fujii\s*kaze|majiko|yuuri|tuyu|mafumafu|kikuo|deco\*27|kanaria|pinocchiop|hoshimachi\s*suisei|shigure\s*ui|creepy\s*nuts|kohana\s*lam|atarashii\s*gakko|ano|milet|king\s*gnu|one\s*ok\s*rock|aimyon|back\s*number|saucy\s*dog|sekai\s*no\s*owari|spyair|flow|kana-?boon|bump\s*of\s*chicken|asian\s*kung-?fu\s*generation|akfg|unison\s*square\s*garden|myth\s*&\s*roid|reona|clari[sz]|eir\s*aoi|garnidelia|supercell|chelly|egoist|yanaginagi|sawano|nzk|hololive|nijisanji|utattemita|kokoronashi|shinunoga|unravel|gurenge|idol|sparkle|zenzenzense|nandemonaiya|suzume|kaijuu|odoriko|lemon|kick\s*back|blinding|specialz|ao\s*no\s*sumika|kaikai\s*kitan|call\s*of\s*the\s*night|yofukashi|dandadan|boku\s*no\s*kokoro|bokuyaba|op\s*theme|ed\s*theme|opening\s*theme|ending\s*theme|alice&u)\b/i.test(`${origTitle} ${origArtist}`));
 
     if (isIndonesian && !hasJpText && !/\b(utattemita|anime|jpop|j-pop|vocaloid)\b/i.test(origTitle)) {
         likelyJapanese = false;

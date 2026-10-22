@@ -357,46 +357,79 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
             });
         }
 
-        // Pasangkan juga karakter kanji/kana dari database resmi (LRCLIB / NetEase / KuGou) jika subtitle YouTube hanya memuat Romaji
+        function cleanJpChars(str) {
+            return String(str || '').replace(/[\s\u3000、。！？!?・~〜「」『』()（）\-—–.,]/g, '').toLowerCase();
+        }
+
         const allDbLines = [
             ...(bestDb?.lines || []),
             ...(dbBundle?.lrcRes?.lines || []),
             ...(dbBundle?.neRes?.lines || []),
             ...(dbBundle?.kgRes?.lines || [])
         ];
-        const jpDbLines = allDbLines.filter(dbl => hasJapaneseChars(dbl.rawText || dbl.text || ''));
-        if (jpDbLines.length > 0) {
-            for (const dbl of jpDbLines) {
-                const dbTxt = dbl.rawText || dbl.text || '';
-                let bestYt = null;
-                let minCost = 999;
+
+        if (ytHasNativeLines) {
+            // YouTube CC sudah memuat karakter kanji/kana asli (seperti Kohana Lam atau Creepy Nuts).
+            // DILARANG MENIMPA jpText DENGAN SELISIH WAKTU 14 DETIK!
+            // Cukup pasangkan Romaji (dbl.romaText) dari database resmi jika teks kanji/kana-nya cocok:
+            const romaDbLines = allDbLines.filter(dbl => dbl.romaText && hasJapaneseChars(dbl.rawText || dbl.text || ''));
+            if (romaDbLines.length > 0) {
                 for (const ytl of ytCaptions.lines) {
-                    const timeDiff = Math.abs(dbl.time - ytl.time);
-                    if (timeDiff > 14) continue;
+                    if (ytl.romaText && !isMoraSpacedRomaji(ytl.romaText)) continue;
+                    const yClean = cleanJpChars(ytl.rawText || ytl.text);
+                    if (!yClean || yClean.length < 2) continue;
 
-                    const yText = String(ytl.rawText || ytl.text || '').trim();
-                    if (/^(?:Terima kasih|Apakah|Nah,|Irama|Senandung|Untukku|Maka|Ada perjalanan|Yakni|Ungkapkan|Dan percayalah|Every day|Thank you|A complete|Legacy,|I believe|Let the wind|Has been sung|Sung with)/i.test(yText)) {
-                        continue;
+                    let bestRoma = null;
+                    for (const dbl of romaDbLines) {
+                        const dbClean = cleanJpChars(dbl.rawText || dbl.text);
+                        if (!dbClean) continue;
+                        if (yClean === dbClean || yClean.includes(dbClean) || dbClean.includes(yClean)) {
+                            bestRoma = dbl.romaText;
+                            break;
+                        }
                     }
-
-                    let affinityBonus = 0;
-                    const yNorm = yText.toLowerCase();
-                    if (dbTxt.includes('星屑') && yNorm.includes('hoshikuzu')) affinityBonus = 12;
-                    if (dbTxt.includes('喜び') && yNorm.includes('yorokobi')) affinityBonus = 12;
-                    if (dbTxt.includes('記憶') && yNorm.includes('kioku')) affinityBonus = 12;
-                    if (dbTxt.includes('燃える') && yNorm.includes('moeru')) affinityBonus = 12;
-                    if (dbTxt.includes('呼んで') && yNorm.includes('yonde')) affinityBonus = 12;
-                    if (dbTxt.includes('聴いて') && yNorm.includes('kiite')) affinityBonus = 12;
-                    if (dbTxt.includes('声') && yNorm.includes('koe')) affinityBonus = 12;
-
-                    const cost = timeDiff - affinityBonus;
-                    if (cost < minCost) {
-                        minCost = cost;
-                        bestYt = ytl;
+                    if (bestRoma) {
+                        ytl.romaText = bestRoma;
                     }
                 }
-                if (bestYt && (!bestYt.jpText || !hasJapaneseChars(bestYt.jpText))) {
-                    bestYt.jpText = dbTxt;
+            }
+        } else {
+            // Subtitle YouTube HANYA memuat Romaji (seperti ReoNa Amore).
+            // Pasangkan karakter kanji dari database resmi:
+            const jpDbLines = allDbLines.filter(dbl => hasJapaneseChars(dbl.rawText || dbl.text || ''));
+            if (jpDbLines.length > 0) {
+                for (const dbl of jpDbLines) {
+                    const dbTxt = dbl.rawText || dbl.text || '';
+                    let bestYt = null;
+                    let minCost = 999;
+                    for (const ytl of ytCaptions.lines) {
+                        const timeDiff = Math.abs(dbl.time - ytl.time);
+                        if (timeDiff > 14) continue;
+
+                        const yText = String(ytl.rawText || ytl.text || '').trim();
+                        if (/^(?:Terima kasih|Apakah|Nah,|Irama|Senandung|Untukku|Maka|Ada perjalanan|Yakni|Ungkapkan|Dan percayalah|Every day|Thank you|A complete|Legacy,|I believe|Let the wind|Has been sung|Sung with)/i.test(yText)) {
+                            continue;
+                        }
+
+                        let affinityBonus = 0;
+                        const yNorm = yText.toLowerCase();
+                        if (dbTxt.includes('星屑') && yNorm.includes('hoshikuzu')) affinityBonus = 12;
+                        if (dbTxt.includes('喜び') && yNorm.includes('yorokobi')) affinityBonus = 12;
+                        if (dbTxt.includes('記憶') && yNorm.includes('kioku')) affinityBonus = 12;
+                        if (dbTxt.includes('燃える') && yNorm.includes('moeru')) affinityBonus = 12;
+                        if (dbTxt.includes('呼んで') && yNorm.includes('yonde')) affinityBonus = 12;
+                        if (dbTxt.includes('聴いて') && yNorm.includes('kiite')) affinityBonus = 12;
+                        if (dbTxt.includes('声') && yNorm.includes('koe')) affinityBonus = 12;
+
+                        const cost = timeDiff - affinityBonus;
+                        if (cost < minCost) {
+                            minCost = cost;
+                            bestYt = ytl;
+                        }
+                    }
+                    if (bestYt && (!bestYt.jpText || !hasJapaneseChars(bestYt.jpText))) {
+                        bestYt.jpText = dbTxt;
+                    }
                 }
             }
         }
@@ -580,7 +613,7 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
         );
         if (missingLines.length > 0) {
             const toProcess = missingLines.slice(0, 95);
-            const rawTexts = toProcess.map(l => l.jpText || l.rawText || l.text || '');
+            const rawTexts = toProcess.map(l => (l.jpText && hasJapaneseChars(l.jpText)) ? l.jpText : (l.rawText || l.text || ''));
             const isJp = rawTexts.some(t => hasJapaneseChars(t));
             const isKr = rawTexts.some(t => /[\uac00-\ud7af]/.test(t));
             const isRu = rawTexts.some(t => /[\u0400-\u04ff]/.test(t));
