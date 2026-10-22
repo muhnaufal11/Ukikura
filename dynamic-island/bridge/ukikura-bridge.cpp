@@ -1469,6 +1469,7 @@ class ForegroundWindowMonitor {
 private:
     bool m_lastBrowserMaximized = false;
     bool m_lastMaximized = false;
+    bool m_lastPrimary = false;
     std::string m_lastApp = "";
     int m_tick = 0;
     bool m_hasInitialScan = false;
@@ -1479,12 +1480,22 @@ public:
         HWND fg = GetForegroundWindow();
         if (!fg) return;
 
+        HMONITOR hMon = MonitorFromWindow(fg, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO mi;
+        mi.cbSize = sizeof(mi);
+        bool isPrimary = true;
+        RECT monRect = { 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
+        if (hMon && GetMonitorInfoW(hMon, &mi)) {
+            isPrimary = ((mi.dwFlags & MONITORINFOF_PRIMARY) != 0);
+            monRect = mi.rcMonitor;
+        }
+
         bool isMaximized = false;
-        RECT rc;
+        RECT rc = { 0, 0, 0, 0 };
         if (GetWindowRect(fg, &rc)) {
-            int screenW = GetSystemMetrics(SM_CXSCREEN);
-            // Jika jendela menutupi area paling atas layar
-            if (rc.top <= 2 && (rc.right - rc.left) >= (screenW - 40)) {
+            int monW = monRect.right - monRect.left;
+            // Jika jendela menutupi area paling atas layar monitor tempat jendela berada
+            if (rc.top <= (monRect.top + 2) && (rc.right - rc.left) >= (monW - 40)) {
                 isMaximized = true;
             }
         }
@@ -1546,17 +1557,27 @@ public:
         }
 
         bool browserMaximized = (isBrowser && isMaximized);
-        bool changed = (!m_hasInitialScan) || (browserMaximized != m_lastBrowserMaximized) || (isMaximized != m_lastMaximized);
+        bool changed = (!m_hasInitialScan) ||
+                       (browserMaximized != m_lastBrowserMaximized) ||
+                       (isMaximized != m_lastMaximized) ||
+                       (isPrimary != m_lastPrimary) ||
+                       (appName != m_lastApp);
         if (changed || (m_tick % 10 == 0)) {
             m_hasInitialScan = true;
             m_lastBrowserMaximized = browserMaximized;
             m_lastMaximized = isMaximized;
+            m_lastPrimary = isPrimary;
             m_lastApp = appName;
 
             std::ostringstream ss;
             ss << "{\"type\":\"window_state\",\"browserMaximized\":" 
                << (browserMaximized ? "true" : "false") 
                << ",\"isMaximized\":" << (isMaximized ? "true" : "false")
+               << ",\"isPrimary\":" << (isPrimary ? "true" : "false")
+               << ",\"x\":" << rc.left
+               << ",\"y\":" << rc.top
+               << ",\"w\":" << (rc.right - rc.left)
+               << ",\"h\":" << (rc.bottom - rc.top)
                << ",\"app\":\"" << appName << "\"}";
             PrintJson(ss.str());
         }

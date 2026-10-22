@@ -1,5 +1,5 @@
 "use strict";
-const { app } = require("electron");
+const { app, screen } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
@@ -216,8 +216,50 @@ function startWinRtBridge() {
                             mainWindow.webContents.send('volume-update', msg);
                         }
                     } else if (msg.type === 'window_state') {
+                        const mainWindow = getMainWindow();
+                        if (mainWindow && !mainWindow.isDestroyed()) {
+                            try {
+                                const islandDisplay = screen.getDisplayMatching(mainWindow.getBounds());
+                                const primaryDisplay = screen.getPrimaryDisplay();
+                                const isIslandOnPrimary = (islandDisplay.id === primaryDisplay.id);
+
+                                let isOnSameDisplay = false;
+                                if (typeof msg.isPrimary === 'boolean') {
+                                    if (isIslandOnPrimary && msg.isPrimary) {
+                                        isOnSameDisplay = true;
+                                    } else if (!isIslandOnPrimary && !msg.isPrimary) {
+                                        if (typeof msg.x === 'number' && typeof msg.w === 'number') {
+                                            const winCenterX = msg.x + Math.round(msg.w / 2);
+                                            const winCenterY = msg.y + Math.round(msg.h / 2);
+                                            isOnSameDisplay = (
+                                                winCenterX >= islandDisplay.bounds.x &&
+                                                winCenterX < (islandDisplay.bounds.x + islandDisplay.bounds.width) &&
+                                                winCenterY >= islandDisplay.bounds.y &&
+                                                winCenterY < (islandDisplay.bounds.y + islandDisplay.bounds.height)
+                                            );
+                                        } else {
+                                            isOnSameDisplay = true;
+                                        }
+                                    }
+                                } else if (typeof msg.x === 'number' && typeof msg.w === 'number') {
+                                    const winCenterX = msg.x + Math.round(msg.w / 2);
+                                    const winCenterY = msg.y + Math.round(msg.h / 2);
+                                    isOnSameDisplay = (
+                                        winCenterX >= islandDisplay.bounds.x &&
+                                        winCenterX < (islandDisplay.bounds.x + islandDisplay.bounds.width) &&
+                                        winCenterY >= islandDisplay.bounds.y &&
+                                        winCenterY < (islandDisplay.bounds.y + islandDisplay.bounds.height)
+                                    );
+                                } else {
+                                    isOnSameDisplay = isIslandOnPrimary;
+                                }
+
+                                msg.isOnSameDisplay = isOnSameDisplay;
+                                msg.browserMaximized = Boolean(msg.browserMaximized && isOnSameDisplay);
+                            } catch (_) {}
+                        }
                         lastWindowState = msg;
-                        const mainWindow = getMainWindow(); if (mainWindow && !mainWindow.isDestroyed()) {
+                        if (mainWindow && !mainWindow.isDestroyed()) {
                             mainWindow.webContents.send('window-state', msg);
                         }
                     }

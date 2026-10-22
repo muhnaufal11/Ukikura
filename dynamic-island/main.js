@@ -308,8 +308,24 @@ function startNusaHoverLoop() {
         }
 
         // Deteksi apakah jendela latar depan yang sedang aktif adalah browser dalam mode fullscreen / maximized
+        // PENTING: Browser HARUS berada di layar monitor yang SAMA dengan posisi pulau Ukikura!
+        // Jika browser di-maximize di layar sebelah (secondary display), pulau di layar utama TIDAK BOLEH ikut melipat!
         const winState = typeof getLastWindowState === 'function' ? getLastWindowState() : null;
-        const isBrowserMaximized = Boolean(winState && (winState.browserMaximized || (winState.isMaximized && winState.app && /brave|chrome|edge|firefox|opera|vivaldi|zen|waterfox|arc/i.test(winState.app))));
+        let isBrowserMaximized = false;
+        if (winState && (winState.browserMaximized || (winState.isMaximized && winState.app && /brave|chrome|edge|firefox|opera|vivaldi|zen|waterfox|arc/i.test(winState.app)))) {
+            if (typeof winState.isOnSameDisplay === 'boolean') {
+                isBrowserMaximized = winState.isOnSameDisplay && Boolean(winState.browserMaximized);
+            } else {
+                const islandDisplay = screen.getDisplayMatching(mainWindow.getBounds());
+                const primaryDisplay = screen.getPrimaryDisplay();
+                const isIslandOnPrimary = (islandDisplay.id === primaryDisplay.id);
+                if (typeof winState.isPrimary === 'boolean') {
+                    isBrowserMaximized = (isIslandOnPrimary === winState.isPrimary) && Boolean(winState.browserMaximized);
+                } else {
+                    isBrowserMaximized = isIslandOnPrimary && Boolean(winState.browserMaximized);
+                }
+            }
+        }
 
         if (isBrowserMaximized) {
             // =====================================================================
@@ -664,6 +680,7 @@ ipcMain.on('island-quit', () => {
 });
 
 const gotLock = app.requestSingleInstanceLock();
+try { fs.appendFileSync(path.join(process.env.TEMP || '', 'ukikura_lock.log'), 'gotLock: ' + gotLock + ' at ' + new Date().toISOString() + '\n'); } catch (_) {}
 if (!gotLock) {
     app.quit();
 } else {

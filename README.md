@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch69-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch70-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -148,6 +148,9 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
 - **WhatsApp Companion**: Mendeteksi pesan dan stiker WhatsApp masuk secara *real-time* dan menampilkannya melalui *Peek Popup* tanpa harus membuka jendela browser penuh.
 
 ### 4. Interaksi Kapsul, Maskot, & Pengaturan Hemat Daya (`mascot-engine.js` & `core-state.js`)
+- **Isolasi Multi-Monitor: Deteksi Fullscreen Browser Hanya pada Layar Pulau (Patch 70)**:
+  - **Pencegahan False-Positive pada Multi-Monitor / Layar Kedua**: Memperbaiki kendala di mana browser yang dibuka fullscreen/maximized di monitor kedua (layar sebelah / secondary display) secara keliru memicu mode lipat tab pada kapsul pulau Ukikura di monitor utama.
+  - **Validasi Monitor Native & Koordinat Layar**: Bridge C++ (`ukikura-bridge.cpp`) kini mengecek `HMONITOR` dan bendera `MONITORINFOF_PRIMARY` secara native serta mengukur dimensi layar monitor aktif, dan Electron main loop (`winrt-client.js` & `main.js`) memverifikasi bahwa browser berada di display yang sama dengan pulau sebelum mengaktifkan mode penghindaran tab.
 - **Sinkronisasi Status & Baterai HP Realtime via Phone Link (Patch 68)**:
   - **Integrasi Penuh Microsoft Phone Link (Link to Windows)**: Mengintegrasikan deteksi status koneksi dan persentase baterai HP secara native di dalam bridge C++ (`ukikura-bridge.exe`) serta live companion watcher di Node.js. Menampilkan nama perangkat HP (seperti *Redmi Note 13 Pro+ 5G*), persentase daya baterai HP realtime, dan status pengisian daya (cas) di Header Island dan Halaman 2 (Baterai HP & Notifikasi WA).
   - **Zero-Latency Live File Watcher**: Mengawasi pembaruan berkas `StartMenuCompanion.json` milik Phone Link sehingga setiap perubahan level baterai atau status sambungan HP langsung terkirim seketika ke kapsul pulau tanpa perlu restart atau menunggu interval polling.
