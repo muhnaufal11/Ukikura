@@ -747,10 +747,11 @@
     }
 
     /* ========================================================
-       MODE CLOSED LYRICS NOTCH (SESUAI GAMBAR DESAIN UKIKURA)
+       MODE CLOSED LYRICS NOTCH (KARAOKE COMPACT DISPLAY)
        - Bezel atas layar menempel mulus dengan squircle concave ears
-       - Ikon beamed musical note di sisi kiri
-       - Teks lirik aktif (atau "Lyrics not available") di tengah
+       - Ikon beamed musical note & mini album art di sisi kiri
+       - Teks lirik aktif tersinkronisasi kinetik di tengah
+       - Equalizer audio jumping bars di sisi kanan (simetris)
        ======================================================== */
     .idle-lyrics-row {
         position: absolute;
@@ -758,37 +759,165 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 18px;
+        padding: 0 14px;
         box-sizing: border-box;
         overflow: hidden;
         user-select: none;
     }
 
-    .idle-note-icon {
-        flex-shrink: 0;
-        color: #ffffff;
-        opacity: 0.95;
-        width: 13px;
-        height: 13px;
-        display: inline-flex;
+    /* Badge Media di Sisi Kiri */
+    .idle-media-badge {
+        position: relative;
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+        transition: background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
     }
 
-    .idle-lyric-text {
+    .mn.playing .idle-media-badge {
+        background: rgba(25, 184, 255, 0.12);
+        border-color: rgba(25, 184, 255, 0.25);
+        box-shadow: 0 0 10px rgba(25, 184, 255, 0.2);
+    }
+
+    .idle-note-icon {
+        width: 12px;
+        height: 12px;
+        color: rgba(255, 255, 255, 0.95);
+        fill: currentColor;
+        flex-shrink: 0;
+        transition: color 0.2s ease, transform 0.2s ease;
+    }
+
+    .mn.playing .idle-note-icon {
+        color: #5ec2ff;
+    }
+
+    .idle-media-badge .idle-art {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        background-size: cover;
+        background-position: center;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+
+    .idle-media-badge .idle-art.has-art {
+        display: block;
+        opacity: 1;
+    }
+
+    .idle-media-badge .idle-art.has-art + .idle-note-icon {
+        display: none;
+    }
+
+    /* Viewport Lirik Tengah Simetris */
+    .idle-lyric-viewport {
+        position: relative;
         flex: 1;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        margin: 0 10px;
+        mask-image: linear-gradient(90deg, transparent 0, #000 8px, #000 calc(100% - 8px), transparent 100%);
+        -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8px, #000 calc(100% - 8px), transparent 100%);
+    }
+
+    /* Garis Lirik Kinetik dengan Animasi Pergantian Halus */
+    .idle-lyric-line,
+    .idle-lyric-text {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         text-align: center;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-family: var(--ui);
         font-size: 12.5px;
-        font-weight: 500;
+        font-weight: 600;
         color: #ffffff;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         letter-spacing: -0.15px;
-        padding: 0 10px;
-        /* Kompensasi offset ikon di kiri agar posisi teks benar-benar berada di titik tengah notch */
-        margin-right: 13px;
+        padding: 0 4px;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        will-change: transform, opacity, filter;
+        transition:
+            transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+            opacity 0.24s ease,
+            filter 0.24s ease;
+    }
+
+    .idle-lyric-line.is-entering {
+        transform: translateY(9px) scale(0.96);
+        opacity: 0;
+        filter: blur(1.5px);
+    }
+
+    .idle-lyric-line.is-active {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+        filter: blur(0);
+    }
+
+    .idle-lyric-line.is-exiting {
+        transform: translateY(-9px) scale(0.96);
+        opacity: 0;
+        filter: blur(1.5px);
+        pointer-events: none;
+    }
+
+    /* Equalizer Mini Audio di Sisi Kanan (Penyelaras Simetri) */
+    .idle-eq {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        flex-shrink: 0;
+    }
+
+    .idle-eq i {
+        width: 2px;
+        height: 3px;
+        border-radius: 1.5px;
+        background: rgba(255, 255, 255, 0.4);
+        transition: height 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+    }
+
+    .mn.playing .idle-eq i {
+        background: #5ec2ff;
+        box-shadow: 0 0 6px rgba(25, 184, 255, 0.4);
+        animation: idle-eq-bounce 0.85s ease-in-out infinite alternate;
+    }
+
+    .mn.playing .idle-eq i:nth-child(1) { animation-delay: -0.2s; animation-duration: 0.65s; }
+    .mn.playing .idle-eq i:nth-child(2) { animation-delay: -0.5s; animation-duration: 0.85s; }
+    .mn.playing .idle-eq i:nth-child(3) { animation-delay: -0.1s; animation-duration: 0.72s; }
+    .mn.playing .idle-eq i:nth-child(4) { animation-delay: -0.35s; animation-duration: 0.92s; }
+
+    @keyframes idle-eq-bounce {
+        0% { height: 3px; }
+        50% { height: 11px; }
+        100% { height: 5px; }
     }
 
     /* Baris Tertutup Legacy (Idle Mode) */

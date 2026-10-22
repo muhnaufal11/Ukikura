@@ -8,7 +8,7 @@
 #define MyAppName "Ukikura"
 #define MyAppFullTitle "Ukikura (浮倉) — Floating Island & Task Vault"
 #define MyAppVersion "1.0.6"
-#define MyAppVersionCode "73"
+#define MyAppVersionCode "74"
 #define MyAppPublisher "Nauflix (muhnaufal11)"
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
 #define MyAppExeName "Ukikura.exe"

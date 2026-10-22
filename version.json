@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 73,
+  "versionCode": 74,
   "version": "1.0.6",
-  "fixCount": 73,
-  "displayVersion": "1.0.6 (Patch 73 - Isolasi Bahasa Asli & Navigasi Terpadu Seluruh Fitur)",
+  "fixCount": 74,
+  "displayVersion": "1.0.6 (Patch 74 - Animasi Pergantian Lirik Kinetik & Penataan Simetri Mode Karaoke)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 73): 1) Isolasi Bahasa Asli (Lirik Indonesia vs Terjemahan Asing): Memperbaiki kendala di mana subtitle terjemahan Jepang resmi (Manual CC YouTube) pada lagu Indonesia (seperti Airani Iofifteen - Lucu Juga) secara keliru diidentifikasi sebagai lirik utama berbahasa Jepang dan ditransliterasi menjadi Romaji. Sistem kini memprioritaskan vokal asli Indonesia dan database kanonikal (NetEase/LRCLIB) di atas terjemahan asing. 2) Navigasi Terpadu Seluruh Fitur: Mengembalikan titik navigasi (.dots) dan panah samping (btn-prev / btn-next) agar selalu aktif dan terlihat pada mode lirik 520px sehingga pengguna leluasa berpindah ke LMS Tasks, Kalender Pintar, Pomodoro Timer, Baterai & Notifikasi WA, serta File Shelf. Ditambahkan navigasi 1-klik pada judul header dan gesture swipe/scroll horizontal."
+  "changelog": "Ukikura v1.0.6 (Patch 74): 1) Animasi Pergantian Lirik Kinetik (Mode Karaoke Tertutup): Mengimplementasikan transisi teks lirik kinetik vertical slide (Apple-style push roll) 60fps dengan double requestAnimationFrame, GPU acceleration, dan font smoothing grayscale anti-fringing pada jendela transparan. 2) Penataan Simetri & Kerapihan Mode Karaoke: Menambahkan badge media squircle berbingkai frosted glass dengan beamed note icon/mini album art di sisi kiri, serta mini visualizer equalizer dancing bars di sisi kanan untuk menjaga keseimbangan visual simetris 100% tepat di tengah notch kapsul."
 }

@@ -35,14 +35,21 @@
         <!-- 2. MODE CLOSED: COMPACT NOTCH LYRICS (SESUAI GAMBAR) -->
         <div class="ly l-idle" id="l-idle" title="Klik untuk membuka lirik & pemutar musik">
             <div class="idle-lyrics-row">
-                <svg class="idle-note-icon" viewBox="0 0 16 16" width="13" height="13" fill="currentColor">
-                    <path d="M6 13c0 1.105-1.12 2-2.5 2S1 14.105 1 13s1.12-2 2.5-2c.352 0 .687.06 1 .17V3.5a.5.5 0 0 1 .379-.485l7-2A.5.5 0 0 1 12.5 1.5v8.67A2.69 2.69 0 0 1 11.5 10c-1.38 0-2.5.895-2.5 2s1.12 2 2.5 2 2.5-.895 2.5-2V2.414l-6 1.714V13c0 .034-.002.067-.005.1l.005-.1z"/>
-                </svg>
-                <span class="idle-lyric-text" id="idle-lyric-text">Lyrics not available</span>
+                <div class="idle-media-badge" id="idle-media-badge">
+                    <span class="idle-art" id="idle-art"></span>
+                    <svg class="idle-note-icon" viewBox="0 0 16 16" width="13" height="13" fill="currentColor">
+                        <path d="M6 13c0 1.105-1.12 2-2.5 2S1 14.105 1 13s1.12-2 2.5-2c.352 0 .687.06 1 .17V3.5a.5.5 0 0 1 .379-.485l7-2A.5.5 0 0 1 12.5 1.5v8.67A2.69 2.69 0 0 1 11.5 10c-1.38 0-2.5.895-2.5 2s1.12 2 2.5 2 2.5-.895 2.5-2V2.414l-6 1.714V13c0 .034-.002.067-.005.1l.005-.1z"/>
+                    </svg>
+                </div>
+                <div class="idle-lyric-viewport" id="idle-lyric-viewport">
+                    <span class="idle-lyric-line is-active" id="idle-lyric-text">Lyrics not available</span>
+                </div>
+                <div class="idle-eq bars" id="idle-eq" title="Audio playing">
+                    <i></i><i></i><i></i><i></i>
+                </div>
             </div>
             <!-- Elemen kompatibilitas mundur jika dibutuhkan skrip pendukung -->
             <span id="idle-center" style="display:none"></span>
-            <span id="idle-art" style="display:none"></span>
             <span id="idle-ring" style="display:none"></span>
         </div>
 

@@ -352,30 +352,97 @@ if (btnSubToggleEl) {
 }
 
 // ==================== CLOSED NOTCH LYRICS & IDLE DISPLAY ====================
-function updateIdleLyricDisplay() {
-    const idleTextEl = document.getElementById('idle-lyric-text');
-    if (!idleTextEl) return;
+let currentIdleLyric = '';
+let idleLyricAnimTimer = null;
 
-    if (!mediaState.active || mediaState.status !== 'Playing') {
-        if (idleTextEl.textContent !== 'Lyrics not available') {
-            idleTextEl.textContent = 'Lyrics not available';
+function setIdleLyricWithAnimation(newText) {
+    if (!newText) newText = 'Lyrics not available';
+    if (newText === currentIdleLyric) return;
+    currentIdleLyric = newText;
+
+    const viewportEl = document.getElementById('idle-lyric-viewport');
+    let currentLineEl = document.getElementById('idle-lyric-text');
+
+    if (!viewportEl) {
+        if (currentLineEl && currentLineEl.textContent !== newText) {
+            currentLineEl.textContent = newText;
+            currentLineEl.title = newText;
         }
         return;
     }
 
-    if (!syncedLyrics || !syncedLyrics.length) {
-        if (idleTextEl.textContent !== 'Lyrics not available') {
-            idleTextEl.textContent = 'Lyrics not available';
+    viewportEl.title = newText;
+
+    // Bersihkan animasi exiting sebelumnya agar tidak terjadi penumpukan elemen di DOM
+    if (idleLyricAnimTimer) {
+        clearTimeout(idleLyricAnimTimer);
+        idleLyricAnimTimer = null;
+    }
+    viewportEl.querySelectorAll('.is-exiting').forEach(el => el.remove());
+
+    if (!currentLineEl) {
+        currentLineEl = document.createElement('span');
+        currentLineEl.id = 'idle-lyric-text';
+        currentLineEl.className = 'idle-lyric-line is-active';
+        currentLineEl.textContent = newText;
+        currentLineEl.title = newText;
+        viewportEl.appendChild(currentLineEl);
+        return;
+    }
+
+    // Jika render awal atau dari status default tidak aktif, langsung set tanpa animasi berlebihan
+    if (!currentLineEl.textContent || (currentLineEl.textContent === 'Lyrics not available' && !mediaState.active)) {
+        currentLineEl.textContent = newText;
+        currentLineEl.title = newText;
+        return;
+    }
+
+    // Animasi Pergantian Lirik Halus (Kinetic Push / Roll Vertical)
+    const oldLineEl = currentLineEl;
+    oldLineEl.removeAttribute('id');
+    oldLineEl.classList.remove('is-active');
+    oldLineEl.classList.add('is-exiting');
+
+    const newLineEl = document.createElement('span');
+    newLineEl.id = 'idle-lyric-text';
+    newLineEl.className = 'idle-lyric-line is-entering';
+    newLineEl.textContent = newText;
+    newLineEl.title = newText;
+    viewportEl.appendChild(newLineEl);
+
+    // Frame ganda untuk memastikan GPU transition berjalan mulus di 60fps
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            newLineEl.classList.remove('is-entering');
+            newLineEl.classList.add('is-active');
+        });
+    });
+
+    idleLyricAnimTimer = setTimeout(() => {
+        if (oldLineEl && oldLineEl.parentNode) {
+            oldLineEl.parentNode.removeChild(oldLineEl);
         }
+        idleLyricAnimTimer = null;
+    }, 320);
+}
+
+function updateIdleLyricDisplay() {
+    if (!mediaState.active || mediaState.status !== 'Playing') {
+        setIdleLyricWithAnimation('Lyrics not available');
+        return;
+    }
+
+    if (!syncedLyrics || !syncedLyrics.length) {
+        const fallback = mediaState.title || 'Lyrics not available';
+        setIdleLyricWithAnimation(fallback);
         return;
     }
 
     const idx = Math.max(0, Math.min(syncedLyrics.length - 1, activeLyricIndex >= 0 ? activeLyricIndex : 0));
     const curLine = syncedLyrics[idx];
     if (!curLine) {
-        if (idleTextEl.textContent !== 'Lyrics not available') {
-            idleTextEl.textContent = 'Lyrics not available';
-        }
+        const fallback = mediaState.title || 'Lyrics not available';
+        setIdleLyricWithAnimation(fallback);
         return;
     }
 
@@ -398,10 +465,7 @@ function updateIdleLyricDisplay() {
         displayLyric = mediaState.title || 'Lyrics not available';
     }
 
-    if (idleTextEl.textContent !== displayLyric) {
-        idleTextEl.textContent = displayLyric;
-        idleTextEl.title = displayLyric;
-    }
+    setIdleLyricWithAnimation(displayLyric);
 }
 
 function updateKaraokeOverlay() {
