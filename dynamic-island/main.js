@@ -654,7 +654,7 @@ ipcMain.on('island-peek-active', (event, active) => {
 ipcMain.on('island-idle-music', (event, active, customWidth) => {
     isMusicIdleActive = Boolean(active);
     if (customWidth && typeof customWidth === 'number') {
-        currentIdleNotchWidth = Math.max(320, Math.min(500, customWidth));
+        currentIdleNotchWidth = Math.max(320, Math.min(540, customWidth));
     } else if (!active) {
         currentIdleNotchWidth = 360;
     }

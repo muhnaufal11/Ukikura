@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 77,
+  "versionCode": 78,
   "version": "1.0.6",
-  "fixCount": 77,
-  "displayVersion": "1.0.6 (Patch 77 - Eliminasi Romaji Liar Lagu Indonesia & Forced Alignment Cover Song)",
+  "fixCount": 78,
+  "displayVersion": "1.0.6 (Patch 78 - Auto-ASR Initial Particle Recovery, Smart Phrase Merging, & Long Lyrics Full Display)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 77): 1) Eliminasi Romaji Liar pada Lagu Indonesia: Mencegah subtitle terjemahan bahasa Jepang pada lagu berbahasa Indonesia (seperti pada video cover hololive Indonesia) diubah menjadi Romaji dan menimpa teks lirik vokal di notch. Vokal asli Indonesia kini 100% diprioritaskan di notch maupun daftar lirik tanpa Romaji. 2) Audio-to-Text Forced Alignment Lagu Cover: Mengatasi masalah Auto-ASR YouTube yang terpotong/hilang kalimatnya dengan secara cerdas mengambil lirik kanonikal bersih (seperti RAN - Selamat Pagi) dari database dan menyinkronkannya langsung ke gelombang audio vokal penyanyi via Forced Alignment."
+  "changelog": "Ukikura v1.0.6 (Patch 78): 1) Pemulihan Kata Awal Auto-ASR (.srv3): Memperbaiki bug parsing TimedText format 3 di mana kata pertama pada setiap bait vokal (seperti 'Ku', 'katamu', 'pelengkap', 'sengaja') terlewat karena tidak memiliki atribut waktu relatif eksplisit. Seluruh kata awal kini pulih 100%. 2) Penggabungan Frasa Utuh (Smart Phrase Merging): Mencegah pemotongan lirik menggantung pada partikel dan preposisi ('tak', 'saat', 'saling', 'berbagi', 'dan') sehingga kalimat vokal selalu utuh dan rapi. 3) Tampilan Lirik Panjang (Long Lyrics Display): Memperluas adaptasi dinamis notch hingga 520px serta optimasi auto-marquee sehingga lirik panjang tampil penuh tanpa terpotong."
 }

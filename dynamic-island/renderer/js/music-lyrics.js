@@ -370,10 +370,10 @@ function setIdleLyricWithAnimation(newText) {
     const viewportEl = document.getElementById('idle-lyric-viewport');
     let currentLineEl = document.getElementById('idle-lyric-text');
 
-    // Adaptasi dinamis lebar notch kapsul (360px - 480px) agar lirik panjang muat seutuhnya
+    // Adaptasi dinamis lebar notch kapsul (360px - 520px) agar lirik panjang muat seutuhnya
     const textW = measureLyricTextWidth(newText);
     const isDefaultState = (newText === 'Lyrics not available' && (!mediaState || !mediaState.active));
-    const targetWidth = isDefaultState ? 360 : Math.max(360, Math.min(480, Math.round(textW + 104)));
+    const targetWidth = isDefaultState ? 360 : Math.max(360, Math.min(520, Math.round(textW + 104)));
 
     if (mnEl) {
         mnEl.style.setProperty('--idle-w', `${targetWidth}px`);

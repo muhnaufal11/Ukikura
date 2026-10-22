@@ -46,17 +46,16 @@ function parseSrv3Stream(xml) {
             if (!rawWord || /^\[.*\]$|^♪+$|^♬+$/.test(rawWord)) continue;
 
             const stm = sAttrs.match(/\bt="(\d+)"/);
-            if (stm) {
-                hasRealWordTimestamps = true;
-                const wordMs = pStartMs + parseInt(stm[1], 10);
-                if (pWords.length === 0) firstWordMs = wordMs;
-                pWords.push({ timeMs: wordMs, text: rawWord });
-                tokens.push({
-                    time: Math.round(wordMs) / 1000,
-                    text: rawWord,
-                    norm: normalizePhoneticLatin(rawWord)
-                });
-            }
+            const wordOffset = stm ? parseInt(stm[1], 10) : 0;
+            hasRealWordTimestamps = true;
+            const wordMs = pStartMs + wordOffset;
+            if (pWords.length === 0) firstWordMs = wordMs;
+            pWords.push({ timeMs: wordMs, text: rawWord });
+            tokens.push({
+                time: Math.round(wordMs) / 1000,
+                text: rawWord,
+                norm: normalizePhoneticLatin(rawWord)
+            });
         }
 
         if (!hasRealWordTimestamps) {
@@ -391,6 +390,21 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
         ? parseSrv3Stream(jaXmlRes.body)
         : { tokens: [], lines: [] };
 
+const STRICT_DANGLING_REGEX = /\b(tak|tidak|bukan|belum|jangan|tanpa|mau|akan|ingin|sedang|sudah|telah|saat|ketika|waktu|sebelum|sesudah|setelah|sementara|jikalau|andaikan|seandainya|umpama|ibarat|laksana|bagai|seperti|antara|hingga|sampai|demi|bagi|guna|buat|tentang|mengenai|terhadap|oleh|karena|sebab|maka|sehingga|padahal|sedangkan|melainkan|tetapi|namun|walau|meski|kendati|biar|dan|dan\s+juga|serta|atau|yang|di|ke|dari|pada|dalam|atas|bawah|saling|berbagi|not|no|never|can|cannot|could|would|should|will|shall|might|may|must|have|has|had|is|am|are|was|were|be|been|being|if|when|while|since|until|till|before|after|because|as|though|although|even|whether|like|about|into|onto|through|over|under|above|below|between|among|without|within|with|for|by|at|on|in|to|of|from|and|or|nor|but|yet|so|the|a|an|that),?$/i;
+
+function fixCommonAsrPhoneticErrors(text) {
+    if (!text || typeof text !== 'string') return text;
+    return text
+        .replace(/\bkcana\s+Maja\b/gi, 'bercanda manja')
+        .replace(/\bpecana\s+banjat\b/gi, 'bercanda manja')
+        .replace(/\bberdoa\s+bertukar\b/gi, 'berdua bertukar')
+        .replace(/\btemun\s+nanti\b/gi, 'temu nanti')
+        .replace(/\bpand\s+jikat\b/gi, 'berandai jika')
+        .replace(/\s+di\s+di\s+/gi, ' di ')
+        .replace(/\s+foreign$/i, '')
+        .trim();
+}
+
 function mergeFragmentedAsrLines(rawLines) {
     if (!Array.isArray(rawLines) || rawLines.length <= 2) return rawLines;
     const merged = [];
@@ -408,13 +422,19 @@ function mergeFragmentedAsrLines(rawLines) {
 
         const curText = cur.text.trim();
         const wordCount = curText.split(/\s+/).length;
+        const itemWordCount = text.split(/\s+/).length;
         const gap = item.time - (cur.endTime || cur.time);
         const endsWithPunct = /[.!?]$/.test(curText);
         const curDur = (cur.endTime || (item.time + 1.5)) - cur.time;
-        const endsWithDangling = /\b(dan|dan\s+juga|atau|yang|untuk|dengan|saat|walau|karena|tapi|agar|bila|jika|ku|kau|and|to|with|of|the|in|on|at|for|that|which|as|so|but|or|mengawali|memulai|menjadi|melihat|mendengar|mengatakan|seperti|bagai|bagaikan|tentang|ke|di|dari|pada|dalam|atas|bawah|antara|tanpa|demi|hingga|sampai|hari|malam|pagi|siang|sore),?$/i.test(curText) || /[,，、…—–]$/.test(curText);
-        const startsWithContinuation = /^(?:ini|itu|lagi|pun|lah|kah|juga|saja|nanti|esok|bersama|sendiri)\b/i.test(text);
+        const endsWithStrictDangling = STRICT_DANGLING_REGEX.test(curText) || /[,，、…—–]$/.test(curText);
+        const startsWithContinuation = /^(?:ini|itu|lagi|pun|lah|kah|juga|saja|nanti|esok|bersama|sendiri|sengaja|manja)\b/i.test(text);
 
-        const shouldMerge = endsWithDangling || startsWithContinuation || (!endsWithPunct && (wordCount < 4 || curDur < 2.4) && gap < 2.2 && (wordCount + text.split(/\s+/).length <= 13));
+        const shouldMerge = (wordCount + itemWordCount <= 12) && (
+            endsWithStrictDangling ||
+            startsWithContinuation ||
+            (!endsWithPunct && (wordCount < 4 || curDur < 2.2) && gap < 2.2) ||
+            (gap < 0.5 && (wordCount <= 3 || itemWordCount <= 3))
+        );
 
         if (shouldMerge) {
             const separator = hasJapaneseChars(curText + text) ? '' : ' ';
@@ -427,7 +447,14 @@ function mergeFragmentedAsrLines(rawLines) {
         }
     }
     if (cur) merged.push(cur);
-    return merged;
+    return merged.map(l => {
+        const cleanedText = fixCommonAsrPhoneticErrors(l.text || l.rawText || '');
+        return {
+            ...l,
+            text: cleanedText,
+            rawText: cleanedText
+        };
+    });
 }
 
 function sanitizeBilingualManualLines(rawLines) {
@@ -476,7 +503,29 @@ function sanitizeBilingualManualLines(rawLines) {
 
         cleaned.push(cur);
     }
-    return cleaned;
+
+    // Deduplikasi baris silabel karaoke YouTube (misal "Are my eyes de ceiving me?" vs "Are my eyes deceiving me?")
+    const collapsed = [];
+    for (let i = 0; i < cleaned.length; i++) {
+        const l = cleaned[i];
+        const textLetters = (l.text || l.rawText || '').toLowerCase().replace(/[^a-z0-9\u3040-\u30ff\u4e00-\u9fff]/g, '');
+        const prev = collapsed[collapsed.length - 1];
+        if (prev) {
+            const prevLetters = (prev.text || prev.rawText || '').toLowerCase().replace(/[^a-z0-9\u3040-\u30ff\u4e00-\u9fff]/g, '');
+            const timeDiff = l.time - prev.time;
+            if (textLetters && textLetters === prevLetters && timeDiff <= 4.2) {
+                prev.endTime = Math.max(prev.endTime || 0, l.endTime || 0);
+                if (!prev.transText && l.transText) prev.transText = l.transText;
+                if ((l.text || '').length < (prev.text || '').length && !l.text.includes('  ')) {
+                    prev.text = l.text;
+                    prev.rawText = l.rawText;
+                }
+                continue;
+            }
+        }
+        collapsed.push(l);
+    }
+    return collapsed;
 }
 
     // Prioritaskan Manual CC buatan manusia di atas Auto-ASR HANYA jika bukan teks obrolan/vlog/behind-the-scenes

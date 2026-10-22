@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch77-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch78-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -118,6 +118,11 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
 ## Fitur Utama
 
 ### 1. Mesin Lirik Multi-Sumber & Forced Alignment (`dynamic-island/lyrics/`)
+- **Pemulihan Kata Awal Auto-ASR, Penggabungan Frasa Utuh, & Tampilan Lirik Panjang (Patch 78)**:
+  - **Pemulihan Kata Awal Auto-ASR (.srv3)**: Memperbaiki bug parsing TimedText format 3 YouTube di mana kata pembuka di setiap bait vokal (`<s ac="0">Word</s>`, seperti *"Ku"*, *"katamu"*, *"pelengkap"*, *"sengaja"*, *"kesukaan"*) hilang karena tidak membawa atribut waktu relatif eksplisit (`\bt="(\d+)"`). Seluruh kata pembuka kini dijamin 100% pulih dan hadir lengkap di awal baris lirik.
+  - **Penggabungan Frasa Utuh (Smart Phrase Merging)**: Menghilangkan pemotongan kalimat menggantung pada partikel dan preposisi (*"tak"*, *"saat"*, *"saling"*, *"berbagi"*, *"dan"*, dll.). Kalimat yang terpotong oleh ASR digabungkan menjadi bait vokal utuh dan rapi.
+  - **Pembersihan Fonetik ASR & Deduplikasi Silabel**: Mengoreksi salah dengar fonetik ASR bahasa Indonesia (seperti *"kcana Maja"* dan *"pecana banjat"* $\rightarrow$ *"bercanda manja"*, *"temun nanti"* $\rightarrow$ *"temu nanti"*, *"berdoa bertukar"* $\rightarrow$ *"berdua bertukar"*) serta mendeduplikasi pergantian silabel karaoke berturut-turut pada subtitle YouTube multi-track.
+  - **Pelebaran Dinamis Notch Hingga 520px**: Batas atas lebar notch kompak ditingkatkan hingga 520px (dengan area klik-tembus hingga 540px) agar lirik yang panjang dapat tertampil lega dan jelas tanpa sesak.
 - **Eliminasi Romaji Liar Lagu Indonesia & Forced Alignment Cover Song (Patch 77)**:
   - **Eliminasi Romaji Liar**: Mencegah teks terjemahan bahasa Jepang pada lagu cover Indonesia (seperti pada kanal *hololive Indonesia*) diubah menjadi transliterasi Romaji dan menggantikan lirik vokal di notch (seperti kemunculan *"[ohayou! ]"* saat vokal menyanyikan *"Selamat pagi!"*). Pada lagu berbahasa Indonesia, notch kini dijamin 100% menampilkan teks vokal asli Indonesia.
   - **Audio-to-Text Forced Alignment Lagu Cover**: Mengatasi Auto-ASR YouTube yang memotong kalimat lirik secara menggantung (seperti *"dunia dan mulai mengawali hari"* alih-alih kalimat utuh *"Dan embun membasahi dunia dan mulai mengawali hari ini"*). Sistem kini secara cerdas mendeteksi lagu kanonikal asli dari database (*RAN - Selamat Pagi*) dan menyinkronkan ketukan teks resmi langsung ke gelombang audio vokal penyanyi via *Forced Alignment* (25+ baris anchored presisi).

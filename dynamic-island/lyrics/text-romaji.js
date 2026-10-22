@@ -595,7 +595,7 @@ function attachTranslationLines(baseLines, transLines) {
 
 const TAGALOG_MARKERS = /\b(mga|nang|hindi|bakit|'di\s+ba|naman|lahat|humingang|pumikit|namamalikmata|nababahala|binaon|tinakpan|andito|intindihin)\b/i;
 
-const INDONESIAN_ARTIST_REGEX = /\b(vierra|vierratale|noah|peterpan|sheila\s*on\s*7|dewa\s*19|dewa|padi|gigi|ungu|kotak|d['’]?masiv|geisha|armada|wali|kangen\s*band|tulus|mahalini|tiara\s*andini|lyodra|ziva\s*magnolya|fiersa\s*besari|hindia|\.?feast|judika|afgan|rossa|glenn\s*fredly|chrisye|ebiet\s*g\s*ade|ari\s*lasso|slank|iwan\s*fals|jkt48|kerispatih|samsons|letto|raisa|isyana|bcl|bunga\s*citra\s*lestari|nidji|maliq|yovie|kahitna|sal\s*priadi|bernadya|nadin\s*amizah|last\s*child|virgoun|for\s*revenge|radja|st12|setia\s*band|repvblik|payung\s*teduh|fourtwnty|hivi!?|the\s*changcuters|naif|ada\s*band|kerispatih|seventeen|andra\s*(?:and|&)\s*the\s*backbone|ran|iwa\s*k|project\s*pop|barasuara|efek\s*rumah\s*kaca|danilla|pamungkas|ardhito|rendy\s*pandugo|trio\s*lestari|ten2five|mocca|white\s*shoes)\b/i;
+const INDONESIAN_ARTIST_REGEX = /\b(vierra|vierratale|noah|peterpan|sheila\s*on\s*7|dewa\s*19|dewa|padi|gigi|ungu|kotak|d['’]?masiv|geisha|armada|wali|kangen\s*band|tulus|mahalini|tiara\s*andini|lyodra|ziva\s*magnolya|fiersa\s*besari|hindia|\.?feast|judika|afgan|rossa|glenn\s*fredly|chrisye|ebiet\s*g\s*ade|ari\s*lasso|slank|iwan\s*fals|jkt48|kerispatih|samsons|letto|raisa|isyana|bcl|bunga\s*citra\s*lestari|nidji|maliq|yovie|kahitna|sal\s*priadi|bernadya|nadin\s*amizah|last\s*child|virgoun|for\s*revenge|radja|st12|setia\s*band|repvblik|payung\s*teduh|fourtwnty|hivi!?|the\s*changcuters|naif|ada\s*band|kerispatih|seventeen|andra\s*(?:and|&)\s*the\s*backbone|ran|iwa\s*k|project\s*pop|barasuara|efek\s*rumah\s*kaca|danilla|pamungkas|ardhito|rendy\s*pandugo|trio\s*lestari|ten2five|mocca|white\s*shoes|alenka|inventra|digikagi|kobo|kanaeru|moona|hoshinova|ayunda|risu|airani|iofi|kureiji|ollie|anya|melfissa|pavolia|reine|vestia|zeta|kaela|kovalskia|mythia|batford|vtuberid|vtuber\s*id)\b/i;
 
 const INDONESIAN_DISTINCT_WORDS = new Set([
     'yang', 'dan', 'untuk', 'adalah', 'dengan', 'kamu', 'aku', 'kau', 'dia', 'kita', 'mereka', 'bisa', 'ada', 'tidak', 'tak', 'bukan', 'saat', 'sudah', 'lagi', 'hati', 'cinta',
@@ -604,7 +604,8 @@ const INDONESIAN_DISTINCT_WORDS = new Set([
     'senyum', 'bahagia', 'duka', 'kasih', 'jiwa', 'sepi', 'sunyi', 'usai', 'pulang', 'hilang', 'teman', 'kawan', 'sahabat', 'jalan', 'waktu', 'tentang', 'bukan', 'engkau', 'dariku', 'buaya', 'darat',
     'seandainya', 'seperti', 'bila', 'jika', 'walau', 'kenangan', 'lupakan', 'melukai', 'lalui', 'tersisa', 'bayangan', 'selamanya', 'hidupmu', 'diriku', 'hatiku', 'jiwaku', 'cintaku', 'bersama', 'pergi',
     'tiada', 'terindah', 'sempurna', 'berharap', 'berjanji', 'menanti', 'menunggu', 'merindukan', 'mencintai', 'menyayangi', 'merelakan', 'terluka', 'menangis', 'terdiam', 'berlalu', 'tanpamu',
-    'bersamamu', 'tetap', 'pernah', 'sudahlah', 'mengapa', 'bagaimana', 'kapan', 'dimana', 'kemana', 'semuanya', 'hanyalah', 'dirimu', 'kepadaku', 'kepadamu', 'terbayang', 'dingin', 'hangat', 'pelukan'
+    'bersamamu', 'tetap', 'pernah', 'sudahlah', 'mengapa', 'bagaimana', 'kapan', 'dimana', 'kemana', 'semuanya', 'hanyalah', 'dirimu', 'kepadaku', 'kepadamu', 'terbayang', 'dingin', 'hangat', 'pelukan',
+    'penawan', 'taruhan', 'berani', 'sengaja', 'berbagi', 'sapa', 'peduli', 'cerita', 'janji', 'takdir', 'ketemu', 'bertemu', 'putar', 'kuputar', 'menahan', 'berbeda', 'depan', 'semata', 'manja', 'bercanda', 'pagi', 'senang', 'senangku', 'ciptaan', 'vokal', 'lagu', 'aransemen', 'kuberani'
 ]);
 
 function isIndonesianText(sample) {
