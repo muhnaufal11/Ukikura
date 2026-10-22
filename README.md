@@ -148,12 +148,6 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
 - **WhatsApp Companion**: Mendeteksi pesan dan stiker WhatsApp masuk secara *real-time* dan menampilkannya melalui *Peek Popup* tanpa harus membuka jendela browser penuh.
 
 ### 4. Interaksi Kapsul, Maskot, & Pengaturan Hemat Daya (`mascot-engine.js` & `core-state.js`)
-- **Implementasi Native Rust Host (tao + wry WebView2) — Langkah 1 Sukses**:
-  - **Efisiensi Memori Drastis**: Menggantikan runtime Electron yang berat dengan host biner native Rust (`dynamic-island/host-wry/`) berbasis crate `tao 0.37` (windowing & event loop) dan `wry 0.57` (Microsoft Edge WebView2 tipis). Penggunaan RAM terpangkas dari **~160 MB $\rightarrow$ ~40 MB (penghematan ~75%)**.
-  - **Ukuran Biner Rilis < 5 MB**: Ukuran binary release `Ukikura.exe` menyusut drastis sebesar **96.6%** dari **~120 MB $\rightarrow$ 4.01 MB**.
-  - **Zero Visual & Interaction Regression**: 100% markup DOM, geometri telinga konkaf (`core-notch.css`), efek pendaran aura ambient, 11 emosi maskot Nusa (`mascot-engine.js`), dan kanvas *Island Gulp* (`shelf-actions.js`) di `renderer/` berjalan utuh tanpa ada satu baris kode CSS/JS yang perlu ditulis ulang.
-  - **Injected IPC Compatibility Shim**: Injeksi adapter IPC transparan otomatis memetakan pemanggilan `ipcRenderer` frontend ke event loop `wry` native.
-  - **Windows Job Object Lifecycle**: Proses hardware bridge `ukikura-bridge.exe` dan background server diikat dengan kernel Windows Job Object (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`), menjamin nol proses *zombie* saat aplikasi ditutup.
 - **Pembersihan Repositori & Sanitasi Eksperimen Prototipe (Workspace Sanitization)**:
   - **Eliminasi Direktori Eksperimen Rust**: Menghapus seluruh direktori prototipe eksperimental (`dynamic-island/host-rust/`, `dynamic-island/native/`, dan `tauri-preview/`) beserta file biner uji coba dan cache build `target/`, membebaskan lebih dari 2.5 GB ruang disk.
   - **Penyelarasan Arsitektur Produksi**: Memastikan struktur repositori murni difokuskan pada stack produksi utama yang stabil (Electron Desktop Runtime, mesin lirik `dynamic-island/lyrics/`, antarmuka terpisah `dynamic-island/renderer/`, dan bridge hardware native C++ `ukikura-bridge.exe`).
@@ -246,9 +240,6 @@ Ukikura/
 │   ├── Ukikura-Setup.iss            # Skrip konfigurasi Inno Setup 6
 │   └── Build-Ukikura-Installer.ps1  # Skrip pembaruan installer (opsional untuk pengembang)
 ├── dynamic-island/
-│   ├── host-wry/                    # Host native desktop berbasis Rust (tao 0.37 + wry 0.57 WebView2)
-│   │   ├── Cargo.toml               # Konfigurasi dependensi Rust (tao, wry, windows-rs, serde)
-│   │   └── src/                     # Windowing transparan, hover loop, IPC bridge, & tray
 │   ├── bridge/
 │   │   ├── ukikura-bridge.cpp       # Kode sumber bridge native C++ (LLVM-MinGW clang++)
 │   │   ├── ukikura-bridge.exe       # Jembatan hardware C++ native (SMTC Media, Battery, Phone Link, Browser Monitor)
