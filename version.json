@@ -2,10 +2,10 @@
   "name": "Ukikura",
   "codename": "Uki (Terapung) + Kura (Gudang Penyimpanan Data & Tugas)",
   "versionName": "1.0.6",
-  "versionCode": 80,
+  "versionCode": 81,
   "version": "1.0.6",
-  "fixCount": 80,
-  "displayVersion": "1.0.6 (Patch 80 - Anti-Overwriting Desync Fix, YouTube Roman Track Parser, Auto-ASR Cover Forced Alignment & Multilingual Sub Indo Guarantee)",
+  "fixCount": 81,
+  "displayVersion": "1.0.6 (Patch 81 - Cover Song Forced Alignment Desync Fix, Spaced Mora Collision Protection & Say No Ayarikapi Canonical Suite)",
   "author": "Nauflix",
   "githubRepo": "muhnaufal11/Ukikura",
   "fallbackRepos": [
@@ -16,5 +16,5 @@
   "installerFile": "installer/Ukikura-Setup-v1.0.6.exe",
   "releaseUrl": "https://github.com/muhnaufal11/Ukikura/releases/latest",
   "companionLmsAiRepo": "https://github.com/muhnaufal11/lms-quiz-assistant",
-  "changelog": "Ukikura v1.0.6 (Patch 80): 1) Pencegahan Penimpaan Lirik Jepang (Anti-Overwriting Desync Fix): Menghilangkan bug penimpaan lirik kanji/kana resmi YouTube CC oleh timestamp album NetEase via rentang 14 detik yang menyebabkan lirik berjalan 16 detik mendahului video (kasus Kohana Lam). Lirik kini dipasangkan murni berbasis kesamaan teks kanji. 2) Ekstraksi Track Romaji Resmi YouTube (Roman Alphabet Parser): Mendeteksi caption track bertipe Romaji (seperti 'English - Roman alphabet' pada Creepy Nuts) sebagai Romaji murni di baris 1 (.lyr-main) dan vokal Jepang kanji di baris 2 (.lyr-sub) alih-alih menampilkan terjemahan Inggris. 3) Jaminan Sub Indo Penuh (Auto Batch Indonesian Translation): Memastikan seluruh bait lagu asing/Jepang mendapatkan baris terjemahan Bahasa Indonesia resmi/akurat saat [SUB: ON] aktif. 4) Penguncian Tempo Lagu Cover (Auto-ASR Forced Alignment): Menyelaraskan lirik standar bersih ke tempo nyanyian cover (seperti ayarikapi - Say No). 5) Lulus 100% Pengujian Non-Regresi 7 Lagu Kanonikal."
+  "changelog": "Ukikura v1.0.6 (Patch 81): 1) Perbaikan Desinkronisasi Lagu Cover (Cover Song Forced Alignment Desync Fix): Menghilangkan emisi dini Fast LRC album studio yang belum terselaraskan pada lagu cover/remix/sped-up sehingga lirik lagu cover (seperti SAY NO by ayarikapi) 100% selaras dengan vokal aktual video. 2) Proteksi Tabrakan Spasi Romaji (Spaced Mora Collision Protection): Memperbaiki bug regex isMoraSpacedRomaji yang sebelumnya salah menganggap kata pendek bahasa Inggris/Indonesia ('Say no say no', 'I will say no') sebagai morfem Jepang terpisah yang menyebabkan kata menyatu ('Saynosay no'). Morfologi Romaji kini dibatasi hanya pada silabel mora Jepang asli dan tidak dijalankan pada lagu Indonesia/Inggris. 3) Penetapan Lagu Kanonikal Baru: Menambahkan lagu 【COVER】SAY NO - Tasya Kamila / by ayarikapi (KesOSmWdVJI) sebagai lagu kanonikal uji ke-1 yang wajib dites deluan/pertama kali sebelum setiap rilis. 4) Lulus 100% Uji Non-Regresi 6 Lagu Kanonikal."
 }

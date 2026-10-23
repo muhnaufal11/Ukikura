@@ -163,6 +163,9 @@ async function fetchYouTubeCaptionStream(rawTitle, rawArtist, mediaDur, meta) {
     if (/\b(?:alice&u|alice\s*&\s*u|alice\s*u)\b/i.test(rawTitle) || /\b(?:alice&u|alice\s*&\s*u)\b/i.test(meta?.cleanedTitle || '')) {
         videoIds.push({ id: 'IGviVpVE1fA', dur: 275, score: 999 });
     }
+    if (/\b(?:say\s*no)\b/i.test(rawTitle) && /\b(?:ayarikapi|tasya)\b/i.test(`${rawTitle} ${rawArtist}`)) {
+        videoIds.push({ id: 'KesOSmWdVJI', dur: 216, score: 999 });
+    }
 
     if (videoIds.length === 0) {
         const searchBody = JSON.stringify({

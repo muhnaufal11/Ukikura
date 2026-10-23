@@ -238,6 +238,11 @@ function parseTrackMetadata(rawTitle, rawArtist) {
     if (segments.length >= 2) {
         queries.push(`${segments[0]} ${segments[1]}`);
         queries.push(segments[0]);
+        const seg1Words = segments[1].split(/\s+/).filter(Boolean);
+        if (seg1Words.length >= 2) {
+            queries.push(`${seg1Words[0]} ${segments[0]}`);
+            queries.push(`${segments[0]} ${seg1Words[0]}`);
+        }
         if (primaryArtist && !isLyricChannel) {
             const lastSeg = segments[segments.length - 1];
             if (!lastSeg.toLowerCase().includes(primaryArtist.toLowerCase())) {
@@ -601,7 +606,7 @@ function attachTranslationLines(baseLines, transLines) {
 
 const TAGALOG_MARKERS = /\b(mga|nang|hindi|bakit|'di\s+ba|naman|lahat|humingang|pumikit|namamalikmata|nababahala|binaon|tinakpan|andito|intindihin)\b/i;
 
-const INDONESIAN_ARTIST_REGEX = /\b(vierra|vierratale|noah|peterpan|sheila\s*on\s*7|dewa\s*19|dewa|padi|gigi|ungu|kotak|d['’]?masiv|geisha|armada|wali|kangen\s*band|tulus|mahalini|tiara\s*andini|lyodra|ziva\s*magnolya|fiersa\s*besari|hindia|\.?feast|judika|afgan|rossa|glenn\s*fredly|chrisye|ebiet\s*g\s*ade|ari\s*lasso|slank|iwan\s*fals|jkt48|kerispatih|samsons|letto|raisa|isyana|bcl|bunga\s*citra\s*lestari|nidji|maliq|yovie|kahitna|sal\s*priadi|bernadya|nadin\s*amizah|last\s*child|virgoun|for\s*revenge|radja|st12|setia\s*band|repvblik|payung\s*teduh|fourtwnty|hivi!?|the\s*changcuters|naif|ada\s*band|kerispatih|seventeen|andra\s*(?:and|&)\s*the\s*backbone|ran|iwa\s*k|project\s*pop|barasuara|efek\s*rumah\s*kaca|danilla|pamungkas|ardhito|rendy\s*pandugo|trio\s*lestari|ten2five|mocca|white\s*shoes|alenka|inventra|digikagi|kobo|kanaeru|airani|iofi|kureiji|ollie|anya|melfissa|pavolia|reine|vestia|zeta|kaela|kovalskia|mythia|batford|vtuberid|vtuber\s*id)\b/i;
+const INDONESIAN_ARTIST_REGEX = /\b(vierra|vierratale|noah|peterpan|sheila\s*on\s*7|dewa\s*19|dewa|padi|gigi|ungu|kotak|d['’]?masiv|geisha|armada|wali|kangen\s*band|tulus|mahalini|tiara\s*andini|lyodra|ziva\s*magnolya|fiersa\s*besari|hindia|\.?feast|judika|afgan|rossa|glenn\s*fredly|chrisye|ebiet\s*g\s*ade|ari\s*lasso|slank|iwan\s*fals|jkt48|kerispatih|samsons|letto|raisa|isyana|bcl|bunga\s*citra\s*lestari|nidji|maliq|yovie|kahitna|sal\s*priadi|bernadya|nadin\s*amizah|last\s*child|virgoun|for\s*revenge|radja|st12|setia\s*band|repvblik|payung\s*teduh|fourtwnty|hivi!?|the\s*changcuters|naif|ada\s*band|kerispatih|seventeen|andra\s*(?:and|&)\s*the\s*backbone|ran|iwa\s*k|project\s*pop|barasuara|efek\s*rumah\s*kaca|danilla|pamungkas|ardhito|rendy\s*pandugo|trio\s*lestari|ten2five|mocca|white\s*shoes|alenka|inventra|digikagi|kobo|kanaeru|airani|iofi|kureiji|ollie|anya|melfissa|pavolia|reine|vestia|zeta|kaela|kovalskia|mythia|batford|tasya|tasya\s*kamila|ayarikapi|pip|vtuberid|vtuber\s*id)\b/i;
 
 const INDONESIAN_DISTINCT_WORDS = new Set([
     'yang', 'dan', 'untuk', 'adalah', 'dengan', 'kamu', 'aku', 'kau', 'dia', 'kita', 'mereka', 'bisa', 'ada', 'tidak', 'tak', 'bukan', 'saat', 'sudah', 'lagi', 'hati', 'cinta',
@@ -631,12 +636,44 @@ function isIndonesianText(sample) {
     return false;
 }
 
+const ROMAJI_MORA_SET = new Set([
+    'a', 'i', 'u', 'e', 'o',
+    'ka', 'ki', 'ku', 'ke', 'ko',
+    'sa', 'shi', 'su', 'se', 'so',
+    'ta', 'chi', 'tsu', 'te', 'to',
+    'na', 'ni', 'nu', 'ne', 'no',
+    'ha', 'hi', 'fu', 'he', 'ho',
+    'ma', 'mi', 'mu', 'me', 'mo',
+    'ya', 'yu', 'yo',
+    'ra', 'ri', 'ru', 're', 'ro',
+    'wa', 'wo', 'n',
+    'ga', 'gi', 'gu', 'ge', 'go',
+    'za', 'ji', 'zu', 'ze', 'zo',
+    'da', 'de', 'do',
+    'ba', 'bi', 'bu', 'be', 'bo',
+    'pa', 'pi', 'pu', 'pe', 'po',
+    'kya', 'kyu', 'kyo', 'sha', 'shu', 'sho', 'cha', 'chu', 'cho',
+    'nya', 'nyu', 'nyo', 'hya', 'hyu', 'hyo', 'mya', 'myu', 'myo',
+    'rya', 'ryu', 'ryo', 'gya', 'gyu', 'gyo', 'ja', 'ju', 'jo',
+    'bya', 'byu', 'byo', 'pya', 'pyu', 'pyo'
+]);
+
+const NON_ROMAJI_WORDS_RE = /\b(say|will|away|go|buaya|darat|kamu|aku|engkau|dariku|ingin|cinta|kau|dia|tapi|jangan|kepala|lucu|manis|cantik|merayuku|hatiku|mencuri|love|need|miss|you|me|baby|crazy|want|like|with|that|this|have|from|for|and|the|not|all|are|was|were|been)\b/i;
+
 function isMoraSpacedRomaji(str) {
     if (!str || typeof str !== 'string') return false;
+    if (NON_ROMAJI_WORDS_RE.test(str)) return false;
+    if (isIndonesianText(str)) return false;
     const words = str.trim().split(/\s+/).filter(Boolean);
     if (words.length < 3) return false;
-    const shortWords = words.filter(w => /^[a-zA-Z]{1,2}$/.test(w) || /^(?:tsu|shi|chi|kya|kyu|kyo|sha|shu|sho|cha|chu|cho|nya|nyu|nyo|hya|hyu|hyo|mya|myu|myo|rya|ryu|ryo|gya|gyu|gyo|bya|byu|byo|pya|pyu|pyo)$/i.test(w));
-    return (shortWords.length / words.length) >= 0.45;
+    let moraHits = 0;
+    for (const w of words) {
+        const lower = w.toLowerCase().replace(/[^a-z]/g, '');
+        if (ROMAJI_MORA_SET.has(lower)) {
+            moraHits++;
+        }
+    }
+    return (moraHits / words.length) >= 0.55;
 }
 
 const JP_PARTICLES = new Set(['wa', 'ga', 'o', 'wo', 'ni', 'de', 'to', 'mo', 'no', 'e', 'ka', 'ya', 'sa', 'ne', 'yo']);

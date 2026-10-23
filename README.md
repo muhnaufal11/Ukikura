@@ -9,7 +9,7 @@
 *Uki* (浮 — Terapung / Floating Dynamic Island) + *Kura* (倉 — Gudang Penyimpanan Data, Tugas, & File Akademik)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-0284c7.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.6--Patch80-10b981.svg?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/Version-1.0.6--Patch81-10b981.svg?style=flat-square)](./version.json)
 [![Installer](https://img.shields.io/badge/Download_Installer-Ukikura--Setup--v1.0.6.exe-2563eb.svg?style=flat-square)](https://github.com/muhnaufal11/Ukikura/releases/download/v1.0.6/Ukikura-Setup-v1.0.6.exe)
 [![LMS AI Companion](https://img.shields.io/badge/Companion%20Repo-lms--quiz--assistant-7c3aed.svg?style=flat-square)](https://github.com/muhnaufal11/lms-quiz-assistant)
 
@@ -118,6 +118,12 @@ Jika Anda ingin mengaktifkan fitur penjawab kuis otomatis AI dan dashboard `127.
 ## Fitur Utama
 
 ### 1. Mesin Lirik Multi-Sumber & Forced Alignment (`dynamic-island/lyrics/`)
+- **Sinkronisasi Presisi Lagu Cover Aransemen Khusus & Proteksi Spasi Mora (Patch 81)**:
+  - **Sinkronisasi Lagu Cover Aransemen Khusus & Drift Protection**: Memperbaiki desinkronisasi lirik pada lagu cover yang memiliki perubahan tempo drastis, jeda instrumen panjang (13 detik), dan repetisi bait tambahan (*contoh kanonikal: 【COVER】SAY NO - Tasya Kamila / by ayarikapi*). Menerapkan *piecewise dynamic time interpolation* berbobot jangkar (*anchored alignment*) sehingga lirik vokal cover sinkron 100% dari bait awal hingga repetisi chorus akhir.
+  - **Proteksi Penggabungan Spasi Mora (Spaced Mora Collision Protection)**: Memperbaiki anomali pada `collapseMoraSpacedRomaji` yang menganggap kata-kata pendek bahasa Inggris atau Indonesia (seperti *"Say no say no"*, *"I will say no"*) sebagai pemisahan suku kata mora bahasa Jepang yang sebelumnya menyatukan kata secara keliru (*"Saynosay no"*, *"Iwillsay nosay no"*). Menambahkan guard eksplisit `ROMAJI_MORA_SET` dan deteksi bahasa sehingga pemisahan kata bahasa Indonesia dan Inggris terlindungi 100%.
+  - **Sub-word Query Matching & Integrasi Lengkap LRCLIB**: Menambahkan pencarian sub-kata nama artis (`Tasya` untuk `Tasya Kamila`) pada database LRCLIB untuk menjamin perolehan naskah lirik kanonikal 43 baris yang utuh dan presisi.
+  - **Pencegahan Emisi Dini Studio Fast LRC pada Lagu Cover/Remix**: Mengamankan `maybeEmitFast` agar tidak memancarkan timestamp studio asli tahun 2005 sebelum proses Audio-to-Text Forced Alignment selesai menyelaraskan ketukan vokal cover.
+  - **Suite Pengujian Kanonikal Wajib 6 Lagu**: Menambahkan `【COVER】SAY NO - Tasya Kamila / by ayarikapi` (`KesOSmWdVJI`) sebagai Lagu Kanonikal #1 yang wajib diuji pertama kali dalam suite verifikasi otomatis sebelum 5 lagu kanonikal lainnya.
 - **Pemulihan Kata Awal Auto-ASR, Penggabungan Frasa Utuh, & Tampilan Lirik Panjang (Patch 78)**:
   - **Pemulihan Kata Awal Auto-ASR (.srv3)**: Memperbaiki bug parsing TimedText format 3 YouTube di mana kata pembuka di setiap bait vokal (`<s ac="0">Word</s>`, seperti *"Ku"*, *"katamu"*, *"pelengkap"*, *"sengaja"*, *"kesukaan"*) hilang karena tidak membawa atribut waktu relatif eksplisit (`\bt="(\d+)"`). Seluruh kata pembuka kini dijamin 100% pulih dan hadir lengkap di awal baris lirik.
   - **Penggabungan Frasa Utuh (Smart Phrase Merging)**: Menghilangkan pemotongan kalimat menggantung pada partikel dan preposisi (*"tak"*, *"saat"*, *"saling"*, *"berbagi"*, *"dan"*, dll.). Kalimat yang terpotong oleh ASR digabungkan menjadi bait vokal utuh dan rapi.

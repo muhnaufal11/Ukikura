@@ -9,9 +9,9 @@
  *    with strict anti-foreign-dub protection so Japanese/Indonesian songs never turn into random languages.
  */
 
-const https = require('https');
-const http = require('http');
-const zlib = require('zlib');
+const https = (typeof require === 'function' && typeof window === 'undefined') ? require('https') : null;
+const http = (typeof require === 'function' && typeof window === 'undefined') ? require('http') : null;
+const zlib = (typeof require === 'function' && typeof window === 'undefined') ? require('zlib') : null;
 
 const ANDROID_CLIENT = {
     clientName: 'ANDROID',
@@ -47,6 +47,55 @@ async function httpRequestRaw(url, opts = {}) {
         'User-Agent': opts.ua || WEB_CLIENT.ua,
         'Accept-Language': 'ja,id-ID;q=0.9,id;q=0.8,en-US;q=0.7,en;q=0.6'
     }, opts.headers || {});
+
+    // Jika berjalan di dalam WebView2 Native Host tanpa Node.js require, gunakan IPC Native Proxy atau Kura Local Proxy
+    if (typeof window !== 'undefined' && window.__UKIKURA_NATIVE_HOST__) {
+        if (window.ipcRenderer && typeof window.ipcRenderer.invoke === 'function') {
+            try {
+                const ipcRes = await window.ipcRenderer.invoke('island-http-proxy', {
+                    url,
+                    opts: {
+                        method: opts.method || 'GET',
+                        headers,
+                        body: opts.body || undefined,
+                        timeout: timeoutMs
+                    }
+                });
+                if (ipcRes && typeof ipcRes.body === 'string' && ipcRes.status > 0) {
+                    return { status: ipcRes.status, body: ipcRes.body };
+                }
+            } catch (_) {}
+        }
+        if (typeof fetch === 'function') {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs + 1500);
+            try {
+                const proxyRes = await fetch('http://127.0.0.1:8089/__qbot__/proxy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url,
+                        opts: {
+                            method: opts.method || 'GET',
+                            headers,
+                            body: opts.body || undefined,
+                            timeout: timeoutMs
+                        }
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timer);
+                if (proxyRes.ok) {
+                    const json = await proxyRes.json();
+                    if (json && typeof json.body === 'string' && json.status > 0) {
+                        return { status: json.status, body: json.body };
+                    }
+                }
+            } catch (_) {
+                clearTimeout(timer);
+            }
+        }
+    }
 
     if (typeof fetch === 'function') {
         const controller = new AbortController();

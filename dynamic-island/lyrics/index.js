@@ -21,6 +21,9 @@ const { forceAlignLyricsToAudioStream } = require("./forced-alignment");
 async function enrichWithRomaji(lines, meta, bestDb, isManualCC = false, mediaDur = 0) {
     if (!Array.isArray(lines) || lines.length === 0) return lines;
 
+    const hasJp = lines.some(l => hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText));
+    if (!hasJp && !meta.likelyJapanese && !meta.isJapaneseVersion) return lines;
+
     // Bersihkan spasi morfem berlebih pada lirik latin (seperti "mo shi mo shi")
     lines.forEach(l => {
         if (l.rawText && isMoraSpacedRomaji(l.rawText)) {
@@ -33,9 +36,6 @@ async function enrichWithRomaji(lines, meta, bestDb, isManualCC = false, mediaDu
             l.romaText = collapseMoraSpacedRomaji(l.romaText);
         }
     });
-
-    const hasJp = lines.some(l => hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText));
-    if (!hasJp) return lines;
 
     // Cari romalrc resmi ke NetEase HANYA jika bukan dari official CC YouTube dan masih ada baris tanpa Romaji
     const missingRomaCount = lines.filter(l => !l.romaText && (hasJapaneseChars(l.rawText) || hasJapaneseChars(l.text) || hasJapaneseChars(l.jpText))).length;
@@ -199,6 +199,12 @@ async function getCompleteSyncedLyrics(rawTitle, rawArtist, mediaDur = 0, onFast
     const maybeEmitFast = (cand, isFinalDbMerge = false) => {
         if (typeof onFastResult !== 'function') return;
         if (cand && cand.hasSyncedTimestamps && Array.isArray(cand.lines) && cand.lines.length >= 4) {
+            // Untuk lagu cover / remix / sped-up / slowed, JANGAN pernah kirim fast LRC studio yang belum diselaraskan!
+            // Karena vokal cover memiliki tempo, intro, dan struktur ketukan yang berbeda dari album studio asli.
+            if (meta.isCover || meta.isSpedUp || meta.isSlowed) {
+                return;
+            }
+
             // Untuk lagu Jepang / Asing / Multilingual, JANGAN pernah kirim fast LRC yang hanya 1 bahasa (misal bahasa Inggris tanpa Romaji/Kanji)
             // jika lagu aslinya memiliki subtitle Romaji/Kanji/Sub Indo yang sedang diekstraksi dari YouTube CC!
             if (meta.likelyJapanese || meta.isJapaneseVersion || /[\u3040-\u30ff\u4e00-\u9fff]/.test(rawTitle) || /\b(?:hololive|nijisanji|vshojo|vtuber|anime|alice&u)\b/i.test(`${rawTitle} ${rawArtist}`)) {

@@ -287,9 +287,9 @@ function forceAlignLyricsToAudioStream(canonicalLines, ytCaptionData, hasStudioL
         const medianOffset = diffs[Math.floor(diffs.length / 2)] || 0;
         const driftRange = diffs.length >= 2 ? (diffs[diffs.length - 1] - diffs[0]) : 0;
 
-        // Jika terdapat variasi tempo antar anchor (driftRange >= 2.0s dan validAnchors >= 3),
+        // Jika terdapat variasi tempo antar anchor (driftRange >= 1.5s atau >= 0.8s dengan 4+ anchor),
         // ini adalah aransemen cover/remix dengan tempo vokal berbeda -> gunakan interpolasi piecewise antar anchor
-        if (driftRange >= 2.0 && validAnchors.length >= 3) {
+        if ((driftRange >= 1.5 || (driftRange >= 0.8 && validAnchors.length >= 4)) && validAnchors.length >= 3) {
             return canonicalLines.map((l, i) => {
                 if (anchors[i]) {
                     return Object.assign({}, l, {

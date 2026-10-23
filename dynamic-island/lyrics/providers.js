@@ -334,7 +334,14 @@ async function searchKuGouLyrics(meta, mediaDur) {
 
         let rawLrc = '';
         try {
-            rawLrc = Buffer.from(dlJson.content, 'base64').toString('utf8');
+            if (typeof Buffer !== 'undefined') {
+                rawLrc = Buffer.from(dlJson.content, 'base64').toString('utf8');
+            } else if (typeof atob === 'function') {
+                const binStr = atob(String(dlJson.content).replace(/\s+/g, ''));
+                const bytes = new Uint8Array(binStr.length);
+                for (let bIdx = 0; bIdx < binStr.length; bIdx++) bytes[bIdx] = binStr.charCodeAt(bIdx);
+                rawLrc = new TextDecoder('utf-8').decode(bytes);
+            }
         } catch (_) {
             continue;
         }

@@ -8,7 +8,7 @@
 #define MyAppName "Ukikura"
 #define MyAppFullTitle "Ukikura (浮倉) — Floating Island & Task Vault"
 #define MyAppVersion "1.0.6"
-#define MyAppVersionCode "80"
+#define MyAppVersionCode "81"
 #define MyAppPublisher "Nauflix (muhnaufal11)"
 #define MyAppURL "https://github.com/muhnaufal11/Ukikura"
 #define MyAppExeName "Ukikura.exe"
@@ -59,7 +59,7 @@ Name: "{app}\runtime"
 
 [Files]
 ; Modul Utama Ukikura (Dynamic Island, Mesin Lirik, UI Assets, Native C++ Bridge ukikura-bridge.exe)
-Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*,host-rust\*,native\*,src\*,*.md"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dynamic-island\*"; DestDir: "{app}\dynamic-island"; Excludes: "data\*,host-rust\*,host-native\*,native\*,src\*,*.md"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\Ukikura-Debug.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\version.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\package.json"; DestDir: "{app}"; Flags: ignoreversion
